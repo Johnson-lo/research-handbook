@@ -1,33 +1,33 @@
 ---
 title: Johnson's Research Handbook
-description: Flow Matching, MeanFlow, fast generative modeling, and robotics research notes.
+description: Research notes on Flow Matching, MeanFlow, fast generative modeling, and robotics.
 template: splash
 hero:
-  tagline: Flow Matching · MeanFlow · Fast Generative Modeling · Robotics
+  tagline: A research story from Flow Matching to Improved MeanFlow
   actions:
-    - text: Start from Foundations
-      link: /research-handbook/en/foundations/distribution-and-sampling/
-      icon: right-arrow
+    - text: Start the main story
+      link: /research-handbook/en/meanflow/story/
       variant: primary
-    - text: Explore Interactive Lab
-      link: /research-handbook/en/interactive/
-      icon: open-book
+    - text: Open concept reference
+      link: /research-handbook/en/foundations/distribution-and-sampling/
 ---
 
-## What this site is
+## Read the story first, use the rest as reference
 
-This is a **curated research handbook**, not a chronological blog. The goal is to turn paper reading, discussion, experiments, and research questions into a public knowledge base that can be revisited, extended, and used as a technical research portfolio.
+The primary reading path is now causal rather than category-driven:
 
-### Three layers of content
+**Why does Flow Matching usually need multiple NFEs?**
+→ **Why does MeanFlow switch to average velocity?**
+→ **How can an average velocity field be trained?**
+→ **What is awkward about the original MeanFlow objective?**
+→ **What exactly does Improved MeanFlow change?**
+→ **What do the experiments actually support?**
 
-| Layer | Purpose |
-|---|---|
-| **Handbook** | Reconstruct the concepts in the order needed to understand the field. |
-| **Paper Notes** | Preserve what each paper actually claims, derives, and reports. |
-| **Interactive Lab** | Make distributions, velocity fields, JVP, and MeanFlow objectives physically inspectable. |
+### How to use the site
 
-## Current research map
+1. **The Full Story**: start here on a first read.
+2. **Deep Dives**: revisit MeanFlow Identity, JVP, or the iMF objective in more detail.
+3. **Concept Reference**: look up distribution, conditional velocity, or marginal velocity when needed.
+4. **Evidence & Sources**: verify paper claims and reported experimental results.
 
-**Diffusion / ODE view** → **Flow Matching** → **MeanFlow** → **Improved MeanFlow** → related MeanFlow variants and applications.
-
-The first complete showcase of this site is the **MeanFlow → Improved MeanFlow** line.
+> This is not a Notion mirror or a paper list. The core of the site is a technical narrative where every section answers why the next idea is needed.

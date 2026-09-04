@@ -1,15 +1,18 @@
 ---
-title: MeanFlow：Average Velocity 與 One-Step Generation
-description: 從 instantaneous velocity 到 average velocity、MeanFlow Identity、JVP 與 1-NFE inference。
+title: MeanFlow 深入｜Average Velocity、Identity 與 JVP
+description: 在已理解主線後，深入看 MeanFlow 的數學結構。
 sidebar:
   order: 1
 ---
 
 import JVPExplorer from '../../../components/JVPExplorer.astro';
+import DerivationStepper from '../../../components/DerivationStepper.astro';
 
-## 從 local velocity 到 interval-average velocity
+:::note[建議閱讀順序]
+如果你是第一次看，先讀 [完整故事線](/research-handbook/meanflow/story/)。這頁是數學 deep dive，不再負責從零建立所有脈絡。
+:::
 
-MeanFlow 定義
+## Average velocity
 
 $$
 u(z_t,r,t)=\frac{1}{t-r}\int_r^t v(z_\tau,\tau)\,d\tau.
@@ -21,27 +24,29 @@ $$
 (t-r)u=\int_r^t v(z_\tau,\tau)\,d\tau,
 $$
 
-finite-time update 可以寫成
+以及
 
 $$
 z_r=z_t-(t-r)u(z_t,r,t).
 $$
 
-對 one-step generation：
+One-step generation：
 
 $$
 (r,t)=(0,1),\qquad z_0=z_1-u_\theta(z_1,0,1).
 $$
 
-## MeanFlow Identity
+## MeanFlow Identity 的推導
 
-對 interval relation 微分可得
+<DerivationStepper lang="zh" />
+
+最後得到
 
 $$
 v=u+(t-r)\frac{du}{dt}.
 $$
 
-其中 total derivative 為
+Total derivative：
 
 $$
 \frac{du}{dt}=\partial_z u\,v+\partial_tu=\operatorname{JVP}(u;v).
@@ -49,30 +54,13 @@ $$
 
 <JVPExplorer lang="zh" />
 
-### Mental model
-
-定義 accumulated displacement
-
-$$A(r,t)=(t-r)u(r,t).$$
-
-則
-
-$$\frac{dA}{dt}=v(t).$$
-
-MeanFlow 的核心可以理解成：用一個 **local differential consistency condition** 去學一個具有 **long-range semantics** 的 average transport field。
-
 ## Original MeanFlow objective
 
-Original MF 建構
+$$
+u_{tgt}=(e-x)-(t-r)\operatorname{JVP}(u_\theta;e-x),$$
 
 $$
-u_{tgt}=(e-x)-(t-r)\operatorname{JVP}(u_\theta;e-x),
+\mathcal L_{MF}=\mathbb E\|u_\theta-\operatorname{sg}(u_{tgt})\|^2.
 $$
 
-並以
-
-$$
-\mathcal L_{MF}=\mathbb E\|u_\theta-\operatorname{sg}(u_{tgt})\|^2
-$$
-
-進行 training。這個 apparent target 透過 JVP 又包含當下的 network，因此 target 本身會依賴目前的 $\theta$，也就是 network-dependent target。
+這裡的關鍵不是把 $u_\theta$ 當成 $e-x$。$u_\theta$ 仍然表示 average velocity；$e-x$ 是 sample-specific conditional velocity supervision，並被 Original MF 用作 JVP tangent 的近似。

@@ -1,40 +1,47 @@
 ---
-title: Improved MeanFlow — From Network-Dependent Target to v-Loss
+title: Improved MeanFlow Deep Dive | Objective Reformulation and System Changes
+description: Separate the objective-level change from CFG and architecture changes.
 sidebar:
   order: 2
 ---
 
-import MFIMFLossExplorer from '../../../../components/MFIMFLossExplorer.astro';
+import MFvsIMFBridge from '../../../../components/MFvsIMFBridge.astro';
 
-## Core idea
+:::note[Start with the core difference]
+If the two papers still feel hard to compare, use the component below first. **Do not memorize the 1.72 FID or CFG changes before the objective-level change is clear.**
+:::
 
-iMF keeps MeanFlow's **average-velocity representation** and one-step inference. It changes how that representation is trained.
+<MFvsIMFBridge lang="en" />
 
-Rearrange the MeanFlow identity:
+## 1. Original MF as an equivalent v-loss
+
+From the MeanFlow Identity,
 
 $$
-v=u+(t-r)\frac{du}{dt}.
+v=u+(t-r)\frac{du}{dt},
 $$
 
-### Original MF as an equivalent v-loss
-
-Define
+define
 
 $$
 V_\theta=u_\theta+(t-r)\operatorname{JVP}_{sg}(u_\theta;e-x).
 $$
 
-Then the original objective can be viewed equivalently as
+Original MF can be viewed equivalently as
 
 $$
 \mathcal L=\mathbb E\|V_\theta-(e-x)\|^2.
 $$
 
-This exposes a new problem: the predictor is effectively $V_\theta(z_t,e-x)$ because the sample-specific conditional velocity also enters the JVP tangent.
+This reveals that the predictor is effectively
 
-## iMF modification
+$$V_\theta(z_t,e-x),$$
 
-iMF replaces that tangent with a model estimate of the marginal velocity:
+because the sample-specific $e-x$ enters the JVP tangent.
+
+## 2. The iMF objective-level change
+
+iMF uses
 
 $$
 V_\theta(z_t)=u_\theta(z_t)+(t-r)\operatorname{JVP}_{sg}(u_\theta;v_\theta).
@@ -46,13 +53,11 @@ $$
 \mathcal L_{iMF}=\mathbb E\|V_\theta(z_t)-(e-x)\|^2.
 $$
 
-:::caution[What did not disappear]
-iMF does **not** remove $e-x$ from supervision. It removes $e-x$ from the JVP / prediction pathway.
+:::caution[The most important non-change]
+iMF does **not** remove $e-x$ supervision. It removes $e-x$ from the JVP / predictor pathway.
 :::
 
-<MFIMFLossExplorer lang="en" />
-
-## Where does $v_\theta$ come from?
+## 3. Where does $v_\theta$ come from?
 
 Boundary condition:
 
@@ -66,16 +71,15 @@ $$
 v_\theta(z_t,t)\equiv u_\theta(z_t,t,t).
 $$
 
-The paper also studies an auxiliary $v$-head used during training.
+The paper also studies a training-only auxiliary $v$-head.
 
-## Training vs inference
+## 4. Additional iMF changes that should be kept separate
 
-**Training:** sample $x,e,t,r$, construct $z_t$, compute $u_\theta$, obtain $v_\theta$, evaluate JVP, form $V_\theta$, compare against $e-x$.
+- random $\omega$ conditioning
+- $\Omega=\{\omega,t_{min},t_{max}\}$ conditioning
+- in-context conditioning
+- removal of adaLN-zero
+- SwiGLU / RMSNorm / RoPE
+- longer training
 
-**Inference:** no real $x$. Sample $z_1\sim p_{prior}$ and perform
-
-$$z_0=z_1-u_\theta(z_1,0,1).$$
-
-## Beyond the objective
-
-iMF also introduces flexible CFG conditioning and in-context conditioning so guidance settings can be changed at inference instead of being fixed during training.
+The final FID 1.72 is therefore a system-level result rather than an objective-only result.

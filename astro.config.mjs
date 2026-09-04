@@ -18,14 +18,8 @@ export default defineConfig({
       plugins: [starlightKatex()],
       defaultLocale: 'root',
       locales: {
-        root: {
-          label: '繁體中文',
-          lang: 'zh-TW',
-        },
-        en: {
-          label: 'English',
-          lang: 'en',
-        },
+        root: { label: '繁體中文', lang: 'zh-TW' },
+        en: { label: 'English', lang: 'en' },
       },
       social: [
         { icon: 'github', label: 'GitHub', href: 'https://github.com/Johnson-lo' }
@@ -36,32 +30,33 @@ export default defineConfig({
           translations: { en: 'Start Here' },
           items: [
             { label: '首頁', translations: { en: 'Home' }, slug: '' },
-            { label: '閱讀指南', translations: { en: 'How to use this handbook' }, slug: 'guide' }
+            { label: '閱讀指南', translations: { en: 'Reading Guide' }, slug: 'guide' }
           ]
         },
         {
-          label: '基礎',
-          translations: { en: 'Foundations' },
-          items: [{ autogenerate: { directory: 'foundations' } }]
+          label: '主線：Flow Matching → iMF',
+          translations: { en: 'Main Story: Flow Matching → iMF' },
+          items: [
+            { label: '完整故事線', translations: { en: 'The Full Story' }, slug: 'meanflow/story' },
+            { label: 'MeanFlow 深入', translations: { en: 'MeanFlow Deep Dive' }, slug: 'meanflow/meanflow' },
+            { label: 'Improved MeanFlow 深入', translations: { en: 'Improved MeanFlow Deep Dive' }, slug: 'meanflow/improved-meanflow' }
+          ]
         },
         {
-          label: 'MeanFlow',
-          items: [{ autogenerate: { directory: 'meanflow' } }]
+          label: '概念參考',
+          translations: { en: 'Concept Reference' },
+          items: [
+            { autogenerate: { directory: 'foundations' } },
+            { label: '互動實驗室', translations: { en: 'Interactive Lab' }, slug: 'interactive' }
+          ]
         },
         {
-          label: '論文筆記',
-          translations: { en: 'Paper Notes' },
-          items: [{ autogenerate: { directory: 'papers' } }]
-        },
-        {
-          label: '互動實驗室',
-          translations: { en: 'Interactive Lab' },
-          items: [{ autogenerate: { directory: 'interactive' } }]
-        },
-        {
-          label: '實驗',
-          translations: { en: 'Experiments' },
-          items: [{ autogenerate: { directory: 'experiments' } }]
+          label: '證據與來源',
+          translations: { en: 'Evidence & Sources' },
+          items: [
+            { autogenerate: { directory: 'papers' } },
+            { autogenerate: { directory: 'experiments' } }
+          ]
         },
         { label: '關於', translations: { en: 'About' }, slug: 'about' }
       ]

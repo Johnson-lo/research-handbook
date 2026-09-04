@@ -1,18 +1,22 @@
 ---
-title: How to use this handbook
+title: Reading Guide
 ---
 
-The site intentionally separates **paper claims**, **my interpretation**, and **research questions** so that source-supported claims are not mixed with personal inference.
+On a first read, do not jump around the sidebar. Follow one causal path:
 
-- **Paper**: content directly supported by a paper or official source.
-- **My interpretation**: a reconstructed mental model or explanatory analogy.
-- **Research question**: an open hypothesis, possible experiment, or thesis direction.
+1. **Why Flow Matching needs multiple NFEs**
+2. **Conditional velocity vs marginal velocity**
+3. **MeanFlow: instantaneous velocity → average velocity**
+4. **MeanFlow Identity and JVP**
+5. **The problem with the original MF objective**
+6. **The core Improved MeanFlow change**
+7. **Controlled ablations → system-level result**
+8. **Remaining research questions**
 
-For MeanFlow-related topics, the recommended reading path is:
+The site still separates:
 
-1. Distribution & Sampling
-2. Flow Matching
-3. MeanFlow
-4. Improved MeanFlow
-5. Interactive Lab
-6. Published Experiments
+- **Paper**: claims directly supported by papers or official sources.
+- **My interpretation**: reconstructed mental models and explanatory analogies.
+- **Research question**: unproven hypotheses, experiment ideas, or thesis directions.
+
+Foundations, Paper Notes, Interactive Lab, and Experiments now support the main story as reference material rather than competing reading paths.

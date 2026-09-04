@@ -1,0 +1,51 @@
+---
+const { lang = 'zh' } = Astro.props;
+const isZh = lang !== 'en';
+---
+<div class="derivation" data-derivation data-lang={isZh ? 'zh' : 'en'}>
+  <div class="derivation-head">
+    <strong>{isZh ? '動態推導｜MeanFlow Identity' : 'Animated derivation | MeanFlow Identity'}</strong>
+    <div class="controls">
+      <button type="button" data-prev>{isZh ? '上一步' : 'Prev'}</button>
+      <button type="button" data-play>{isZh ? '播放' : 'Play'}</button>
+      <button type="button" data-next>{isZh ? '下一步' : 'Next'}</button>
+    </div>
+  </div>
+
+  <div class="progress" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
+
+  <section data-step="0">
+    <p class="why">{isZh ? '先把 average velocity 乘回 interval 長度，得到累積位移。' : 'Multiply the average velocity by the interval length to recover accumulated displacement.'}</p>
+    <math display="block"><mrow><mi>A</mi><mo>(</mo><mi>r</mi><mo>,</mo><mi>t</mi><mo>)</mo><mo>=</mo><mo>(</mo><mi>t</mi><mo>−</mo><mi>r</mi><mo>)</mo><mi>u</mi><mo>=</mo><msubsup><mo>∫</mo><mi>r</mi><mi>t</mi></msubsup><mi>v</mi><mo>(</mo><mi>τ</mi><mo>)</mo><mi>d</mi><mi>τ</mi></mrow></math>
+    <p>{isZh ? '這一步把「平均」重新變回「總位移」。' : 'This converts an average quantity back into total displacement.'}</p>
+  </section>
+
+  <section data-step="1" hidden>
+    <p class="why">{isZh ? '接著對右端點 t 微分：累積位移每增加一點時間，新增的就是當下 instantaneous velocity。' : 'Differentiate with respect to the right endpoint t: the new displacement added per unit time is the instantaneous velocity at t.'}</p>
+    <math display="block"><mrow><mfrac><mi>d</mi><mrow><mi>d</mi><mi>t</mi></mrow></mfrac><mo>[</mo><mo>(</mo><mi>t</mi><mo>−</mo><mi>r</mi><mo>)</mo><mi>u</mi><mo>]</mo><mo>=</mo><mi>v</mi><mo>(</mo><mi>t</mi><mo>)</mo></mrow></math>
+    <p>{isZh ? '右邊使用 Fundamental Theorem of Calculus；r 在這個 derivative 中固定。' : 'The right-hand side follows from the Fundamental Theorem of Calculus; r is held fixed.'}</p>
+  </section>
+
+  <section data-step="2" hidden>
+    <p class="why">{isZh ? '左邊套 product rule。這就是 MeanFlow Identity 真正出現的位置。' : 'Apply the product rule on the left. This is exactly where the MeanFlow Identity appears.'}</p>
+    <math display="block"><mrow><mi>u</mi><mo>+</mo><mo>(</mo><mi>t</mi><mo>−</mo><mi>r</mi><mo>)</mo><mfrac><mrow><mi>d</mi><mi>u</mi></mrow><mrow><mi>d</mi><mi>t</mi></mrow></mfrac><mo>=</mo><mi>v</mi></mrow></math>
+    <p class="takeaway">{isZh ? '重點：local velocity = interval average +「average 隨著 endpoint 移動時的修正量」。' : 'Key idea: local velocity = interval average + a correction for how that average changes as the endpoint moves.'}</p>
+  </section>
+
+  <section data-step="3" hidden>
+    <p class="why">{isZh ? '最後才問：du/dt 怎麼算？因為 u 同時依賴 state z_t 與 time t，所以要用 total derivative，也就是 JVP。' : 'Only now do we ask how to compute du/dt. Because u depends on both the state z_t and time t, we need the total derivative, implemented as a JVP.'}</p>
+    <math display="block"><mrow><mfrac><mrow><mi>d</mi><mi>u</mi></mrow><mrow><mi>d</mi><mi>t</mi></mrow></mfrac><mo>=</mo><msub><mo>∂</mo><mi>z</mi></msub><mi>u</mi><mo>·</mo><mi>v</mi><mo>+</mo><msub><mo>∂</mo><mi>t</mi></msub><mi>u</mi><mo>=</mo><mi>JVP</mi><mo>(</mo><mi>u</mi><mo>;</mo><mi>v</mi><mo>)</mo></mrow></math>
+    <p class="takeaway">{isZh ? '因此 JVP 不是另一個 velocity；它是在描述 average velocity u 沿著 flow 與時間變化的速率。' : 'The JVP is not another velocity field. It is the rate at which the average velocity u changes along the flow and time direction.'}</p>
+  </section>
+</div>
+
+<style>
+.derivation{border:1px solid var(--sl-color-gray-5);border-radius:.8rem;padding:1rem;margin:1.2rem 0;background:var(--sl-color-bg-nav)}
+.derivation-head{display:flex;justify-content:space-between;gap:1rem;align-items:center;flex-wrap:wrap}.controls{display:flex;gap:.4rem}.controls button{border:1px solid var(--sl-color-gray-4);background:transparent;color:inherit;padding:.45rem .65rem;border-radius:.45rem;cursor:pointer}.controls button:hover{border-color:var(--sl-color-accent)}
+.progress{display:grid;grid-template-columns:repeat(4,1fr);gap:.35rem;margin:.8rem 0}.progress i{height:4px;border-radius:4px;background:var(--sl-color-gray-5)}.progress i.active{background:var(--sl-color-accent)}
+.derivation section{min-height:13rem;animation:fadein .22s ease}.derivation math{font-size:1.28rem;margin:1.5rem auto}.why{font-weight:600}.takeaway{border-left:3px solid var(--sl-color-accent);padding-left:.8rem}@keyframes fadein{from{opacity:.25;transform:translateY(4px)}to{opacity:1;transform:none}}
+</style>
+
+<script>
+for(const root of document.querySelectorAll('[data-derivation]')){if(root.dataset.ready)continue;root.dataset.ready='1';const steps=[...root.querySelectorAll('[data-step]')],bars=[...root.querySelectorAll('.progress i')],prev=root.querySelector('[data-prev]'),next=root.querySelector('[data-next]'),play=root.querySelector('[data-play]');const isZh=root.dataset.lang==='zh';let idx=0,timer=null;function render(){steps.forEach((s,i)=>s.hidden=i!==idx);bars.forEach((b,i)=>b.classList.toggle('active',i<=idx));prev.disabled=idx===0;next.disabled=idx===steps.length-1}function stop(){if(timer){clearInterval(timer);timer=null}play.textContent=isZh?'播放':'Play'}prev.onclick=()=>{stop();idx=Math.max(0,idx-1);render()};next.onclick=()=>{stop();idx=Math.min(steps.length-1,idx+1);render()};play.onclick=()=>{if(timer){stop();return}play.textContent=isZh?'暫停':'Pause';timer=setInterval(()=>{if(idx===steps.length-1){stop();return}idx++;render()},2600)};render()}
+</script>

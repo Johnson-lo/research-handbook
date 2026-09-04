@@ -3,31 +3,31 @@ title: Johnson 的研究手冊
 description: Flow Matching、MeanFlow、fast generative modeling 與 robotics 的研究筆記。
 template: splash
 hero:
-  tagline: Flow Matching · MeanFlow · Fast Generative Modeling · Robotics
+  tagline: 一條從 Flow Matching 到 Improved MeanFlow 的研究故事線
   actions:
-    - text: 從基礎開始
-      link: /research-handbook/foundations/distribution-and-sampling/
-      icon: right-arrow
+    - text: 從主線開始
+      link: /research-handbook/meanflow/story/
       variant: primary
-    - text: 開啟互動實驗室
-      link: /research-handbook/interactive/
-      icon: open-book
+    - text: 查概念參考
+      link: /research-handbook/foundations/distribution-and-sampling/
 ---
 
-## 這個網站是什麼
+## 先讀故事，再查資料
 
-這是一份持續整理的 **research handbook**，而不是依日期排列的 blog。目標是把 paper reading、討論、實驗與 research questions 整理成可以反覆查閱、持續擴充，並能對外展示的研究知識庫。
+這個網站的主要閱讀方式不再是「先挑分類」，而是先沿著一條因果主線讀：
 
-### 三層內容
+**為什麼 Flow Matching 需要 multiple NFE？**
+→ **MeanFlow 為什麼改學 average velocity？**
+→ **average velocity 要怎麼訓練？**
+→ **Original MeanFlow 的 training objective 哪裡不穩定？**
+→ **Improved MeanFlow 到底只改了哪一條關鍵路徑？**
+→ **實驗證據支持了什麼？**
 
-| 層級 | 用途 |
-|---|---|
-| **Handbook** | 依照真正理解領域所需要的順序重建核心概念。 |
-| **Paper Notes** | 保留每篇 paper 實際提出的 claim、derivation 與實驗證據。 |
-| **Interactive Lab** | 用互動方式理解 distribution、velocity field、JVP 與 MeanFlow objectives。 |
+### 主要閱讀入口
 
-## 目前的研究主線
+1. **完整故事線**：第一次讀請從這裡開始。
+2. **Deep Dive**：想重新看 MeanFlow Identity、JVP 或 iMF objective 時再進入。
+3. **Concept Reference**：忘記 distribution、conditional velocity、marginal velocity 時再查。
+4. **Evidence & Sources**：需要確認 paper claim 或實驗數字時再看。
 
-**Diffusion / ODE view** → **Flow Matching** → **MeanFlow** → **Improved MeanFlow** → MeanFlow variants 與 applications。
-
-目前第一條完整整理的主線是 **MeanFlow → Improved MeanFlow**。
+> 這不是 Notion 備份，也不是 paper 清單；主體應該是一個可以一路追問「為什麼下一步會出現」的 technical narrative。

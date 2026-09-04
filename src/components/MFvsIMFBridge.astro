@@ -1,0 +1,78 @@
+---
+const { lang = 'zh' } = Astro.props;
+const isZh = lang !== 'en';
+---
+<div class="bridge" data-bridge data-lang={isZh ? 'zh' : 'en'}>
+  <div class="bridge-head">
+    <div>
+      <strong>{isZh ? 'Original MeanFlow → Improved MeanFlow：到底改了什麼？' : 'Original MeanFlow → Improved MeanFlow: what actually changed?'}</strong>
+      <p>{isZh ? '先把共同部分固定，只看唯一最重要的 objective-level 改動。' : 'Freeze the shared parts first, then isolate the key objective-level change.'}</p>
+    </div>
+    <div class="bridge-tabs">
+      <button class="active" data-view="diff">{isZh ? '只看改動' : 'Difference only'}</button>
+      <button data-view="full">{isZh ? '完整流程' : 'Full flow'}</button>
+    </div>
+  </div>
+
+  <div class="shared" data-shared>
+    <div><b>{isZh ? '共同的 training sample' : 'Shared training sample'}</b><br/><code>x, e, t, r → z_t=(1−t)x+te</code></div>
+    <div><b>{isZh ? '共同的 supervision' : 'Shared supervision'}</b><br/><code>e−x</code></div>
+    <div><b>{isZh ? '共同的 inference object' : 'Shared inference object'}</b><br/><code>uθ(z, r, t)</code></div>
+  </div>
+
+  <div class="compare">
+    <article>
+      <h3>Original MeanFlow</h3>
+      <div class="flowline"><span class="state">z_t</span><span>→</span><span class="avg">uθ</span></div>
+      <div class="critical">
+        <span class="label">JVP tangent</span>
+        <code>e−x</code>
+        <small>{isZh ? 'sample-specific conditional velocity' : 'sample-specific conditional velocity'}</small>
+      </div>
+      <div class="arrow">↓</div>
+      <div class="result"><code>Vθ(z_t, e−x)</code></div>
+      <p>{isZh ? 'Predictor 的計算路徑直接看到這一次抽到的 e−x，因此 prediction function 不只依賴 z_t。' : 'The prediction path directly sees the sampled e−x, so the predictor is not a function of z_t alone.'}</p>
+    </article>
+
+    <div class="change">
+      <span>{isZh ? '唯一先抓住的核心改動' : 'The one core change to remember first'}</span>
+      <b><code>e−x</code> → <code>vθ(z_t)</code></b>
+      <small>{isZh ? '不是把 e−x 從 loss 拿掉，而是把它從 JVP tangent 拿掉。' : 'e−x is not removed from the loss; it is removed from the JVP tangent.'}</small>
+    </div>
+
+    <article>
+      <h3>Improved MeanFlow</h3>
+      <div class="flowline"><span class="state">z_t</span><span>→</span><span class="avg">uθ</span></div>
+      <div class="critical improved">
+        <span class="label">JVP tangent</span>
+        <code>vθ(z_t)</code>
+        <small>{isZh ? 'model-estimated marginal velocity' : 'model-estimated marginal velocity'}</small>
+      </div>
+      <div class="arrow">↓</div>
+      <div class="result"><code>Vθ(z_t)</code></div>
+      <p>{isZh ? 'JVP pathway 改用只依賴當前 state 的 marginal-like velocity estimate；e−x 仍然留在 supervision 端。' : 'The JVP path now uses a marginal-like velocity estimate that depends on the current state; e−x remains on the supervision side.'}</p>
+    </article>
+  </div>
+
+  <div class="supervision-row">
+    <span>{isZh ? '兩邊最後都還是比較' : 'Both objectives still compare against'}</span>
+    <code>Vθ − (e−x)</code>
+  </div>
+
+  <div class="paper-scope">
+    <b>{isZh ? '不要把兩篇 paper 的所有差異都混成一件事' : 'Do not collapse every paper-level difference into one change'}</b>
+    <div class="scope-grid">
+      <div><strong>{isZh ? '核心 objective 改動' : 'Core objective change'}</strong><br/>{isZh ? 'JVP tangent：e−x → vθ(z_t)' : 'JVP tangent: e−x → vθ(z_t)'}</div>
+      <div><strong>{isZh ? 'iMF 額外系統改動' : 'Additional iMF system changes'}</strong><br/>{isZh ? 'flexible CFG、Ω-conditioning、in-context conditioning、Transformer block changes、longer training' : 'flexible CFG, Ω-conditioning, in-context conditioning, Transformer block changes, and longer training'}</div>
+    </div>
+  </div>
+</div>
+
+<style>
+.bridge{border:1px solid var(--sl-color-gray-5);border-radius:.9rem;padding:1rem;margin:1.2rem 0;background:var(--sl-color-bg-nav)}.bridge-head{display:flex;justify-content:space-between;gap:1rem;align-items:flex-start;flex-wrap:wrap}.bridge-head p{margin:.25rem 0}.bridge-tabs{display:flex;gap:.4rem}.bridge-tabs button{border:1px solid var(--sl-color-gray-4);background:transparent;color:inherit;padding:.45rem .65rem;border-radius:.45rem;cursor:pointer}.bridge-tabs button.active{background:var(--sl-color-accent-low);border-color:var(--sl-color-accent)}
+.shared{display:grid;grid-template-columns:repeat(3,1fr);gap:.55rem;margin:1rem 0}.shared>div,.paper-scope,.supervision-row{border:1px solid var(--sl-color-gray-5);border-radius:.6rem;padding:.75rem}.compare{display:grid;grid-template-columns:1fr .52fr 1fr;gap:.8rem;align-items:center}.compare article{border:1px solid var(--sl-color-gray-5);border-radius:.7rem;padding:.9rem;min-height:21rem}.flowline{display:flex;justify-content:center;gap:.55rem;align-items:center;margin:.8rem 0}.state,.avg,.result,.critical{border:1px solid var(--sl-color-gray-4);border-radius:.55rem;padding:.55rem .7rem}.avg{border-color:#7658a8}.critical{display:grid;gap:.25rem;text-align:center;border:2px dashed #b46b18;background:color-mix(in srgb,#b46b18 8%,transparent)}.critical.improved{border-style:solid}.critical .label{font-size:.75rem;text-transform:uppercase;opacity:.7}.critical code{font-size:1.05rem}.arrow{text-align:center;font-size:1.4rem}.result{text-align:center}.change{text-align:center;display:grid;gap:.55rem}.change b{font-size:1.2rem}.supervision-row{margin-top:.8rem;display:flex;justify-content:center;gap:.8rem;align-items:center;flex-wrap:wrap}.paper-scope{margin-top:.8rem}.scope-grid{display:grid;grid-template-columns:1fr 1fr;gap:.6rem;margin-top:.6rem}.scope-grid>div{border-left:3px solid var(--sl-color-accent);padding-left:.7rem}.bridge[data-view='diff'] .shared{display:none}@media(max-width:760px){.compare{grid-template-columns:1fr}.change{padding:.5rem 0}.shared,.scope-grid{grid-template-columns:1fr}.compare article{min-height:auto}}
+</style>
+
+<script>
+for(const root of document.querySelectorAll('[data-bridge]')){if(root.dataset.ready)continue;root.dataset.ready='1';const buttons=[...root.querySelectorAll('[data-view]')];function set(v){root.dataset.view=v;buttons.forEach(b=>b.classList.toggle('active',b.dataset.view===v))}buttons.forEach(b=>b.addEventListener('click',()=>set(b.dataset.view)));set('diff')}
+</script>

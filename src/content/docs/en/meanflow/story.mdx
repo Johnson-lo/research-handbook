@@ -1,0 +1,198 @@
+---
+title: Main Story | Flow Matching → MeanFlow → Improved MeanFlow
+description: A causal narrative for understanding the two MeanFlow papers instead of treating their equations as disconnected topics.
+sidebar:
+  order: 0
+---
+
+import DerivationStepper from '../../../../components/DerivationStepper.astro';
+import MFvsIMFBridge from '../../../../components/MFvsIMFBridge.astro';
+
+# The whole story first
+
+This path asks one question: **how do we move from many local velocity queries in a generative ODE to effective one-step generation?**
+
+---
+
+## 1. Why does Flow Matching usually need multiple NFEs?
+
+Flow Matching learns an instantaneous velocity field:
+
+$$
+\frac{dz_t}{dt}=v_\theta(z_t,t).
+$$
+
+During inference, we move from noise at $t=1$ toward data at $t=0$. Once the state changes, the local direction can change as well, so the model is queried again.
+
+The multi-NFE requirement is therefore tied to the semantics of the predicted quantity: it is **local / instantaneous**.
+
+For the linear path
+
+$$z_t=(1-t)x+te,$$
+
+a sampled pair provides
+
+$$e-x,$$
+
+but this is a **conditional velocity**. The unique marginal field is
+
+$$
+v(z_t,t)=\mathbb E[e-x\mid z_t,t].
+$$
+
+---
+
+## 2. MeanFlow's first idea: stop predicting only local velocity
+
+If we want to move from $z_1$ to $z_0$ in one step, the natural question is:
+
+> Can we directly learn the average velocity over the whole interval?
+
+MeanFlow defines
+
+$$
+u(z_t,r,t)=\frac{1}{t-r}\int_r^t v(z_\tau,\tau)\,d\tau.
+$$
+
+Then
+
+$$
+z_r=z_t-(t-r)u(z_t,r,t).
+$$
+
+For one-step generation:
+
+$$
+(r,t)=(0,1),\qquad z_0=z_1-u_\theta(z_1,0,1).
+$$
+
+This is the core representation shift:
+
+**instantaneous velocity $v$ → interval-average velocity $u$.**
+
+---
+
+## 3. But where does the ground-truth average velocity come from?
+
+We can cheaply sample $e-x$, but we do not have an equally convenient per-sample regression target for $u(z_t,r,t)$.
+
+MeanFlow therefore needs an identity that connects the **average quantity $u$** to the **local quantity $v$**.
+
+<DerivationStepper lang="en" />
+
+The result is
+
+$$
+v=u+(t-r)\frac{du}{dt},
+$$
+
+with
+
+$$
+\frac{du}{dt}=\partial_z u\,v+\partial_tu,
+$$
+
+which can be computed as a JVP.
+
+> The JVP is not an arbitrary implementation trick. It appears because MeanFlow learns an average quantity that does not come with a simple sampled ground-truth label.
+
+---
+
+## 4. How does Original MeanFlow turn the identity into a training objective?
+
+The theoretical identity requires the marginal velocity $v(z_t,t)$. Original MeanFlow uses the sampled conditional velocity $e-x$ as the JVP tangent:
+
+$$
+u_{tgt}=(e-x)-(t-r)\operatorname{JVP}(u_\theta;e-x),$$
+
+then trains
+
+$$
+\mathcal L_{MF}=\mathbb E\|u_\theta-\operatorname{sg}(u_{tgt})\|^2.
+$$
+
+Two distinctions matter:
+
+1. **$u_\theta$ is not predicting $e-x$.** Its semantics remain average velocity.
+2. **$e-x$ is not only supervision.** It also enters the JVP tangent and therefore the prediction/target-construction path.
+
+---
+
+## 5. What exactly does Improved MeanFlow change?
+
+Ignore CFG, architecture, and the final 1.72 FID for a moment. First isolate the objective-level change.
+
+<MFvsIMFBridge lang="en" />
+
+Rewrite Original MF as an equivalent v-loss:
+
+$$
+V_\theta=u_\theta+(t-r)\operatorname{JVP}_{sg}(u_\theta;e-x),
+$$
+
+$$
+\mathcal L=\mathbb E\|V_\theta-(e-x)\|^2.
+$$
+
+Now the issue is visible:
+
+$$V_\theta=V_\theta(z_t,e-x).$$
+
+Improved MeanFlow changes the JVP tangent to a marginal-like prediction:
+
+$$
+V_\theta(z_t)=u_\theta(z_t)+(t-r)\operatorname{JVP}_{sg}(u_\theta;v_\theta).
+$$
+
+The supervision is still
+
+$$
+\mathcal L_{iMF}=\mathbb E\|V_\theta(z_t)-(e-x)\|^2.
+$$
+
+### One-line memory aid
+
+> **Original MF: $e-x$ enters both supervision and the JVP.**  
+> **iMF: $e-x$ stays only in supervision; the JVP uses $v_\theta(z_t)$.**
+
+---
+
+## 6. Why does the final iMF system reach FID 1.72?
+
+Do not attribute the entire gain to the objective change.
+
+Controlled objective evidence includes:
+
+| Setting | 1-NFE FID ↓ |
+|---|---:|
+| Original MF-B/2 | 6.17 |
+| iMF boundary $v_\theta=u_\theta(z_t,t,t)$ | 5.97 |
+| iMF auxiliary $v$-head | 5.68 |
+| Original MF-XL/2 | 3.43 |
+| MF-XL/2 + iMF boundary objective | 2.99 |
+
+The iMF system also adds flexible guidance conditioning, $\Omega$-conditioning, in-context conditioning, Transformer block changes, and longer training. The final iMF-XL/2 system reaches **FID 1.72**.
+
+The correct interpretation is:
+
+> **The objective reformulation has independent supporting evidence, but the final 1.72 result is a system-level outcome.**
+
+---
+
+## 7. The relationship between the two papers in one table
+
+| Question | Original MeanFlow | Improved MeanFlow |
+|---|---|---|
+| Main goal | One-step generation with average velocity | Stabilize/clean up MeanFlow training and improve guidance/conditioning |
+| Inference object | $u_\theta$ | same $u_\theta$ |
+| One-step inference | $z_0=z_1-u_\theta(z_1,0,1)$ | **unchanged** |
+| Sample supervision | $e-x$ | **unchanged** |
+| JVP tangent | $e-x$ | $v_\theta(z_t)$ |
+| Training concern | network-dependent target / sample-specific tangent | state-only compound predictor $V_\theta(z_t)$ |
+| Additional system changes | fixed CFG | flexible CFG + conditioning/architecture changes |
+
+---
+
+## 8. What research questions remain?
+
+After iMF, simply re-identifying the original network-dependent target is not enough novelty. More promising directions include temporal difficulty, endpoint error, JVP/gradient geometry, two-step intermediate constraints, and transferring average-flow or flow-map representations to robotics/action generation.

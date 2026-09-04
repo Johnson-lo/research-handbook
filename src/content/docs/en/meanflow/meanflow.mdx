@@ -1,15 +1,18 @@
 ---
-title: MeanFlow — Average Velocity and One-Step Generation
-description: From instantaneous velocity to average velocity, MeanFlow Identity, JVP, and 1-NFE inference.
+title: MeanFlow Deep Dive | Average Velocity, Identity, and JVP
+description: A mathematical deep dive after the main story is clear.
 sidebar:
   order: 1
 ---
 
 import JVPExplorer from '../../../../components/JVPExplorer.astro';
+import DerivationStepper from '../../../../components/DerivationStepper.astro';
 
-## From local velocity to interval-average velocity
+:::note[Recommended order]
+On a first read, start with [The Full Story](/research-handbook/en/meanflow/story/). This page is a mathematical deep dive rather than a from-scratch narrative.
+:::
 
-MeanFlow defines
+## Average velocity
 
 $$
 u(z_t,r,t)=\frac{1}{t-r}\int_r^t v(z_\tau,\tau)\,d\tau.
@@ -21,7 +24,7 @@ $$
 (t-r)u=\int_r^t v(z_\tau,\tau)\,d\tau,
 $$
 
-and the finite-time update is
+and
 
 $$
 z_r=z_t-(t-r)u(z_t,r,t).
@@ -33,9 +36,11 @@ $$
 (r,t)=(0,1),\qquad z_0=z_1-u_\theta(z_1,0,1).
 $$
 
-## MeanFlow Identity
+## Deriving the MeanFlow Identity
 
-Differentiating the interval relation gives
+<DerivationStepper lang="en" />
+
+The result is
 
 $$
 v=u+(t-r)\frac{du}{dt}.
@@ -49,30 +54,13 @@ $$
 
 <JVPExplorer lang="en" />
 
-### Mental model
-
-Define accumulated displacement
-
-$$A(r,t)=(t-r)u(r,t).$$
-
-Then
-
-$$\frac{dA}{dt}=v(t).$$
-
-MeanFlow therefore uses a **local differential consistency condition** to learn a **long-range average transport field**.
-
 ## Original MeanFlow objective
 
-Original MF constructs
-
 $$
-u_{tgt}=(e-x)-(t-r)\operatorname{JVP}(u_\theta;e-x),
-$$
-
-and trains
+u_{tgt}=(e-x)-(t-r)\operatorname{JVP}(u_\theta;e-x),$$
 
 $$
 \mathcal L_{MF}=\mathbb E\|u_\theta-\operatorname{sg}(u_{tgt})\|^2.
 $$
 
-The apparent target contains the current network through the JVP term, making it network-dependent.
+The key distinction is that $u_\theta$ does not mean $e-x$. It remains an average velocity; $e-x$ is sample-specific conditional velocity supervision and is used by Original MF as the JVP tangent approximation.
