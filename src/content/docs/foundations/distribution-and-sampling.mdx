@@ -1,0 +1,37 @@
+---
+title: Distribution, Sampling & Probability Path
+description: The minimum probability foundation needed for Flow Matching and MeanFlow.
+sidebar:
+  order: 1
+---
+
+import ProbabilityPath from '../../../components/ProbabilityPath.astro';
+
+## Distribution is not a single sample
+
+- $p_{data}$: the **distribution** of real data.
+- $x \sim p_{data}$: one sampled data point.
+- $p_{prior}$: an easy-to-sample prior distribution, typically Gaussian.
+- $e \sim p_{prior}$: one noise sample.
+
+“Random” describes the **sampling operation**. It is not a separate distribution.
+
+## Linear probability path
+
+For the MeanFlow / iMF convention:
+
+$$
+z_t=(1-t)x+te
+$$
+
+Therefore:
+
+$$
+t=0 \Rightarrow z_0=x, \qquad t=1 \Rightarrow z_1=e.
+$$
+
+<ProbabilityPath />
+
+:::note[Training is not rollout]
+During training, $x$, $e$, and $t$ are sampled and $z_t$ is **constructed directly** from the equation. The model does not start from Gaussian noise and simulate through all previous times to obtain this training point.
+:::
