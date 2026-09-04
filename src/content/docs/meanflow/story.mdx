@@ -30,11 +30,15 @@ Inference 從 $t=1$ 的 noise 往 $t=0$ 的 data 走。問題是：走到新的 
 
 對 linear probability path
 
-$$z_t=(1-t)x+te$$
+$$
+z_t=(1-t)x+te
+$$
 
 某一組 sampled pair 的速度是
 
-$$e-x.$$
+$$
+e-x
+$$
 
 但它只是 **conditional velocity**。真正唯一的 marginal field 是
 
@@ -143,7 +147,9 @@ $$
 
 這時問題變得很明顯：
 
-$$V_\theta=V_\theta(z_t,e-x).$$
+$$
+V_\theta=V_\theta(z_t,e-x).
+$$
 
 Improved MeanFlow 的核心是把 JVP tangent 改成 marginal-like prediction：
 

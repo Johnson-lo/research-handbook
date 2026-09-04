@@ -57,10 +57,11 @@ $$
 ## Original MeanFlow objective
 
 $$
-u_{tgt}=(e-x)-(t-r)\operatorname{JVP}(u_\theta;e-x),$$
+u_{tgt}=(e-x)-(t-r)\operatorname{JVP}(u_\theta;e-x).
+$$
 
 $$
-\mathcal L=\mathbb E\|u_\theta-sg(u_{tgt})\|^2.
+\mathcal L=\mathbb E\|u_\theta-\operatorname{sg}(u_{tgt})\|^2.
 $$
 
 這裡 `sg` 表示 stop-gradient。關鍵不是把 $u_\theta$ 當成 $e-x$；$u_\theta$ 仍然表示 average velocity，而 $e-x$ 是 sample-specific conditional velocity supervision，並被 Original MF 用作 JVP tangent 的近似。

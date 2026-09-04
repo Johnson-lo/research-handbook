@@ -28,11 +28,15 @@ The multi-NFE requirement is therefore tied to the semantics of the predicted qu
 
 For the linear path
 
-$$z_t=(1-t)x+te,$$
+$$
+z_t=(1-t)x+te
+$$
 
 a sampled pair provides
 
-$$e-x,$$
+$$
+e-x
+$$
 
 but this is a **conditional velocity**. The unique marginal field is
 
@@ -103,7 +107,8 @@ which can be computed as a JVP.
 The theoretical identity requires the marginal velocity $v(z_t,t)$. Original MeanFlow uses the sampled conditional velocity $e-x$ as the JVP tangent:
 
 $$
-u_{tgt}=(e-x)-(t-r)\operatorname{JVP}(u_\theta;e-x),$$
+u_{tgt}=(e-x)-(t-r)\operatorname{JVP}(u_\theta;e-x).
+$$
 
 then trains
 
@@ -136,7 +141,9 @@ $$
 
 Now the issue is visible:
 
-$$V_\theta=V_\theta(z_t,e-x).$$
+$$
+V_\theta=V_\theta(z_t,e-x).
+$$
 
 Improved MeanFlow changes the JVP tangent to a marginal-like prediction:
 
