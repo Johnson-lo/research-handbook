@@ -1,0 +1,17 @@
+<div class="interactive-frame" data-jvp>
+  <div class="j-head"><strong>JVP Explorer</strong><span>t=<output data-t>0.70</output>, r=<output data-r>0.20</output></span></div>
+  <label>t <input data-ts type="range" min="0.05" max="1" step="0.01" value="0.70"/></label>
+  <label>r <input data-rs type="range" min="0" max="0.69" step="0.01" value="0.20"/></label>
+  <svg viewBox="0 0 760 210" role="img" aria-label="MeanFlow interval from r to t">
+    <rect width="760" height="210" rx="12" fill="#101722"/>
+    <line x1="70" y1="105" x2="690" y2="105" stroke="#647180" stroke-width="5"/>
+    <circle data-rp cy="105" r="13" fill="#7658a8"/><circle data-tp cy="105" r="13" fill="#b46b18"/>
+    <text x="70" y="155" fill="#9dd4b5" font-size="13">0 data</text><text x="645" y="155" fill="#a9c7e8" font-size="13">1 noise</text>
+    <text data-mid y="70" text-anchor="middle" fill="#dce5ed" font-size="15">interval average u</text>
+  </svg>
+  <p data-copy></p>
+</div>
+<style>.j-head{display:flex;justify-content:space-between;gap:1rem;flex-wrap:wrap}.interactive-frame label{display:block;margin:.5rem 0}</style>
+<script>
+for(const root of document.querySelectorAll('[data-jvp]')){if(root.dataset.ready)continue;root.dataset.ready='1';const ts=root.querySelector('[data-ts]'),rs=root.querySelector('[data-rs]'),to=root.querySelector('[data-t]'),ro=root.querySelector('[data-r]'),rp=root.querySelector('[data-rp]'),tp=root.querySelector('[data-tp]'),mid=root.querySelector('[data-mid]'),copy=root.querySelector('[data-copy]');function render(src){let t=+ts.value,r=+rs.value;if(r>=t){if(src===rs){r=Math.max(0,t-.01);rs.value=r}else{r=Math.max(0,t-.01);rs.value=r}}rs.max=Math.max(0,t-.01);to.textContent=t.toFixed(2);ro.textContent=r.toFixed(2);const xR=70+620*r,xT=70+620*t;rp.setAttribute('cx',xR);tp.setAttribute('cx',xT);mid.setAttribute('x',(xR+xT)/2);const L=t-r;copy.innerHTML=`Interval length <code>t−r=${L.toFixed(2)}</code>. When <code>r→t</code>, the interval collapses and average velocity becomes local: <code>u(z_t,t,t)=v(z_t,t)</code>. For a long interval, <code>u</code> summarizes finite-time transport. JVP supplies how that average changes as state and time move.`}ts.addEventListener('input',()=>render(ts));rs.addEventListener('input',()=>render(rs));render()}
+</script>
