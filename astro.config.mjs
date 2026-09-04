@@ -1,5 +1,6 @@
 import { defineConfig } from 'astro/config';
 import starlight from '@astrojs/starlight';
+import { starlightKatex } from 'starlight-katex';
 
 export default defineConfig({
   site: 'https://johnson-lo.github.io',
@@ -10,6 +11,7 @@ export default defineConfig({
       description: 'Flow Matching · MeanFlow · Fast Generative Modeling · Robotics',
       lastUpdated: true,
       customCss: ['./src/styles/custom.css'],
+      plugins: [starlightKatex()],
       social: [
         { icon: 'github', label: 'GitHub', href: 'https://github.com/Johnson-lo' }
       ],
