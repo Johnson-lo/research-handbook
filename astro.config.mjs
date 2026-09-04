@@ -14,15 +14,33 @@ export default defineConfig({
         { icon: 'github', label: 'GitHub', href: 'https://github.com/Johnson-lo' }
       ],
       sidebar: [
-        { label: 'Start Here', items: [
-          { label: 'Home', slug: '' },
-          { label: 'How to use this handbook', slug: 'guide' }
-        ]},
-        { label: 'Foundations', autogenerate: { directory: 'foundations' } },
-        { label: 'MeanFlow', autogenerate: { directory: 'meanflow' } },
-        { label: 'Paper Notes', autogenerate: { directory: 'papers' } },
-        { label: 'Interactive Lab', autogenerate: { directory: 'interactive' } },
-        { label: 'Experiments', autogenerate: { directory: 'experiments' } },
+        {
+          label: 'Start Here',
+          items: [
+            { label: 'Home', slug: '' },
+            { label: 'How to use this handbook', slug: 'guide' }
+          ]
+        },
+        {
+          label: 'Foundations',
+          items: [{ autogenerate: { directory: 'foundations' } }]
+        },
+        {
+          label: 'MeanFlow',
+          items: [{ autogenerate: { directory: 'meanflow' } }]
+        },
+        {
+          label: 'Paper Notes',
+          items: [{ autogenerate: { directory: 'papers' } }]
+        },
+        {
+          label: 'Interactive Lab',
+          items: [{ autogenerate: { directory: 'interactive' } }]
+        },
+        {
+          label: 'Experiments',
+          items: [{ autogenerate: { directory: 'experiments' } }]
+        },
         { label: 'About', slug: 'about' }
       ]
     })
