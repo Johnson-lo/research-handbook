@@ -1,0 +1,15 @@
+<div class="interactive-frame" data-velocity-gt>
+  <div class="vg-head"><strong>Conditional vs Marginal Velocity</strong><button type="button">Resample pair</button></div>
+  <svg viewBox="0 0 760 300" role="img" aria-label="Multiple conditional velocities near one observed state">
+    <rect width="760" height="300" rx="12" fill="#101722"/>
+    <text x="30" y="28" fill="#dce5ed" font-size="14">Each click changes the sampled (x,e) pair.</text>
+    <circle cx="380" cy="150" r="12" fill="#f1f4f7" stroke="#778899" stroke-width="2"/>
+    <text x="380" y="185" text-anchor="middle" fill="#dce5ed" font-size="14">near the same z_t</text>
+    <g data-arrows></g>
+  </svg>
+  <div data-text></div>
+</div>
+<style>.vg-head{display:flex;justify-content:space-between;align-items:center;gap:1rem;flex-wrap:wrap}.vg-head button{padding:.55rem .8rem;border:1px solid #778899;border-radius:.5rem;background:transparent;color:inherit;cursor:pointer}</style>
+<script>
+for(const root of document.querySelectorAll('[data-velocity-gt]')){if(root.dataset.ready)continue;root.dataset.ready='1';const g=root.querySelector('[data-arrows]'),txt=root.querySelector('[data-text]'),btn=root.querySelector('button');let k=0;const dirs=[[-75,-25],[-30,-80],[20,-65],[65,-20],[80,35],[25,75],[-45,65]];function draw(){g.replaceChildren();const ns='http://www.w3.org/2000/svg';dirs.forEach((d,i)=>{const l=document.createElementNS(ns,'line');l.setAttribute('x1','380');l.setAttribute('y1','150');l.setAttribute('x2',380+d[0]);l.setAttribute('y2',150+d[1]);l.setAttribute('stroke',i===k%dirs.length?'#e5a34e':'#6d7b88');l.setAttribute('stroke-width',i===k%dirs.length?'5':'2');l.setAttribute('stroke-opacity',i===k%dirs.length?'1':'.45');g.appendChild(l)});txt.innerHTML=`Highlighted arrow = one sampled <code>e−x</code>. Other faded arrows represent other conditional velocities compatible with nearby/ambiguous states. The regression field is their conditional mean: <code>v(z,t)=E[e−x | z,t]</code>.`;k++}btn.addEventListener('click',draw);draw()}
+</script>
