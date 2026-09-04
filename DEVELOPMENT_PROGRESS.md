@@ -1,6 +1,6 @@
 # Research Handbook — Development Progress
 
-Last updated: 2026-09-04
+Last updated: 2026-09-05
 
 ## Project goal
 
@@ -110,25 +110,36 @@ Important caveat: the final 1.72 result includes objective, flexible CFG, condit
 ## Deployment state
 
 - Repository is public and GitHub Pages is enabled with **Source = GitHub Actions**.
-- Deployment target: `https://johnson-lo.github.io/research-handbook/`.
-- GitHub Actions build and deploy both succeeded after Pages was enabled (workflow run `33859386608`, attempt 2).
+- Traditional-Chinese production URL: `https://johnson-lo.github.io/research-handbook/`.
+- English production URL: `https://johnson-lo.github.io/research-handbook/en/`.
+- Initial Pages deployment succeeded in workflow run `33859386608`, attempt 2.
+- Bilingual release commit: `f7b4790b4b973b66cfdeb6b9f140101cfe3faf99` (`feat: add bilingual Traditional Chinese and English site`).
+- Bilingual workflow run `33862666963` completed successfully: **build = success, deploy = success**.
 - Initial CI issues already fixed:
   1. package manager detection (`package-manager: npm@latest`),
   2. Starlight v0.42 sidebar schema migration,
   3. Astro 7 MDX math parsing (`starlight-katex`, `@astrojs/markdown-remark`, `unified()`).
-- Current bilingual change triggers a fresh build/deployment that must be verified before considering V1 bilingual release complete.
+
+## Validation still required
+
+CI confirms the static site builds and deploys, but the following browser-level checks remain:
+- Chinese root route renders correctly.
+- English `/en/` route renders correctly.
+- language switcher maps equivalent Chinese/English slugs correctly.
+- equations render through KaTeX in both locales.
+- all four interactive components behave correctly in both locales.
+- mobile layout and internal links remain valid under the GitHub Pages base path.
 
 ## Next development steps
 
-1. Verify bilingual CI build and Pages deployment.
-2. Test Chinese root and English `/en/` routes.
-3. Test the Starlight language switcher and one-to-one translated page mapping.
-4. Test all internal links under `/research-handbook` and `/research-handbook/en`.
-5. Validate equations and all four interactive components on desktop and mobile.
-6. Expand the iMF chapter with flexible CFG / in-context conditioning details and stronger experimental interpretation.
-7. Add a dedicated research map and related-work graph.
-8. Add later MeanFlow papers from Notion in curated form rather than bulk-copying.
-9. Add reproduction / compute-resource pages when experiments begin.
+1. Perform browser-level QA for Chinese root and English `/en/` routes.
+2. Test the Starlight language switcher and one-to-one translated page mapping.
+3. Test all internal links under `/research-handbook` and `/research-handbook/en`.
+4. Validate equations and all four interactive components on desktop and mobile.
+5. Expand the iMF chapter with flexible CFG / in-context conditioning details and stronger experimental interpretation.
+6. Add a dedicated research map and related-work graph.
+7. Add later MeanFlow papers from Notion in curated form rather than bulk-copying.
+8. Add reproduction / compute-resource pages when experiments begin.
 
 ## Development continuity rule
 
