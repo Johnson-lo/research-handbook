@@ -1,3 +1,5 @@
+@import 'katex/dist/katex.min.css';
+
 :root {
   --sl-color-accent-low: #e7eef5;
   --sl-color-accent: #345b78;

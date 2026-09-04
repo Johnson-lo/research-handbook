@@ -1,17 +1,24 @@
 import { defineConfig } from 'astro/config';
+import { unified } from '@astrojs/markdown-remark';
 import starlight from '@astrojs/starlight';
-import { starlightKatex } from 'starlight-katex';
+import remarkMath from 'remark-math';
+import rehypeKatex from 'rehype-katex';
 
 export default defineConfig({
   site: 'https://johnson-lo.github.io',
   base: '/research-handbook',
+  markdown: {
+    processor: unified({
+      remarkPlugins: [remarkMath],
+      rehypePlugins: [[rehypeKatex, { strict: false }]],
+    }),
+  },
   integrations: [
     starlight({
       title: "Johnson's Research Handbook",
       description: 'Flow Matching · MeanFlow · Fast Generative Modeling · Robotics',
       lastUpdated: true,
       customCss: ['./src/styles/custom.css'],
-      plugins: [starlightKatex()],
       defaultLocale: 'root',
       locales: {
         root: { label: '繁體中文', lang: 'zh-TW' },
