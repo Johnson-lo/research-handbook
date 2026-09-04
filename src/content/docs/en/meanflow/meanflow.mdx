@@ -60,7 +60,7 @@ $$
 u_{tgt}=(e-x)-(t-r)\operatorname{JVP}(u_\theta;e-x),$$
 
 $$
-\mathcal L_{MF}=\mathbb E\|u_\theta-\operatorname{sg}(u_{tgt})\|^2.
+\mathcal L=\mathbb E\|u_\theta-\operatorname{sg}(u_{tgt})\|^2.
 $$
 
 The key distinction is that $u_\theta$ does not mean $e-x$. It remains an average velocity; $e-x$ is sample-specific conditional velocity supervision and is used by Original MF as the JVP tangent approximation.

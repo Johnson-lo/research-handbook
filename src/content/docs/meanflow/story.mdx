@@ -115,7 +115,7 @@ $$
 再訓練
 
 $$
-\mathcal L_{MF}=\mathbb E\|u_\theta-\operatorname{sg}(u_{tgt})\|^2.
+\mathcal L=\mathbb E\|u_\theta-\operatorname{sg}(u_{tgt})\|^2.
 $$
 
 這裡有兩個要分開的概念：
@@ -154,7 +154,7 @@ $$
 而 supervision **仍然是**
 
 $$
-\mathcal L_{iMF}=\mathbb E\|V_\theta(z_t)-(e-x)\|^2.
+\mathcal L=\mathbb E\|V_\theta(z_t)-(e-x)\|^2.
 $$
 
 ### 一句話記法
@@ -182,7 +182,7 @@ $$
 
 接著 iMF 還加入：
 
-- flexible $\omega$-conditioning
+- flexible $\omega$ conditioning
 - $\Omega=\{\omega,t_{min},t_{max}\}$ conditioning
 - in-context conditioning
 - SwiGLU / RMSNorm / RoPE
