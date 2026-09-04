@@ -1,0 +1,78 @@
+---
+title: MeanFlow — Average Velocity and One-Step Generation
+description: From instantaneous velocity to average velocity, MeanFlow Identity, JVP, and 1-NFE inference.
+sidebar:
+  order: 1
+---
+
+import JVPExplorer from '../../../components/JVPExplorer.astro';
+
+## From local velocity to interval-average velocity
+
+MeanFlow defines
+
+$$
+u(z_t,r,t)=\frac{1}{t-r}\int_r^t v(z_\tau,\tau)\,d\tau.
+$$
+
+Thus
+
+$$
+(t-r)u=\int_r^t v(z_\tau,\tau)\,d\tau,
+$$
+
+and the finite-time update is
+
+$$
+z_r=z_t-(t-r)u(z_t,r,t).
+$$
+
+For one-step generation:
+
+$$
+(r,t)=(0,1),\qquad z_0=z_1-u_\theta(z_1,0,1).
+$$
+
+## MeanFlow Identity
+
+Differentiating the interval relation gives
+
+$$
+v=u+(t-r)\frac{du}{dt}.
+$$
+
+The total derivative is
+
+$$
+\frac{du}{dt}=\partial_z u\,v+\partial_tu=\operatorname{JVP}(u;v).
+$$
+
+<JVPExplorer />
+
+### Mental model
+
+Define accumulated displacement
+
+$$A(r,t)=(t-r)u(r,t).$$
+
+Then
+
+$$\frac{dA}{dt}=v(t).$$
+
+MeanFlow therefore uses a **local differential consistency condition** to learn a **long-range average transport field**.
+
+## Original MeanFlow objective
+
+Original MF constructs
+
+$$
+u_{tgt}=(e-x)-(t-r)\operatorname{JVP}(u_\theta;e-x),
+$$
+
+and trains
+
+$$
+\mathcal L_{MF}=\mathbb E\|u_\theta-\operatorname{sg}(u_{tgt})\|^2.
+$$
+
+The apparent target contains the current network through the JVP term, making it network-dependent.
