@@ -97,19 +97,25 @@ Important caveat: the final 1.72 result includes objective, flexible CFG, condit
 
 - Repository created and V1 source uploaded to `main`.
 - Deployment target: `https://johnson-lo.github.io/research-handbook/`
-- GitHub Actions workflow has been committed.
-- Next validation step: inspect Actions build and Pages deployment status, then fix any build/runtime issues.
+- GitHub Actions **build now succeeds**.
+- Fixed three CI issues during initial deployment:
+  1. package manager detection by setting `package-manager: npm@latest` in the Astro Pages action,
+  2. Starlight v0.42 sidebar schema migration,
+  3. MDX math parsing by adding `starlight-katex`, `@astrojs/markdown-remark`, and switching Astro to the `unified()` Markdown processor.
+- Current blocker is no longer the site build. The deploy job reaches `actions/deploy-pages@v5` but GitHub returns `404 Not Found` with the explicit message: **Ensure GitHub Pages has been enabled**.
+- Required user-side setting: GitHub repository → Settings → Pages → Build and deployment → Source = **GitHub Actions**. After this setting is enabled, rerun the failed workflow or push a new commit.
 
 ## Next development steps
 
-1. Verify GitHub Actions build and Pages deployment.
-2. Test all internal links under the `/research-handbook` base path.
-3. Validate interactive components on desktop and mobile.
-4. Translate/expand the V1 public prose into the intended Traditional-Chinese-first style.
-5. Expand iMF chapter with flexible CFG / in-context conditioning details and stronger experimental interpretation.
-6. Add a dedicated research map and related-work graph.
-7. Add later MeanFlow papers from Notion in curated form rather than bulk-copying.
-8. Add reproduction / compute-resource pages when experiments begin.
+1. Enable GitHub Pages for the repository with Source = GitHub Actions.
+2. Re-run deployment and verify the public URL.
+3. Test all internal links under the `/research-handbook` base path.
+4. Validate interactive components on desktop and mobile.
+5. Translate/expand the V1 public prose into the intended Traditional-Chinese-first style.
+6. Expand iMF chapter with flexible CFG / in-context conditioning details and stronger experimental interpretation.
+7. Add a dedicated research map and related-work graph.
+8. Add later MeanFlow papers from Notion in curated form rather than bulk-copying.
+9. Add reproduction / compute-resource pages when experiments begin.
 
 ## Development continuity rule
 
