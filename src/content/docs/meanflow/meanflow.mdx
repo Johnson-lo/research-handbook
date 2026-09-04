@@ -1,33 +1,33 @@
 ---
-title: MeanFlow — Average Velocity and One-Step Generation
-description: From instantaneous velocity to average velocity, MeanFlow Identity, JVP, and 1-NFE inference.
+title: MeanFlow：Average Velocity 與 One-Step Generation
+description: 從 instantaneous velocity 到 average velocity、MeanFlow Identity、JVP 與 1-NFE inference。
 sidebar:
   order: 1
 ---
 
 import JVPExplorer from '../../../components/JVPExplorer.astro';
 
-## From local velocity to interval-average velocity
+## 從 local velocity 到 interval-average velocity
 
-MeanFlow defines
+MeanFlow 定義
 
 $$
 u(z_t,r,t)=\frac{1}{t-r}\int_r^t v(z_\tau,\tau)\,d\tau.
 $$
 
-Thus
+因此
 
 $$
 (t-r)u=\int_r^t v(z_\tau,\tau)\,d\tau,
 $$
 
-and the finite-time update is
+finite-time update 可以寫成
 
 $$
 z_r=z_t-(t-r)u(z_t,r,t).
 $$
 
-For one-step generation:
+對 one-step generation：
 
 $$
 (r,t)=(0,1),\qquad z_0=z_1-u_\theta(z_1,0,1).
@@ -35,44 +35,44 @@ $$
 
 ## MeanFlow Identity
 
-Differentiating the interval relation gives
+對 interval relation 微分可得
 
 $$
 v=u+(t-r)\frac{du}{dt}.
 $$
 
-The total derivative is
+其中 total derivative 為
 
 $$
 \frac{du}{dt}=\partial_z u\,v+\partial_tu=\operatorname{JVP}(u;v).
 $$
 
-<JVPExplorer />
+<JVPExplorer lang="zh" />
 
 ### Mental model
 
-Define accumulated displacement
+定義 accumulated displacement
 
 $$A(r,t)=(t-r)u(r,t).$$
 
-Then
+則
 
 $$\frac{dA}{dt}=v(t).$$
 
-MeanFlow therefore uses a **local differential consistency condition** to learn a **long-range average transport field**.
+MeanFlow 的核心可以理解成：用一個 **local differential consistency condition** 去學一個具有 **long-range semantics** 的 average transport field。
 
 ## Original MeanFlow objective
 
-Original MF constructs
+Original MF 建構
 
 $$
 u_{tgt}=(e-x)-(t-r)\operatorname{JVP}(u_\theta;e-x),
 $$
 
-and trains
+並以
 
 $$
-\mathcal L_{MF}=\mathbb E\|u_\theta-\operatorname{sg}(u_{tgt})\|^2.
+\mathcal L_{MF}=\mathbb E\|u_\theta-\operatorname{sg}(u_{tgt})\|^2
 $$
 
-The apparent target contains the current network through the JVP term, making it network-dependent.
+進行 training。這個 apparent target 透過 JVP 又包含當下的 network，因此 target 本身會依賴目前的 $\theta$，也就是 network-dependent target。

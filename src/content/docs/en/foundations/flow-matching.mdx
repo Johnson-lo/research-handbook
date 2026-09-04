@@ -1,0 +1,42 @@
+---
+title: Flow Matching, Conditional Velocity & Marginal Velocity
+description: Why e-x is sample supervision while v(z,t) is the marginal velocity field.
+sidebar:
+  order: 2
+---
+
+import VelocityGTExplorer from '../../../../components/VelocityGTExplorer.astro';
+
+From
+
+$$z_t=(1-t)x+te$$
+
+we obtain
+
+$$\frac{dz_t}{dt}=e-x.$$
+
+For a particular sampled pair $(x,e)$, $e-x$ is the **conditional instantaneous velocity**.
+
+However, the same $(z_t,t)$ can be compatible with many different pairs $(x,e)$. Therefore the unique MSE regression optimum is
+
+$$
+v(z_t,t)=\mathbb E[e-x\mid z_t,t].
+$$
+
+<VelocityGTExplorer lang="en" />
+
+## Three “GT” levels that should not be conflated
+
+| Level | Quantity | Role |
+|---|---|---|
+| Sample supervision | $e-x$ | Conditional velocity for one sampled pair |
+| Unique instantaneous field | $v(z,t)$ | Marginal velocity, the MSE regression optimum |
+| MeanFlow theoretical field | $u(z,r,t)$ | Average velocity across an interval |
+
+Flow Matching trains
+
+$$
+\mathcal L_{FM}=\mathbb E\|v_\theta(z_t,t)-(e-x)\|^2.
+$$
+
+At inference time, it numerically solves $dz_t/dt=v_\theta(z_t,t)$ from $t=1$ to $t=0$, typically requiring multiple NFEs.

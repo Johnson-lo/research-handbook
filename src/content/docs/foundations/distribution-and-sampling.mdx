@@ -1,37 +1,37 @@
 ---
-title: Distribution, Sampling & Probability Path
-description: The minimum probability foundation needed for Flow Matching and MeanFlow.
+title: Distribution、Sampling 與 Probability Path
+description: 理解 Flow Matching 與 MeanFlow 所需的最小 probability 基礎。
 sidebar:
   order: 1
 ---
 
 import ProbabilityPath from '../../../components/ProbabilityPath.astro';
 
-## Distribution is not a single sample
+## Distribution 不是一個 sample
 
-- $p_{data}$: the **distribution** of real data.
-- $x \sim p_{data}$: one sampled data point.
-- $p_{prior}$: an easy-to-sample prior distribution, typically Gaussian.
-- $e \sim p_{prior}$: one noise sample.
+- $p_{data}$：真實資料的 **distribution**。
+- $x \sim p_{data}$：從資料分布中抽出的一個 sample。
+- $p_{prior}$：刻意選擇、容易取樣的 prior distribution，通常是 Gaussian。
+- $e \sim p_{prior}$：從 prior 抽到的一個 noise sample。
 
-“Random” describes the **sampling operation**. It is not a separate distribution.
+「random」描述的是 **sampling operation**，本身不是另一個 distribution。
 
 ## Linear probability path
 
-For the MeanFlow / iMF convention:
+採用 MeanFlow / iMF 的 convention：
 
 $$
 z_t=(1-t)x+te
 $$
 
-Therefore:
+因此：
 
 $$
 t=0 \Rightarrow z_0=x, \qquad t=1 \Rightarrow z_1=e.
 $$
 
-<ProbabilityPath />
+<ProbabilityPath lang="zh" />
 
-:::note[Training is not rollout]
-During training, $x$, $e$, and $t$ are sampled and $z_t$ is **constructed directly** from the equation. The model does not start from Gaussian noise and simulate through all previous times to obtain this training point.
+:::note[Training 不是 rollout]
+Training 時會直接抽樣 $x$、$e$ 與 $t$，再利用上式直接建構 $z_t$。模型並不是先從 Gaussian noise 出發，再把前面所有時間點一步步模擬到這個 training point。
 :::

@@ -1,5 +1,5 @@
 ---
-title: Improved MeanFlow — From Network-Dependent Target to v-Loss
+title: Improved MeanFlow：從 Network-Dependent Target 到 v-Loss
 sidebar:
   order: 2
 ---
@@ -8,74 +8,74 @@ import MFIMFLossExplorer from '../../../components/MFIMFLossExplorer.astro';
 
 ## Core idea
 
-iMF keeps MeanFlow's **average-velocity representation** and one-step inference. It changes how that representation is trained.
+iMF 保留 MeanFlow 的 **average-velocity representation** 與 one-step inference；它主要改變的是這個 representation 的 training 方式。
 
-Rearrange the MeanFlow identity:
+重新排列 MeanFlow identity：
 
 $$
 v=u+(t-r)\frac{du}{dt}.
 $$
 
-### Original MF as an equivalent v-loss
+### 把 Original MF 看成等價的 v-loss
 
-Define
+定義
 
 $$
 V_\theta=u_\theta+(t-r)\operatorname{JVP}_{sg}(u_\theta;e-x).
 $$
 
-Then the original objective can be viewed equivalently as
+則 original objective 可以等價寫成
 
 $$
 \mathcal L=\mathbb E\|V_\theta-(e-x)\|^2.
 $$
 
-This exposes a new problem: the predictor is effectively $V_\theta(z_t,e-x)$ because the sample-specific conditional velocity also enters the JVP tangent.
+這個寫法會暴露一個問題：predictor 實際上是 $V_\theta(z_t,e-x)$，因為 sample-specific conditional velocity $e-x$ 不只作為 supervision，也進入了 JVP tangent。
 
 ## iMF modification
 
-iMF replaces that tangent with a model estimate of the marginal velocity:
+iMF 將這個 tangent 改成模型對 marginal velocity 的估計：
 
 $$
 V_\theta(z_t)=u_\theta(z_t)+(t-r)\operatorname{JVP}_{sg}(u_\theta;v_\theta).
 $$
 
-The supervision remains
+Supervision 仍然是
 
 $$
 \mathcal L_{iMF}=\mathbb E\|V_\theta(z_t)-(e-x)\|^2.
 $$
 
-:::caution[What did not disappear]
-$iMF$ does **not** remove $e-x$ from supervision. It removes $e-x$ from the JVP / prediction pathway.
+:::caution[沒有消失的是什麼？]
+iMF **沒有**把 $e-x$ 從 supervision 移除；它移除的是 $e-x$ 進入 JVP / prediction pathway 的這條路徑。
 :::
 
-<MFIMFLossExplorer />
+<MFIMFLossExplorer lang="zh" />
 
-## Where does $v_\theta$ come from?
+## $v_\theta$ 從哪裡來？
 
-Boundary condition:
+由 boundary condition：
 
 $$
 v(z_t,t)=u(z_t,t,t),
 $$
 
-so the same network can define
+同一個 network 可以定義
 
 $$
 v_\theta(z_t,t)\equiv u_\theta(z_t,t,t).
 $$
 
-The paper also studies an auxiliary $v$-head used during training.
+Paper 也研究了 training-only 的 auxiliary $v$-head。
 
 ## Training vs inference
 
-**Training:** sample $x,e,t,r$, construct $z_t$, compute $u_\theta$, obtain $v_\theta$, evaluate JVP, form $V_\theta$, compare against $e-x$.
+**Training：**抽樣 $x,e,t,r$，直接建構 $z_t$，計算 $u_\theta$、取得 $v_\theta$、evaluate JVP、組成 $V_\theta$，最後與 $e-x$ 比較。
 
-**Inference:** no real $x$. Sample $z_1\sim p_{prior}$ and perform
+**Inference：**沒有真實 $x$。只需要抽樣 $z_1\sim p_{prior}$，然後做
 
 $$z_0=z_1-u_\theta(z_1,0,1).$$
 
-## Beyond the objective
+## Objective 之外的改進
 
-iMF also introduces flexible CFG conditioning and in-context conditioning so guidance settings can be changed at inference instead of being fixed during training.
+iMF 還加入 flexible CFG conditioning 與 in-context conditioning，使 guidance setting 不必在 training 時固定，而能在 inference 時彈性選擇。

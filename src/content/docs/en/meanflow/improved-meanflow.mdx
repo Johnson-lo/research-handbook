@@ -1,0 +1,81 @@
+---
+title: Improved MeanFlow — From Network-Dependent Target to v-Loss
+sidebar:
+  order: 2
+---
+
+import MFIMFLossExplorer from '../../../../components/MFIMFLossExplorer.astro';
+
+## Core idea
+
+iMF keeps MeanFlow's **average-velocity representation** and one-step inference. It changes how that representation is trained.
+
+Rearrange the MeanFlow identity:
+
+$$
+v=u+(t-r)\frac{du}{dt}.
+$$
+
+### Original MF as an equivalent v-loss
+
+Define
+
+$$
+V_\theta=u_\theta+(t-r)\operatorname{JVP}_{sg}(u_\theta;e-x).
+$$
+
+Then the original objective can be viewed equivalently as
+
+$$
+\mathcal L=\mathbb E\|V_\theta-(e-x)\|^2.
+$$
+
+This exposes a new problem: the predictor is effectively $V_\theta(z_t,e-x)$ because the sample-specific conditional velocity also enters the JVP tangent.
+
+## iMF modification
+
+iMF replaces that tangent with a model estimate of the marginal velocity:
+
+$$
+V_\theta(z_t)=u_\theta(z_t)+(t-r)\operatorname{JVP}_{sg}(u_\theta;v_\theta).
+$$
+
+The supervision remains
+
+$$
+\mathcal L_{iMF}=\mathbb E\|V_\theta(z_t)-(e-x)\|^2.
+$$
+
+:::caution[What did not disappear]
+iMF does **not** remove $e-x$ from supervision. It removes $e-x$ from the JVP / prediction pathway.
+:::
+
+<MFIMFLossExplorer lang="en" />
+
+## Where does $v_\theta$ come from?
+
+Boundary condition:
+
+$$
+v(z_t,t)=u(z_t,t,t),
+$$
+
+so the same network can define
+
+$$
+v_\theta(z_t,t)\equiv u_\theta(z_t,t,t).
+$$
+
+The paper also studies an auxiliary $v$-head used during training.
+
+## Training vs inference
+
+**Training:** sample $x,e,t,r$, construct $z_t$, compute $u_\theta$, obtain $v_\theta$, evaluate JVP, form $V_\theta$, compare against $e-x$.
+
+**Inference:** no real $x$. Sample $z_1\sim p_{prior}$ and perform
+
+$$z_0=z_1-u_\theta(z_1,0,1).$$
+
+## Beyond the objective
+
+iMF also introduces flexible CFG conditioning and in-context conditioning so guidance settings can be changed at inference instead of being fixed during training.

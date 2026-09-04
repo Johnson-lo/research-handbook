@@ -1,10 +1,14 @@
-<div class="interactive-frame" data-probability-path>
+---
+const { lang = 'zh' } = Astro.props;
+const isZh = lang !== 'en';
+---
+<div class="interactive-frame" data-probability-path data-lang={isZh ? 'zh' : 'en'}>
   <div class="pp-head">
-    <strong>Probability Path Explorer</strong>
+    <strong>{isZh ? 'Probability Path Explorer｜機率路徑' : 'Probability Path Explorer'}</strong>
     <span>t = <output>0.50</output></span>
   </div>
-  <input type="range" min="0" max="1" step="0.01" value="0.5" aria-label="time t" />
-  <svg viewBox="0 0 760 280" role="img" aria-label="Data, current interpolation distribution, and Gaussian prior">
+  <input type="range" min="0" max="1" step="0.01" value="0.5" aria-label={isZh ? '時間 t' : 'time t'} />
+  <svg viewBox="0 0 760 280" role="img" aria-label={isZh ? '資料分布、目前的 interpolation distribution 與 Gaussian prior' : 'Data, current interpolation distribution, and Gaussian prior'}>
     <rect width="760" height="280" rx="12" fill="#101722"/>
     <text x="105" y="28" text-anchor="middle" fill="#9dd4b5" font-size="15">p_data</text>
     <text x="380" y="28" text-anchor="middle" fill="#ecf1f6" font-size="15">p_t</text>
@@ -24,6 +28,7 @@
 <script>
 for (const root of document.querySelectorAll('[data-probability-path]')) {
   if (root.dataset.ready) continue; root.dataset.ready='1';
+  const isZh=root.dataset.lang==='zh';
   const input=root.querySelector('input'), out=root.querySelector('output'), explain=root.querySelector('[data-explain]');
   const gd=root.querySelector('[data-data]'), gz=root.querySelector('[data-current]'), ge=root.querySelector('[data-prior]');
   let seed=104729; const rnd=()=>((seed=(1664525*seed+1013904223)>>>0)/4294967296);
@@ -31,7 +36,7 @@ for (const root of document.querySelectorAll('[data-probability-path]')) {
   const X=[],E=[]; for(let i=0;i<40;i++){const m=rnd()<.5?-1:1;X.push([m*.72+.15*rn(),m*.12+.25*rn()]);E.push([.38*rn(),.38*rn()]);}
   const ns='http://www.w3.org/2000/svg';
   const dot=(g,x,y,c)=>{const el=document.createElementNS(ns,'circle');el.setAttribute('cx',x);el.setAttribute('cy',y);el.setAttribute('r','4');el.setAttribute('fill',c);el.setAttribute('fill-opacity','.78');g.appendChild(el)};
-  function render(){const t=Number(input.value);out.textContent=t.toFixed(2);gd.replaceChildren();gz.replaceChildren();ge.replaceChildren();for(let i=0;i<X.length;i++){const z=[(1-t)*X[i][0]+t*E[i][0],(1-t)*X[i][1]+t*E[i][1]];dot(gd,105+X[i][0]*75,135-X[i][1]*75,'#2f7d57');dot(gz,380+z[0]*75,135-z[1]*75,'#e9eef3');dot(ge,655+E[i][0]*75,135-E[i][1]*75,'#3f6ea8');}explain.innerHTML=`At t=${t.toFixed(2)}, each training point is constructed as <code>z_t=${(1-t).toFixed(2)}x + ${t.toFixed(2)}e</code>. This is interpolation for training, not a model rollout.`}
+  function render(){const t=Number(input.value);out.textContent=t.toFixed(2);gd.replaceChildren();gz.replaceChildren();ge.replaceChildren();for(let i=0;i<X.length;i++){const z=[(1-t)*X[i][0]+t*E[i][0],(1-t)*X[i][1]+t*E[i][1]];dot(gd,105+X[i][0]*75,135-X[i][1]*75,'#2f7d57');dot(gz,380+z[0]*75,135-z[1]*75,'#e9eef3');dot(ge,655+E[i][0]*75,135-E[i][1]*75,'#3f6ea8');}const eq=`<code>z_t=${(1-t).toFixed(2)}x + ${t.toFixed(2)}e</code>`;explain.innerHTML=isZh?`在 t=${t.toFixed(2)} 時，每個 training point 都直接由 ${eq} 建構。這是 training interpolation，不是模型從 Gaussian noise 一步步 rollout 得到的。`:`At t=${t.toFixed(2)}, each training point is constructed as ${eq}. This is interpolation for training, not a model rollout.`}
   input.addEventListener('input',render);render();
 }
 </script>

@@ -1,42 +1,42 @@
 ---
-title: Flow Matching, Conditional Velocity & Marginal Velocity
-description: Why e-x is sample supervision while v(z,t) is the marginal velocity field.
+title: Flow Matching：Conditional Velocity 與 Marginal Velocity
+description: 為什麼 e-x 是 sample-level supervision，而 v(z,t) 才是 marginal velocity field。
 sidebar:
   order: 2
 ---
 
 import VelocityGTExplorer from '../../../components/VelocityGTExplorer.astro';
 
-From
+由
 
 $$z_t=(1-t)x+te$$
 
-we obtain
+可以得到
 
 $$\frac{dz_t}{dt}=e-x.$$
 
-For a particular sampled pair $(x,e)$, $e-x$ is the **conditional instantaneous velocity**.
+對某一組已抽樣的 $(x,e)$ 而言，$e-x$ 是這組 sample-specific path 的 **conditional instantaneous velocity**。
 
-However, the same $(z_t,t)$ can be compatible with many different pairs $(x,e)$. Therefore the unique MSE regression optimum is
+但同一個 $(z_t,t)$ 可能對應到很多不同的 $(x,e)$。因此，在 MSE regression 下唯一的最優 field 是
 
 $$
 v(z_t,t)=\mathbb E[e-x\mid z_t,t].
 $$
 
-<VelocityGTExplorer />
+<VelocityGTExplorer lang="zh" />
 
-## Three “GT” levels that should not be conflated
+## 三個不能混在一起的「GT」層級
 
-| Level | Quantity | Role |
+| 層級 | Quantity | 角色 |
 |---|---|---|
-| Sample supervision | $e-x$ | Conditional velocity for one sampled pair |
-| Unique instantaneous field | $v(z,t)$ | Marginal velocity, the MSE regression optimum |
-| MeanFlow theoretical field | $u(z,r,t)$ | Average velocity across an interval |
+| Sample supervision | $e-x$ | 某一組 sampled pair 的 conditional velocity |
+| Unique instantaneous field | $v(z,t)$ | Marginal velocity，也是 MSE regression optimum |
+| MeanFlow theoretical field | $u(z,r,t)$ | 一段 interval 上的 average velocity |
 
-Flow Matching trains
+Flow Matching 的 training objective 是
 
 $$
 \mathcal L_{FM}=\mathbb E\|v_\theta(z_t,t)-(e-x)\|^2.
 $$
 
-At inference time, it numerically solves $dz_t/dt=v_\theta(z_t,t)$ from $t=1$ to $t=0$, typically requiring multiple NFEs.
+Inference 時則從 $t=1$ 往 $t=0$ 數值求解 $dz_t/dt=v_\theta(z_t,t)$；由於每到新的 state 通常都要重新 query instantaneous velocity，所以一般需要 multiple NFEs。

@@ -1,20 +1,20 @@
 ---
-title: MeanFlow vs iMF — Published Experimental Results
+title: MeanFlow vs iMF — 公開實驗結果
 sidebar:
   order: 1
 ---
 
 ## Objective-focused ablation
 
-The most useful results for isolating the objective change are not necessarily the final 1.72 FID system result.
+如果要隔離 objective change 的效果，最有資訊量的結果不一定是最終的 FID 1.72，而是較受控制的 objective ablation。
 
 | Setting | 1-NFE FID ↓ | Interpretation |
 |---|---:|---|
 | MF-B/2 original MF, fixed CFG | 6.17 | baseline |
-| iMF, boundary $v_\theta=u_\theta(z_t,t,t)$ | 5.97 | change JVP tangent / predictor parameterization |
-| iMF, auxiliary $v$-head | 5.68 | stronger marginal-velocity estimate |
+| iMF, boundary $v_\theta=u_\theta(z_t,t,t)$ | 5.97 | 改變 JVP tangent / predictor parameterization |
+| iMF, auxiliary $v$-head | 5.68 | 較強的 marginal-velocity estimate |
 | MF-XL/2 original MF | 3.43 | large-model baseline |
-| MF-XL/2 + iMF boundary objective | 2.99 | objective improvement at XL scale |
+| MF-XL/2 + iMF boundary objective | 2.99 | XL scale 的 objective improvement |
 
 ## iMF system ablation
 
@@ -36,6 +36,6 @@ The most useful results for isolating the objective change are not necessarily t
 | L/2 | 3.84 | 1.86 |
 | XL/2 | 3.43 | 1.72 |
 
-:::caution[Do not over-attribute the final 1.72]
-The paper changes more than the objective: CFG conditioning and the conditioning architecture also change. Removing adaLN-zero changes the parameter/compute profile, so the B/M/L/XL system-level rows are not a perfectly controlled objective-only comparison.
+:::caution[不要把最終 1.72 全部歸因於 objective 改動]
+Paper 不只改 objective，也改了 CFG conditioning 與 conditioning architecture。移除 adaLN-zero 後 parameter / compute profile 也不同，因此 B/M/L/XL 的 system-level rows 並不是完全受控制的 objective-only comparison。
 :::

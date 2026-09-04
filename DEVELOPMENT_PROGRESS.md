@@ -4,22 +4,32 @@ Last updated: 2026-09-04
 
 ## Project goal
 
-Build a public research handbook / knowledge base for Johnson-lo, focused on Flow Matching, MeanFlow, fast generative modeling, and robotics. The site is not a Notion mirror and not a chronological blog. It is curated public research knowledge.
+Build a public research handbook / knowledge base for Johnson-lo, focused on Flow Matching, MeanFlow, fast generative modeling, and robotics. The site is not a Notion mirror and not a chronological blog. It is curated public research knowledge and a long-term technical portfolio.
 
 ## Product decisions
 
 - Framework: **Astro + Starlight**.
 - Hosting: **GitHub Pages** with the official Astro GitHub Action.
-- Language: **Traditional Chinese as the main explanatory language**, while preserving English technical terms and paper terminology.
+- Language architecture: **Traditional Chinese is the default/root locale (`zh-TW`) and English lives under `/en/`**.
+- Technical terminology and paper names remain in English where that improves precision.
 - Public-site structure: Home / Handbook / Paper Notes / Interactive Lab / Experiments / About.
 - Notion remains the private scratchpad and working research space.
 - Public site separates paper-supported claims, personal interpretation / mental models, and open research questions.
+
+## Bilingual URL architecture
+
+- Traditional Chinese: `https://johnson-lo.github.io/research-handbook/`
+- English: `https://johnson-lo.github.io/research-handbook/en/`
+- Starlight locale switcher is configured for `繁體中文` and `English`.
+- Root files and `/en/` files use matching slugs so translated pages map one-to-one.
+- Sidebar labels have Traditional-Chinese defaults and English translations.
+- Interactive Astro components accept a locale prop and localize explanatory UI copy while keeping mathematical notation shared.
 
 ## Information architecture (V1)
 
 ### Home
 - Research focus
-- Entry points: Learn / Papers / Interactive
+- Entry points: Foundations / Papers / Interactive
 - MeanFlow research map
 
 ### Handbook
@@ -57,10 +67,14 @@ Repository: `Johnson-lo/research-handbook`
 - Interactive Lab index
 - Published results page
 - About page
-- `ProbabilityPath.astro`
-- `VelocityGTExplorer.astro`
-- `JVPExplorer.astro`
-- `MFIMFLossExplorer.astro`
+- Traditional-Chinese versions of all current public pages
+- English mirror under `src/content/docs/en/`
+- Starlight bilingual locale configuration and language switcher
+- localized interactive components:
+  - `ProbabilityPath.astro`
+  - `VelocityGTExplorer.astro`
+  - `JVPExplorer.astro`
+  - `MFIMFLossExplorer.astro`
 
 ## Core technical content encoded
 
@@ -82,7 +96,7 @@ Objective-focused results:
 - MF-B/2 fixed-CFG baseline: FID 6.17
 - iMF boundary velocity: FID 5.97
 - iMF auxiliary v-head: FID 5.68
-- MF-XL/2 original objective: FID 3.43
+- MF-XL/2 original MF: FID 3.43
 - MF-XL/2 + iMF boundary objective: FID 2.99
 
 System-level MF → iMF FID:
@@ -95,24 +109,23 @@ Important caveat: the final 1.72 result includes objective, flexible CFG, condit
 
 ## Deployment state
 
-- Repository created and V1 source uploaded to `main`.
-- Deployment target: `https://johnson-lo.github.io/research-handbook/`
-- GitHub Actions **build now succeeds**.
-- Fixed three CI issues during initial deployment:
-  1. package manager detection by setting `package-manager: npm@latest` in the Astro Pages action,
+- Repository is public and GitHub Pages is enabled with **Source = GitHub Actions**.
+- Deployment target: `https://johnson-lo.github.io/research-handbook/`.
+- GitHub Actions build and deploy both succeeded after Pages was enabled (workflow run `33859386608`, attempt 2).
+- Initial CI issues already fixed:
+  1. package manager detection (`package-manager: npm@latest`),
   2. Starlight v0.42 sidebar schema migration,
-  3. MDX math parsing by adding `starlight-katex`, `@astrojs/markdown-remark`, and switching Astro to the `unified()` Markdown processor.
-- Current blocker is no longer the site build. The deploy job reaches `actions/deploy-pages@v5` but GitHub returns `404 Not Found` with the explicit message: **Ensure GitHub Pages has been enabled**.
-- Required user-side setting: GitHub repository → Settings → Pages → Build and deployment → Source = **GitHub Actions**. After this setting is enabled, rerun the failed workflow or push a new commit.
+  3. Astro 7 MDX math parsing (`starlight-katex`, `@astrojs/markdown-remark`, `unified()`).
+- Current bilingual change triggers a fresh build/deployment that must be verified before considering V1 bilingual release complete.
 
 ## Next development steps
 
-1. Enable GitHub Pages for the repository with Source = GitHub Actions.
-2. Re-run deployment and verify the public URL.
-3. Test all internal links under the `/research-handbook` base path.
-4. Validate interactive components on desktop and mobile.
-5. Translate/expand the V1 public prose into the intended Traditional-Chinese-first style.
-6. Expand iMF chapter with flexible CFG / in-context conditioning details and stronger experimental interpretation.
+1. Verify bilingual CI build and Pages deployment.
+2. Test Chinese root and English `/en/` routes.
+3. Test the Starlight language switcher and one-to-one translated page mapping.
+4. Test all internal links under `/research-handbook` and `/research-handbook/en`.
+5. Validate equations and all four interactive components on desktop and mobile.
+6. Expand the iMF chapter with flexible CFG / in-context conditioning details and stronger experimental interpretation.
 7. Add a dedicated research map and related-work graph.
 8. Add later MeanFlow papers from Notion in curated form rather than bulk-copying.
 9. Add reproduction / compute-resource pages when experiments begin.
