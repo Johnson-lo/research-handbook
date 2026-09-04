@@ -1,14 +1,10 @@
 import { defineConfig } from 'astro/config';
-import { unified } from '@astrojs/markdown-remark';
 import starlight from '@astrojs/starlight';
 import { starlightKatex } from 'starlight-katex';
 
 export default defineConfig({
   site: 'https://johnson-lo.github.io',
   base: '/research-handbook',
-  markdown: {
-    processor: unified(),
-  },
   integrations: [
     starlight({
       title: "Johnson's Research Handbook",
