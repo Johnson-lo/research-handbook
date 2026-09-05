@@ -2,21 +2,20 @@
 title: Reading Guide
 ---
 
-On a first read, do not jump around the sidebar. Follow one causal path:
+The main sequence follows the evolution of the methods:
 
-1. **Why Flow Matching needs multiple NFEs**
+1. **Flow Matching and the multi-NFE requirement**
 2. **Conditional velocity vs marginal velocity**
 3. **MeanFlow: instantaneous velocity → average velocity**
 4. **MeanFlow Identity and JVP**
-5. **The problem with the original MF objective**
-6. **The core Improved MeanFlow change**
-7. **Controlled ablations → system-level result**
-8. **Remaining research questions**
+5. **Limitations of the original MeanFlow objective**
+6. **Improved MeanFlow objective reformulation**
+7. **Controlled ablations and system-level results**
 
-The site still separates:
+Content labels follow three roles:
 
-- **Paper**: claims directly supported by papers or official sources.
-- **My interpretation**: reconstructed mental models and explanatory analogies.
-- **Research question**: unproven hypotheses, experiment ideas, or thesis directions.
+- **Paper-supported**: statements directly supported by papers or official sources.
+- **Explanation**: background or mathematical explanation added for clarity.
+- **Open question**: questions that remain unresolved or require further evidence.
 
-Foundations, Paper Notes, Interactive Lab, and Experiments now support the main story as reference material rather than competing reading paths.
+Foundations, Paper Notes, Interactive Lab, and Experiments serve as supporting references for the main narrative.

@@ -1,6 +1,6 @@
 ---
 title: MeanFlow Deep Dive | Average Velocity, Identity, and JVP
-description: A mathematical deep dive after the main story is clear.
+description: The mathematical structure of MeanFlow average velocity, its identity, and the JVP.
 sidebar:
   order: 1
 ---
@@ -8,8 +8,8 @@ sidebar:
 import JVPExplorer from '../../../../components/JVPExplorer.astro';
 import DerivationStepper from '../../../../components/DerivationStepper.astro';
 
-:::note[Recommended order]
-On a first read, start with [The Full Story](/research-handbook/en/meanflow/story/). This page is a mathematical deep dive rather than a from-scratch narrative.
+:::note[Scope]
+This page focuses on the mathematical structure of MeanFlow. For the complete method sequence, see [The Full Story](/research-handbook/en/meanflow/story/).
 :::
 
 ## Average velocity
@@ -64,4 +64,4 @@ $$
 \mathcal L=\mathbb E\|u_\theta-\operatorname{sg}(u_{tgt})\|^2.
 $$
 
-Here `sg` denotes stop-gradient. The key distinction is that $u_\theta$ does not mean $e-x$. It remains an average velocity; $e-x$ is sample-specific conditional velocity supervision and is used by Original MF as the JVP tangent approximation.
+Here `sg` denotes stop-gradient. The semantics of $u_\theta$ remain average velocity; $e-x$ is sample-specific conditional velocity supervision and is used in Original MeanFlow as the JVP tangent approximation.

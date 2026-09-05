@@ -1,15 +1,11 @@
 ---
 title: Improved MeanFlow Deep Dive | Objective Reformulation and System Changes
-description: Separate the objective-level change from CFG and architecture changes.
+description: Separate the objective-level reformulation from CFG and architecture changes.
 sidebar:
   order: 2
 ---
 
 import MFvsIMFBridge from '../../../../components/MFvsIMFBridge.astro';
-
-:::note[Start with the core difference]
-If the two papers still feel hard to compare, use the component below first. **Do not memorize the 1.72 FID or CFG changes before the objective-level change is clear.**
-:::
 
 <MFvsIMFBridge lang="en" />
 
@@ -33,7 +29,7 @@ $$
 \mathcal L=\mathbb E\|V_\theta-(e-x)\|^2.
 $$
 
-This reveals that the predictor is effectively
+The predictor can then be written as
 
 $$
 V_\theta(z_t,e-x),
@@ -55,8 +51,8 @@ $$
 \mathcal L=\mathbb E\|V_\theta(z_t)-(e-x)\|^2.
 $$
 
-:::caution[The most important non-change]
-iMF does **not** remove $e-x$ supervision. It removes $e-x$ from the JVP / predictor pathway.
+:::caution[Key invariant]
+iMF does **not** remove $e-x$ supervision; it changes the tangent used in the JVP / predictor pathway.
 :::
 
 ## 3. Where does $v_\theta$ come from?
@@ -75,7 +71,7 @@ $$
 
 The paper also studies a training-only auxiliary $v$-head.
 
-## 4. Additional iMF changes that should be kept separate
+## 4. Other iMF system changes
 
 - random $\omega$ conditioning
 - $\Omega=\{\omega,t_{min},t_{max}\}$ conditioning

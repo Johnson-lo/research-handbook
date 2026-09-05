@@ -1,33 +1,31 @@
 ---
 title: Johnson 的研究手冊
-description: Flow Matching、MeanFlow、fast generative modeling 與 robotics 的研究筆記。
+description: Flow Matching、MeanFlow、fast generative modeling 與 robotics 的公開研究知識庫。
 template: splash
 hero:
   tagline: 一條從 Flow Matching 到 Improved MeanFlow 的研究故事線
   actions:
-    - text: 從主線開始
+    - text: 閱讀主線
       link: /research-handbook/meanflow/story/
       variant: primary
-    - text: 查概念參考
+    - text: 概念參考
       link: /research-handbook/foundations/distribution-and-sampling/
 ---
 
-## 先讀故事，再查資料
+## 從問題出發，沿著方法演進閱讀
 
-這個網站的主要閱讀方式不再是「先挑分類」，而是先沿著一條因果主線讀：
+本站以一條因果主線整理 Flow Matching 到 Improved MeanFlow：
 
-**為什麼 Flow Matching 需要 multiple NFE？**
+**為什麼 Flow Matching 通常需要 multiple NFE？**
 → **MeanFlow 為什麼改學 average velocity？**
 → **average velocity 要怎麼訓練？**
-→ **Original MeanFlow 的 training objective 哪裡不穩定？**
-→ **Improved MeanFlow 到底只改了哪一條關鍵路徑？**
-→ **實驗證據支持了什麼？**
+→ **Original MeanFlow 的 objective 有什麼限制？**
+→ **Improved MeanFlow 改了哪一條關鍵路徑？**
+→ **實驗證據支持了哪些結論？**
 
-### 主要閱讀入口
+### 內容結構
 
-1. **完整故事線**：第一次讀請從這裡開始。
-2. **Deep Dive**：想重新看 MeanFlow Identity、JVP 或 iMF objective 時再進入。
-3. **Concept Reference**：忘記 distribution、conditional velocity、marginal velocity 時再查。
-4. **Evidence & Sources**：需要確認 paper claim 或實驗數字時再看。
-
-> 這不是 Notion 備份，也不是 paper 清單；主體應該是一個可以一路追問「為什麼下一步會出現」的 technical narrative。
+1. **完整故事線**：建立 Flow Matching → MeanFlow → iMF 的整體脈絡。
+2. **Deep Dive**：深入 MeanFlow Identity、JVP 與 iMF objective。
+3. **Concept Reference**：查閱 distribution、conditional velocity、marginal velocity 等基礎概念。
+4. **Evidence & Sources**：核對論文敘述與已公開的實驗結果。

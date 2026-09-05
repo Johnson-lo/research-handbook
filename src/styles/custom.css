@@ -27,3 +27,50 @@
   margin: 1rem 0;
   background: var(--sl-color-bg-nav);
 }
+
+/* Public interactive controls: consistent geometry across languages and labels. */
+.derivation button,
+.bridge button,
+.interactive-frame button {
+  box-sizing: border-box;
+  min-height: 2.75rem;
+  padding: 0.55rem 0.85rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font: inherit;
+  line-height: 1.15;
+  white-space: nowrap;
+}
+
+.derivation .controls {
+  display: grid !important;
+  grid-template-columns: repeat(3, minmax(5.4rem, 1fr));
+  gap: 0.5rem !important;
+  align-items: stretch;
+}
+
+.derivation .controls button {
+  width: 100%;
+}
+
+.bridge .bridge-tabs {
+  display: grid !important;
+  grid-template-columns: repeat(2, minmax(6.8rem, 1fr));
+  gap: 0.5rem !important;
+}
+
+.bridge .bridge-tabs button {
+  width: 100%;
+}
+
+@media (max-width: 520px) {
+  .derivation .derivation-head,
+  .bridge .bridge-head {
+    align-items: stretch;
+  }
+  .derivation .controls,
+  .bridge .bridge-tabs {
+    width: 100%;
+  }
+}

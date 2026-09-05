@@ -1,15 +1,11 @@
 ---
-title: Improved MeanFlow 深入｜Objective Reformulation 與其他系統改動
-description: 把 objective-level change 與 CFG/architecture changes 分開理解。
+title: Improved MeanFlow 深入｜Objective Reformulation 與系統改動
+description: 分開理解 objective-level reformulation 與 CFG / architecture changes。
 sidebar:
   order: 2
 ---
 
 import MFvsIMFBridge from '../../../components/MFvsIMFBridge.astro';
-
-:::note[先抓核心]
-如果兩篇 paper 的差異還不直覺，先看下面的比較元件。**不要先背 1.72 FID，也不要先背 CFG。**
-:::
 
 <MFvsIMFBridge lang="zh" />
 
@@ -33,7 +29,7 @@ $$
 \mathcal L=\mathbb E\|V_\theta-(e-x)\|^2.
 $$
 
-這個 view 暴露出 predictor 實際是
+此時 predictor 可寫為
 
 $$
 V_\theta(z_t,e-x),
@@ -49,14 +45,14 @@ $$
 V_\theta(z_t)=u_\theta(z_t)+(t-r)\operatorname{JVP}_{sg}(u_\theta;v_\theta).
 $$
 
-但 supervision 保持
+而 supervision 保持
 
 $$
 \mathcal L=\mathbb E\|V_\theta(z_t)-(e-x)\|^2.
 $$
 
-:::caution[最重要的避免誤解]
-iMF **沒有**移除 $e-x$ supervision。它移除的是 $e-x$ 直接進入 JVP / predictor pathway。
+:::caution[關鍵不變項]
+iMF **沒有**移除 $e-x$ supervision；改變的是 JVP / predictor pathway 中使用的 tangent。
 :::
 
 ## 3. $v_\theta$ 從哪裡來？
@@ -75,7 +71,7 @@ $$
 
 Paper 也研究 training-only auxiliary $v$-head。
 
-## 4. 不要和 objective change 混在一起的其他 iMF 改動
+## 4. 其他 iMF 系統改動
 
 - random $\omega$ conditioning
 - $\Omega=\{\omega,t_{min},t_{max}\}$ conditioning
@@ -84,4 +80,4 @@ Paper 也研究 training-only auxiliary $v$-head。
 - SwiGLU / RMSNorm / RoPE
 - longer training
 
-因此 final FID 1.72 是 system-level result，不是 objective-only result。
+因此 final FID 1.72 是 system-level result，而不是 objective-only result。

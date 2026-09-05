@@ -1,6 +1,6 @@
 ---
 title: MeanFlow 深入｜Average Velocity、Identity 與 JVP
-description: 在已理解主線後，深入看 MeanFlow 的數學結構。
+description: MeanFlow average velocity、Identity 與 JVP 的數學結構。
 sidebar:
   order: 1
 ---
@@ -8,8 +8,8 @@ sidebar:
 import JVPExplorer from '../../../components/JVPExplorer.astro';
 import DerivationStepper from '../../../components/DerivationStepper.astro';
 
-:::note[建議閱讀順序]
-如果你是第一次看，先讀 [完整故事線](/research-handbook/meanflow/story/)。這頁是數學 deep dive，不再負責從零建立所有脈絡。
+:::note[章節定位]
+本頁聚焦 MeanFlow 的數學結構；完整方法脈絡可參考 [完整故事線](/research-handbook/meanflow/story/)。
 :::
 
 ## Average velocity
@@ -64,4 +64,4 @@ $$
 \mathcal L=\mathbb E\|u_\theta-\operatorname{sg}(u_{tgt})\|^2.
 $$
 
-這裡 `sg` 表示 stop-gradient。關鍵不是把 $u_\theta$ 當成 $e-x$；$u_\theta$ 仍然表示 average velocity，而 $e-x$ 是 sample-specific conditional velocity supervision，並被 Original MF 用作 JVP tangent 的近似。
+這裡 `sg` 表示 stop-gradient。$u_\theta$ 的語意仍是 average velocity；$e-x$ 是 sample-specific conditional velocity supervision，並在 Original MeanFlow 中作為 JVP tangent 的近似。
