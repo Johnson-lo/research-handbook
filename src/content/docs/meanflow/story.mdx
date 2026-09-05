@@ -1,6 +1,6 @@
 ---
 title: 主線｜Flow Matching → MeanFlow → Improved MeanFlow
-description: 用一條因果故事線理解兩篇 MeanFlow paper，而不是把公式拆成互不相干的章節。
+description: 用一條因果故事線理解 Flow Matching、MeanFlow 與 Improved MeanFlow 的方法演進。
 sidebar:
   order: 0
 ---
@@ -8,9 +8,9 @@ sidebar:
 import DerivationStepper from '../../../components/DerivationStepper.astro';
 import MFvsIMFBridge from '../../../components/MFvsIMFBridge.astro';
 
-# 先抓住整條故事
+# Flow Matching → MeanFlow → Improved MeanFlow
 
-這條主線只問一個問題：**如何把 generative ODE 從「很多次 local velocity query」推到真正有效的 one-step generation？**
+這條主線聚焦一個核心問題：**如何把 generative ODE 從多次 local velocity query 推向有效的 one-step generation？**
 
 ---
 
@@ -22,11 +22,9 @@ $$
 \frac{dz_t}{dt}=v_\theta(z_t,t).
 $$
 
-Inference 從 $t=1$ 的 noise 往 $t=0$ 的 data 走。問題是：走到新的 $z_t$ 後，下一步方向可能改變，因此要再次 query $v_\theta$。
+Inference 從 $t=1$ 的 noise 往 $t=0$ 的 data 走。當 state 改變後，local direction 也可能改變，因此通常需要再次 query $v_\theta$。
 
-所以 multi-NFE 不是單純因為 implementation 很慢，而是因為模型預測的 quantity 本身是 **local / instantaneous** 的。
-
-### Training 時的 supervision 到底是什麼？
+這個 multi-NFE 特性與模型預測 quantity 的語意直接相關：它描述的是 **local / instantaneous** dynamics。
 
 對 linear probability path
 
@@ -34,27 +32,25 @@ $$
 z_t=(1-t)x+te
 $$
 
-某一組 sampled pair 的速度是
+某一組 sampled pair 對應的速度為
 
 $$
-e-x
+e-x.
 $$
 
-但它只是 **conditional velocity**。真正唯一的 marginal field 是
+它是 **conditional velocity**。在 MSE regression 下，唯一的 marginal field 為
 
 $$
 v(z_t,t)=\mathbb E[e-x\mid z_t,t].
 $$
 
-如果這裡不清楚，先查 [Flow Matching reference](/research-handbook/foundations/flow-matching/)。
+延伸定義可參考 [Flow Matching reference](/research-handbook/foundations/flow-matching/)。
 
 ---
 
-## 2. MeanFlow 的第一個想法：不要只學 local velocity
+## 2. MeanFlow：從 instantaneous velocity 轉向 average velocity
 
-如果我們想 one-step 從 $z_1$ 直接到 $z_0$，那最自然的問題是：
-
-> 能不能直接學「這整段 interval 的 average velocity」？
+若希望直接從 $z_1$ 移動到 $z_0$，可以改為建模整段 interval 的 average velocity。
 
 MeanFlow 定義
 
@@ -74,68 +70,64 @@ $$
 (r,t)=(0,1),\qquad z_0=z_1-u_\theta(z_1,0,1).
 $$
 
-這就是 MeanFlow 和普通 Flow Matching 最根本的 representation shift：
+這是 MeanFlow 與一般 Flow Matching 最核心的 representation shift：
 
 **instantaneous velocity $v$ → interval-average velocity $u$.**
 
 ---
 
-## 3. 但 average velocity 的 GT 在哪裡？
+## 3. Average velocity 的 training target 從哪裡來？
 
-這裡才是 MeanFlow 真正的難點。
+Sample-level 的 $e-x$ 很容易取得，但沒有同樣直接的 per-sample ground-truth $u(z_t,r,t)$ 可以進行 regression。
 
-我們很容易抽到 sample-level 的 $e-x$，但沒有一個同樣便宜、可以直接拿來 regression 的 ground-truth $u(z_t,r,t)$。
-
-因此 MeanFlow 需要把 **average quantity $u$** 和我們比較熟悉的 **local quantity $v$** 接起來。
+因此 MeanFlow 需要一個 identity，把 **average quantity $u$** 與 **local quantity $v$** 連接起來。
 
 <DerivationStepper lang="zh" />
 
-推導最後得到：
+推導得到：
 
 $$
 v=u+(t-r)\frac{du}{dt}.
 $$
 
-而
+其中
 
 $$
 \frac{du}{dt}=\partial_z u\,v+\partial_tu
 $$
 
-可以用 JVP 計算。
+可透過 JVP 計算。
 
-> **閱讀重點：JVP 不是突然多出來的技巧。** 它是因為 MeanFlow 想學沒有直接 sample GT 的 average velocity，所以需要 MeanFlow Identity 把 $u$ 和 $v$ 聯繫起來。
+JVP 的角色是描述 average velocity $u$ 沿著 state 與 time 變化時的 total derivative，而不是額外定義另一個 velocity field。
 
 ---
 
-## 4. Original MeanFlow 怎麼把 identity 變成 training objective？
+## 4. Original MeanFlow 的 training objective
 
-理論 identity 需要真正的 marginal velocity $v(z_t,t)$。Original MeanFlow 在實作時用 sampled pair 的 conditional velocity $e-x$ 進入 JVP tangent：
+理論 identity 需要 marginal velocity $v(z_t,t)$。Original MeanFlow 在實作中使用 sampled pair 的 conditional velocity $e-x$ 作為 JVP tangent：
 
 $$
 u_{tgt}=(e-x)-(t-r)\operatorname{JVP}(u_\theta;e-x).
 $$
 
-再訓練
+並訓練
 
 $$
 \mathcal L=\mathbb E\|u_\theta-\operatorname{sg}(u_{tgt})\|^2.
 $$
 
-這裡有兩個要分開的概念：
+這裡需要區分兩件事：
 
-1. **$u_\theta$ 不是在預測 $e-x$。** $u_\theta$ 的語意仍是 average velocity。
-2. **$e-x$ 不只出現在 supervision。** 它也被塞進 JVP tangent，因此會進入 prediction/target construction path。
+1. $u_\theta$ 的語意仍是 average velocity。
+2. $e-x$ 除了作為 supervision，也進入 JVP tangent，因此會出現在 target construction / predictor pathway 中。
 
 ---
 
-## 5. Improved MeanFlow 到底改了哪裡？
-
-先不要一次記 CFG、architecture、1.72 FID。先只看 objective-level 的核心改動。
+## 5. Improved MeanFlow 的 objective reformulation
 
 <MFvsIMFBridge lang="zh" />
 
-把 Original MF 改寫成 equivalent v-loss：
+將 Original MF 改寫成 equivalent v-loss：
 
 $$
 V_\theta=u_\theta+(t-r)\operatorname{JVP}_{sg}(u_\theta;e-x),
@@ -145,38 +137,34 @@ $$
 \mathcal L=\mathbb E\|V_\theta-(e-x)\|^2.
 $$
 
-這時問題變得很明顯：
+此時 compound predictor 可表示為
 
 $$
 V_\theta=V_\theta(z_t,e-x).
 $$
 
-Improved MeanFlow 的核心是把 JVP tangent 改成 marginal-like prediction：
+Improved MeanFlow 將 JVP tangent 改為 marginal-like prediction：
 
 $$
 V_\theta(z_t)=u_\theta(z_t)+(t-r)\operatorname{JVP}_{sg}(u_\theta;v_\theta).
 $$
 
-而 supervision **仍然是**
+而 supervision 保持為
 
 $$
 \mathcal L=\mathbb E\|V_\theta(z_t)-(e-x)\|^2.
 $$
 
-### 一句話記法
+因此 objective-level 的核心差異是：
 
-> **Original MF：$e-x$ 同時進 supervision 與 JVP。**  
-> **iMF：$e-x$ 只留在 supervision；JVP 改吃 $v_\theta(z_t)$。**
-
-這是兩篇 paper 在 objective 上最值得先抓住的差異。
+**Original MF：JVP tangent 使用 $e-x$。**  
+**Improved MF：JVP tangent 使用 $v_\theta(z_t)$，而 $e-x$ 仍保留為 supervision。**
 
 ---
 
-## 6. 那為什麼 iMF 最後能到 FID 1.72？
+## 6. Objective change 與 system-level result
 
-不能把所有提升都歸因於上面的 objective change。
-
-先看較 controlled 的 objective evidence：
+Objective reformulation 本身有較 controlled 的實驗證據：
 
 | Setting | 1-NFE FID ↓ |
 |---|---:|
@@ -186,7 +174,7 @@ $$
 | Original MF-XL/2 | 3.43 |
 | MF-XL/2 + iMF boundary objective | 2.99 |
 
-接著 iMF 還加入：
+Improved MeanFlow 同時加入：
 
 - flexible $\omega$ conditioning
 - $\Omega=\{\omega,t_{min},t_{max}\}$ conditioning
@@ -194,38 +182,34 @@ $$
 - SwiGLU / RMSNorm / RoPE
 - longer training
 
-最後 system-level iMF-XL/2 才到 **FID 1.72**。
+最終 system-level iMF-XL/2 達到 **FID 1.72**。
 
-因此正確結論是：
-
-> **objective reformulation 有獨立改善證據；但最終 1.72 是多個 system changes 疊加的結果。**
+因此需要區分：**objective reformulation 的獨立改善證據**，以及**多項 system changes 疊加後的最終結果**。
 
 ---
 
-## 7. 兩篇 paper 的關係，最後只要記這張心智表
+## 7. Original MeanFlow 與 Improved MeanFlow 對照
 
 | 問題 | Original MeanFlow | Improved MeanFlow |
 |---|---|---|
-| 想解決什麼？ | 用 average velocity 做 one-step generation | 讓 MeanFlow training 更穩、更像 state-only regression，並改善 guidance/conditioning |
+| 核心目標 | 用 average velocity 做 one-step generation | 改善 MeanFlow objective 並強化 guidance / conditioning |
 | Inference object | $u_\theta$ | 同樣是 $u_\theta$ |
 | One-step inference | $z_0=z_1-u_\theta(z_1,0,1)$ | **不變** |
 | Sample supervision | $e-x$ | **不變** |
 | JVP tangent | $e-x$ | $v_\theta(z_t)$ |
-| 核心 training concern | network-dependent target / sample-specific tangent | predictor 改為 $V_\theta(z_t)$ |
-| 額外 system 改動 | fixed CFG | flexible CFG + conditioning/architecture changes |
+| Objective concern | network-dependent target / sample-specific tangent | state-conditioned compound predictor |
+| 額外 system changes | fixed CFG | flexible CFG + conditioning / architecture changes |
 
 ---
 
-## 8. 下一步研究真正該問什麼？
+## 8. Open questions
 
-iMF 已經直接處理了 original MF 的 network-dependent target / conditional-tangent 問題，所以新的研究不應只重新提出同一件事。
+MeanFlow / iMF 之後仍有幾類問題值得研究：
 
-更有價值的方向包括：
+- long interval 與 short interval 的 learning difficulty 是否不同？
+- one-step endpoint error 主要來自 representation、optimization，還是 local derivative estimation？
+- JVP / gradient geometry 是否在特定時間區間放大 error？
+- multi-step variants 如何建立 accuracy / compute 的新 trade-off？
+- average-flow / flow-map representation 如何延伸到 robotics 與 action generation？
 
-- long interval 是否比 short interval 更難學？
-- one-step endpoint quality 的主要 error 來自哪裡？
-- JVP / gradient geometry 是否會在特定時間區間放大 error？
-- two-step + intermediate constraint 是否能在 2-NFE 下建立新的 accuracy/compute trade-off？
-- average-flow / flow-map representation 如何轉到 robotics / action generation？
-
-到這裡，再進入 [MeanFlow Deep Dive](/research-handbook/meanflow/meanflow/) 或 [Improved MeanFlow Deep Dive](/research-handbook/meanflow/improved-meanflow/) 會比較有意義。
+更完整的數學細節可繼續閱讀 [MeanFlow Deep Dive](/research-handbook/meanflow/meanflow/) 與 [Improved MeanFlow Deep Dive](/research-handbook/meanflow/improved-meanflow/)。
