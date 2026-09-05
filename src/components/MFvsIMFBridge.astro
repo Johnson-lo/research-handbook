@@ -5,11 +5,11 @@ const isZh = lang !== 'en';
 <div class="bridge" data-bridge data-lang={isZh ? 'zh' : 'en'}>
   <div class="bridge-head">
     <div>
-      <strong>{isZh ? 'Original MeanFlow → Improved MeanFlow：到底改了什麼？' : 'Original MeanFlow → Improved MeanFlow: what actually changed?'}</strong>
-      <p>{isZh ? '先把共同部分固定，只看唯一最重要的 objective-level 改動。' : 'Freeze the shared parts first, then isolate the key objective-level change.'}</p>
+      <strong>{isZh ? 'Original MeanFlow → Improved MeanFlow：objective-level 差異' : 'Original MeanFlow → Improved MeanFlow: objective-level difference'}</strong>
+      <p>{isZh ? '共同的 supervision 與 inference object 保持不變，差異集中在 JVP tangent。' : 'The supervision and inference object stay shared; the key difference is the JVP tangent.'}</p>
     </div>
     <div class="bridge-tabs">
-      <button class="active" data-view="diff">{isZh ? '只看改動' : 'Difference only'}</button>
+      <button class="active" data-view="diff">{isZh ? '核心差異' : 'Core difference'}</button>
       <button data-view="full">{isZh ? '完整流程' : 'Full flow'}</button>
     </div>
   </div>
@@ -27,17 +27,17 @@ const isZh = lang !== 'en';
       <div class="critical">
         <span class="label">JVP tangent</span>
         <code>e−x</code>
-        <small>{isZh ? 'sample-specific conditional velocity' : 'sample-specific conditional velocity'}</small>
+        <small>sample-specific conditional velocity</small>
       </div>
       <div class="arrow">↓</div>
       <div class="result"><code>Vθ(z_t, e−x)</code></div>
-      <p>{isZh ? 'Predictor 的計算路徑直接看到這一次抽到的 e−x，因此 prediction function 不只依賴 z_t。' : 'The prediction path directly sees the sampled e−x, so the predictor is not a function of z_t alone.'}</p>
+      <p>{isZh ? 'JVP 的計算路徑使用這一次 sampled pair 的 e−x，因此 compound predictor 額外依賴 sample-specific tangent。' : 'The JVP path uses the sampled pair-specific e−x, so the compound predictor additionally depends on a sample-specific tangent.'}</p>
     </article>
 
     <div class="change">
-      <span>{isZh ? '唯一先抓住的核心改動' : 'The one core change to remember first'}</span>
+      <span>{isZh ? '核心 objective-level 改動' : 'Core objective-level change'}</span>
       <b><code>e−x</code> → <code>vθ(z_t)</code></b>
-      <small>{isZh ? '不是把 e−x 從 loss 拿掉，而是把它從 JVP tangent 拿掉。' : 'e−x is not removed from the loss; it is removed from the JVP tangent.'}</small>
+      <small>{isZh ? 'e−x 仍保留為 supervision；改變的是 JVP tangent。' : 'e−x remains as supervision; the JVP tangent changes.'}</small>
     </div>
 
     <article>
@@ -46,21 +46,21 @@ const isZh = lang !== 'en';
       <div class="critical improved">
         <span class="label">JVP tangent</span>
         <code>vθ(z_t)</code>
-        <small>{isZh ? 'model-estimated marginal velocity' : 'model-estimated marginal velocity'}</small>
+        <small>model-estimated marginal velocity</small>
       </div>
       <div class="arrow">↓</div>
       <div class="result"><code>Vθ(z_t)</code></div>
-      <p>{isZh ? 'JVP pathway 改用只依賴當前 state 的 marginal-like velocity estimate；e−x 仍然留在 supervision 端。' : 'The JVP path now uses a marginal-like velocity estimate that depends on the current state; e−x remains on the supervision side.'}</p>
+      <p>{isZh ? 'JVP pathway 改用由當前 state 得到的 marginal-like velocity estimate；e−x 仍位於 supervision 端。' : 'The JVP path uses a marginal-like velocity estimate derived from the current state; e−x remains on the supervision side.'}</p>
     </article>
   </div>
 
   <div class="supervision-row">
-    <span>{isZh ? '兩邊最後都還是比較' : 'Both objectives still compare against'}</span>
+    <span>{isZh ? '兩者皆以此 supervision 形式比較' : 'Both objectives use the same supervision form'}</span>
     <code>Vθ − (e−x)</code>
   </div>
 
   <div class="paper-scope">
-    <b>{isZh ? '不要把兩篇 paper 的所有差異都混成一件事' : 'Do not collapse every paper-level difference into one change'}</b>
+    <b>{isZh ? 'Objective reformulation 與 system changes' : 'Objective reformulation vs system changes'}</b>
     <div class="scope-grid">
       <div><strong>{isZh ? '核心 objective 改動' : 'Core objective change'}</strong><br/>{isZh ? 'JVP tangent：e−x → vθ(z_t)' : 'JVP tangent: e−x → vθ(z_t)'}</div>
       <div><strong>{isZh ? 'iMF 額外系統改動' : 'Additional iMF system changes'}</strong><br/>{isZh ? 'flexible CFG、Ω-conditioning、in-context conditioning、Transformer block changes、longer training' : 'flexible CFG, Ω-conditioning, in-context conditioning, Transformer block changes, and longer training'}</div>
