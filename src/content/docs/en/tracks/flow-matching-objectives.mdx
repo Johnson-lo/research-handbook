@@ -1,0 +1,37 @@
+---
+title: Research Track | Flow Matching Objectives
+description: From conditional velocity regression to probability-path accuracy and divergence alignment.
+sidebar:
+  order: 2
+---
+
+# Flow Matching Objectives
+
+This track focuses not on sampling speed but on **what the training objective actually guarantees**.
+
+## 1. The regression view of Conditional Flow Matching
+
+Under linear interpolation, sample-level supervision is $e-x$, while the marginal MSE optimum is
+
+$$
+v(z_t,t)=\mathbb E[e-x\mid z_t,t].
+$$
+
+This gives a simulation-free vector-field training objective, but a small vector-regression loss is not identical to an exact learned probability path.
+
+## 2. Probability-path accuracy
+
+[Improving Flow Matching by Aligning Flow Divergence](/research-handbook/en/papers/flow-divergence/) derives a PDE characterization of learned-versus-exact probability-path error and relates the total-variation gap to a combination of CFM loss and divergence loss.
+
+## 3. Objective extension
+
+The objective therefore expands from matching only the flow to matching both the flow and its divergence. The research question moves beyond pointwise regression toward whether the field induces the correct distribution evolution.
+
+## 4. Relation to fast generation
+
+This track is distinct from MeanFlow Evolution: MeanFlow focuses on representation and NFE, while Flow Matching Objectives focuses on field/path accuracy. The two can intersect when asking whether fast generators need additional distribution-level constraints beyond simply changing the sampling procedure.
+
+## Papers in this track
+
+- [Improving Flow Matching by Aligning Flow Divergence](/research-handbook/en/papers/flow-divergence/)
+- [Mean Flows for One-step Generative Modeling](/research-handbook/en/papers/meanflow/) — a contrasting direction in objective / representation evolution

@@ -1,0 +1,70 @@
+---
+const { lang = 'zh' } = Astro.props;
+const isZh = lang !== 'en';
+const prefix = isZh ? '/research-handbook' : '/research-handbook/en';
+const papers = [
+  {
+    title: 'Mean Flows for One-step Generative Modeling',
+    meta: 'NeurIPS 2025 · Oral',
+    href: `${prefix}/papers/meanflow/`,
+    tags: ['MeanFlow', 'One-step Generation', 'Average Velocity'],
+    note: isZh ? '完整研究筆記' : 'Full research note',
+    desc: isZh
+      ? '以 interval-average velocity 取代單純的 instantaneous velocity，建立 one-step generative modeling 的 MeanFlow framework。'
+      : 'Introduces MeanFlow by modeling interval-average velocity for one-step generative modeling.'
+  },
+  {
+    title: 'Improved Mean Flows: On the Challenges of Fastforward Generative Models',
+    meta: 'CVPR 2026',
+    href: `${prefix}/papers/improved-meanflow/`,
+    tags: ['MeanFlow', 'Objective Reformulation', 'CFG'],
+    note: isZh ? '完整研究筆記' : 'Full research note',
+    desc: isZh
+      ? '重新整理 MeanFlow objective，並處理 guidance flexibility、conditioning 與 system design。'
+      : 'Reformulates the MeanFlow objective and extends guidance, conditioning, and system design.'
+  },
+  {
+    title: 'RMFlow: Refined Mean Flow by a Noise-Injection Step for Multimodal Generation',
+    meta: 'arXiv 2026',
+    href: `${prefix}/papers/rmflow/`,
+    tags: ['MeanFlow', 'Refinement', 'Multimodal'],
+    note: isZh ? '方法定位筆記' : 'Method-positioning note',
+    desc: isZh
+      ? '在 coarse 1-NFE MeanFlow transport 後加入 tailored noise-injection refinement，延伸到多模態生成。'
+      : 'Adds a tailored noise-injection refinement after coarse 1-NFE MeanFlow transport for multimodal generation.'
+  },
+  {
+    title: 'Improving Flow Matching by Aligning Flow Divergence',
+    meta: 'ICML 2025',
+    href: `${prefix}/papers/flow-divergence/`,
+    tags: ['Flow Matching', 'Divergence', 'Probability Path'],
+    note: isZh ? '方法定位筆記' : 'Method-positioning note',
+    desc: isZh
+      ? '從 probability-path error 的角度補強 conditional flow matching，加入 divergence alignment objective。'
+      : 'Strengthens conditional flow matching through probability-path error analysis and divergence alignment.'
+  }
+];
+---
+<div class="paper-library-grid">
+  {papers.map((paper) => (
+    <a class="paper-card" href={paper.href}>
+      <div class="paper-card-meta"><span>{paper.meta}</span><span>{paper.note}</span></div>
+      <h3>{paper.title}</h3>
+      <p>{paper.desc}</p>
+      <div class="paper-tags">{paper.tags.map((tag) => <span>{tag}</span>)}</div>
+      <div class="paper-open">{isZh ? '開啟論文筆記 →' : 'Open paper note →'}</div>
+    </a>
+  ))}
+</div>
+
+<style>
+.paper-library-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:1rem;margin:1rem 0 1.5rem}
+.paper-card{display:flex;flex-direction:column;min-height:18rem;padding:1.15rem;border:1px solid var(--rh-border);border-radius:1rem;background:var(--rh-surface-2);color:var(--rh-text)!important;text-decoration:none!important;box-shadow:0 10px 30px rgba(74,49,34,.045);transition:transform .18s ease,border-color .18s ease,box-shadow .18s ease}
+.paper-card:hover{transform:translateY(-2px);border-color:var(--rh-caramel);box-shadow:0 14px 36px rgba(74,49,34,.09)}
+.paper-card-meta{display:flex;justify-content:space-between;gap:.75rem;flex-wrap:wrap;font-size:.78rem;color:var(--rh-muted)}
+.paper-card h3{font-size:1.08rem;line-height:1.35;margin:.8rem 0 .45rem;color:var(--rh-text)}
+.paper-card p{margin:0;color:var(--rh-muted);line-height:1.65}
+.paper-tags{display:flex;gap:.4rem;flex-wrap:wrap;margin-top:auto;padding-top:1rem}.paper-tags span{font-size:.72rem;padding:.22rem .5rem;border:1px solid var(--rh-border);border-radius:999px;background:var(--rh-surface);color:var(--rh-coffee)}
+.paper-open{margin-top:.9rem;font-size:.85rem;font-weight:650;color:var(--rh-coffee)}
+@media(max-width:760px){.paper-library-grid{grid-template-columns:1fr}.paper-card{min-height:auto}}
+</style>

@@ -1,31 +1,44 @@
 ---
 title: Johnson's Research Handbook
-description: A public research knowledge base on Flow Matching, MeanFlow, fast generative modeling, and robotics.
+description: A growing public research handbook for papers, research tracks, and technical concepts across generative modeling, flow-based methods, and robotics.
 template: splash
 hero:
-  tagline: A research story from Flow Matching to Improved MeanFlow
+  tagline: A growing research library for papers, research tracks, and technical concepts
   actions:
-    - text: Read the main story
-      link: /research-handbook/en/meanflow/story/
+    - text: Browse Paper Library
+      link: /research-handbook/en/papers/
       variant: primary
-    - text: Concept reference
-      link: /research-handbook/en/foundations/distribution-and-sampling/
+    - text: Explore Research Tracks
+      link: /research-handbook/en/tracks/
 ---
 
-## Follow the method evolution from the underlying problem
+import PaperLibraryGrid from '../../../components/PaperLibraryGrid.astro';
 
-The site organizes Flow Matching through Improved MeanFlow as one causal sequence:
+## Paper Library
 
-**Why does Flow Matching usually need multiple NFEs?**
-→ **Why does MeanFlow switch to average velocity?**
-→ **How can an average velocity field be trained?**
-→ **What limitations appear in the original MeanFlow objective?**
-→ **What key pathway does Improved MeanFlow change?**
-→ **What conclusions are supported by the experiments?**
+Each paper has its own entry for the problem, method, equations, training / inference, experiments, interpretation, and limitations. Cross-paper evolution is organized separately under Research Tracks.
 
-### Site structure
+<PaperLibraryGrid lang="en" />
 
-1. **The Full Story**: the complete Flow Matching → MeanFlow → iMF narrative.
-2. **Deep Dives**: MeanFlow Identity, JVP, and the iMF objective in more detail.
-3. **Concept Reference**: distribution, conditional velocity, marginal velocity, and related foundations.
-4. **Evidence & Sources**: paper claims and published experimental results.
+## Research Tracks
+
+<div class="rh-section-grid">
+  <a class="rh-hub-card" href="/research-handbook/en/meanflow/story/">
+    <small>Research Track</small>
+    <strong>MeanFlow Evolution</strong>
+    <span>Flow Matching → MeanFlow → Improved MeanFlow, with a link to the later RMFlow branch.</span>
+  </a>
+  <a class="rh-hub-card" href="/research-handbook/en/tracks/flow-matching-objectives/">
+    <small>Research Track</small>
+    <strong>Flow Matching Objectives</strong>
+    <span>From conditional velocity regression to probability-path accuracy and divergence alignment.</span>
+  </a>
+</div>
+
+## Concepts
+
+<div class="rh-section-grid rh-section-grid-3">
+  <a class="rh-hub-card" href="/research-handbook/en/foundations/distribution-and-sampling/"><small>Concept</small><strong>Distribution & Sampling</strong><span>Data distributions, priors, and sampling semantics.</span></a>
+  <a class="rh-hub-card" href="/research-handbook/en/foundations/flow-matching/"><small>Concept</small><strong>Flow Matching</strong><span>Conditional velocity, marginal velocity, training, and inference.</span></a>
+  <a class="rh-hub-card" href="/research-handbook/en/interactive/"><small>Interactive</small><strong>Interactive Lab</strong><span>Interactive views of probability paths, JVPs, and MeanFlow objectives.</span></a>
+</div>

@@ -1,31 +1,44 @@
 ---
 title: Johnson 的研究手冊
-description: Flow Matching、MeanFlow、fast generative modeling 與 robotics 的公開研究知識庫。
+description: 持續累積 generative modeling、flow-based methods 與 robotics 論文、研究脈絡與技術概念的公開研究手冊。
 template: splash
 hero:
-  tagline: 一條從 Flow Matching 到 Improved MeanFlow 的研究故事線
+  tagline: 一個持續累積論文、研究脈絡與技術概念的公開 research handbook
   actions:
-    - text: 閱讀主線
-      link: /research-handbook/meanflow/story/
+    - text: 瀏覽 Paper Library
+      link: /research-handbook/papers/
       variant: primary
-    - text: 概念參考
-      link: /research-handbook/foundations/distribution-and-sampling/
+    - text: 查看 Research Tracks
+      link: /research-handbook/tracks/
 ---
 
-## 從問題出發，沿著方法演進閱讀
+import PaperLibraryGrid from '../../components/PaperLibraryGrid.astro';
 
-本站以一條因果主線整理 Flow Matching 到 Improved MeanFlow：
+## Paper Library
 
-**為什麼 Flow Matching 通常需要 multiple NFE？**
-→ **MeanFlow 為什麼改學 average velocity？**
-→ **average velocity 要怎麼訓練？**
-→ **Original MeanFlow 的 objective 有什麼限制？**
-→ **Improved MeanFlow 改了哪一條關鍵路徑？**
-→ **實驗證據支持了哪些結論？**
+每篇論文有獨立入口。單篇頁面負責整理該 paper 的 problem、method、equations、training / inference、experiments、interpretation 與 limitations；跨論文的演進關係則另外放在 Research Tracks。
 
-### 內容結構
+<PaperLibraryGrid lang="zh" />
 
-1. **完整故事線**：建立 Flow Matching → MeanFlow → iMF 的整體脈絡。
-2. **Deep Dive**：深入 MeanFlow Identity、JVP 與 iMF objective。
-3. **Concept Reference**：查閱 distribution、conditional velocity、marginal velocity 等基礎概念。
-4. **Evidence & Sources**：核對論文敘述與已公開的實驗結果。
+## Research Tracks
+
+<div class="rh-section-grid">
+  <a class="rh-hub-card" href="/research-handbook/meanflow/story/">
+    <small>Research Track</small>
+    <strong>MeanFlow Evolution</strong>
+    <span>Flow Matching → MeanFlow → Improved MeanFlow，並連到後續 RMFlow 分支。</span>
+  </a>
+  <a class="rh-hub-card" href="/research-handbook/tracks/flow-matching-objectives/">
+    <small>Research Track</small>
+    <strong>Flow Matching Objectives</strong>
+    <span>從 conditional velocity regression 延伸到 probability-path accuracy 與 divergence alignment。</span>
+  </a>
+</div>
+
+## Concepts
+
+<div class="rh-section-grid rh-section-grid-3">
+  <a class="rh-hub-card" href="/research-handbook/foundations/distribution-and-sampling/"><small>Concept</small><strong>Distribution & Sampling</strong><span>資料分布、prior 與 sampling 的基礎語意。</span></a>
+  <a class="rh-hub-card" href="/research-handbook/foundations/flow-matching/"><small>Concept</small><strong>Flow Matching</strong><span>Conditional velocity、marginal velocity 與 training / inference。</span></a>
+  <a class="rh-hub-card" href="/research-handbook/interactive/"><small>Interactive</small><strong>Interactive Lab</strong><span>以互動元件檢視 probability path、JVP 與 MeanFlow objective。</span></a>
+</div>

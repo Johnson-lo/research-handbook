@@ -1,0 +1,37 @@
+---
+title: Research Track｜Flow Matching Objectives
+description: 從 conditional velocity regression 到 probability-path accuracy 與 divergence alignment。
+sidebar:
+  order: 2
+---
+
+# Flow Matching Objectives
+
+這條 track 聚焦的不是 sampling speed，而是 **training objective 到底保證了什麼**。
+
+## 1. Conditional Flow Matching 的基本 regression view
+
+在 linear interpolation 下，sample-level supervision 是 $e-x$，而 MSE regression 的 marginal optimum 是
+
+$$
+v(z_t,t)=\mathbb E[e-x\mid z_t,t].
+$$
+
+這提供了一個 simulation-free 的 vector-field training objective，但「vector regression loss 小」和「learned probability path 完全正確」並不是同一個 statement。
+
+## 2. Probability-path accuracy
+
+[Improving Flow Matching by Aligning Flow Divergence](/research-handbook/papers/flow-divergence/) 從 learned / exact probability paths 的 error dynamics 出發，建立 PDE characterization，並把 total-variation gap 與 CFM loss + divergence loss 連接起來。
+
+## 3. Objective extension
+
+因此 objective 從單純 matching flow，擴展成同時 matching flow 與 divergence。研究問題從 pointwise regression 進一步移到 distribution evolution 是否正確。
+
+## 4. Relation to fast generation
+
+這條 track 和 MeanFlow Evolution 不同：MeanFlow 重點是 representation 與 NFE；Flow Matching Objectives 重點是 field / path accuracy。兩者可以互相交叉，例如 fast generator 是否需要額外 distribution-level constraint，會是一個獨立於「多做一步 sampling」之外的問題。
+
+## Papers in this track
+
+- [Improving Flow Matching by Aligning Flow Divergence](/research-handbook/papers/flow-divergence/)
+- [Mean Flows for One-step Generative Modeling](/research-handbook/papers/meanflow/) — 作為另一種 objective / representation 演進的對照
