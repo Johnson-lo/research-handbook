@@ -8,52 +8,68 @@ sidebar:
 ## Metadata
 
 - **Authors**: Zhengyang Geng, Yiyang Lu, Zongze Wu, Eli Shechtman, J. Zico Kolter, Kaiming He
-- **Venue**: CVPR 2026
+- **Publication**: arXiv 2512.02012, revised 2026
 - **Topic**: MeanFlow, objective reformulation, classifier-free guidance
-- **Sources**: [CVPR Open Access](https://openaccess.thecvf.com/content/CVPR2026/html/Geng_Improved_Mean_Flows_On_the_Challenges_of_Fastforward_Generative_Models_CVPR_2026_paper.html) · [arXiv](https://arxiv.org/abs/2512.02012)
+- **Source**: [arXiv](https://arxiv.org/abs/2512.02012)
 
-## Summary
+## Core question
 
-Improved MeanFlow addresses both the original MeanFlow training objective and guidance flexibility. The central objective change replaces the sample-specific $e-x$ JVP tangent with an estimated marginal velocity $v_\theta(z_t)$ while retaining $e-x$ as supervision.
+Original MeanFlow already enables one-step generation, but its training target depends on both sample-ground-truth quantities and the network itself. iMF asks whether the formulation can be recast as a more standard prediction function while preserving one-step inference.
 
-## Objective reformulation
-
-Original MF can be written as the equivalent v-loss
+## Original MF as a v-loss
 
 $$
-V_\theta=u_\theta+(t-r)\operatorname{JVP}_{sg}(u_\theta;e-x),
+V_\theta(z_t,e-x)=u_\theta(z_t,r,t)+(t-r)\operatorname{JVP}_{sg}(u_\theta;e-x),
 $$
 
 $$
-\mathcal L=\mathbb E\|V_\theta-(e-x)\|^2.
+\mathcal L=\mathbb E\|V_\theta(z_t,e-x)-(e-x)\|^2.
 $$
 
-iMF instead uses
+The predictor visibly depends on the sample-specific conditional tangent $e-x$.
+
+## iMF replacement
+
+iMF introduces a marginal-like velocity estimate $v_\theta(z_t,t)$ and uses
 
 $$
-V_\theta(z_t)=u_\theta(z_t)+(t-r)\operatorname{JVP}_{sg}(u_\theta;v_\theta),
+V_\theta(z_t)=u_\theta(z_t,r,t)+(t-r)\operatorname{JVP}_{sg}(u_\theta;v_\theta),
 $$
 
-while supervision remains
+with unchanged supervision
 
 $$
-\mathcal L=\mathbb E\|V_\theta(z_t)-(e-x)\|^2.
+\mathcal L_{iMF}=\mathbb E\|V_\theta(z_t)-(e-x)\|^2.
 $$
 
-## Additional system changes
+## The notation trap
 
-Beyond the objective reformulation, the paper adds flexible guidance conditioning, $\Omega$-conditioning, in-context conditioning, Transformer block changes, and longer training. These should be separated from objective-only improvements when interpreting the final result.
+- $u_\theta$: average-velocity model;
+- lowercase $v_\theta$: instantaneous / marginal-like velocity estimate used as tangent;
+- $\operatorname{JVP}(u_\theta;v_\theta)$: directional derivative of $u_\theta$; $v_\theta$ is the direction, not the differentiated function;
+- capital $V_\theta$: compound predictor after adding the JVP correction;
+- $e-x$: sample-level conditional supervision.
 
-## Evidence
+See the [Improved MeanFlow deep dive](/research-handbook/en/meanflow/improved-meanflow/) for the interactive notation explorer.
 
-Controlled objective evidence includes MF-B/2 improving from 6.17 to 5.97 / 5.68 and an MF-XL/2 boundary-objective setting improving from 3.43 to 2.99. The complete iMF-XL/2 system reports **FID 1.72**.
+## Where $v_\theta$ comes from
 
-## Research interpretation
+The boundary variant uses $v_\theta(z_t,t)\equiv u_\theta(z_t,t,t)$. An alternative training-only auxiliary head predicts $v_\theta$ with an additional Flow Matching loss $\|v_\theta-(e-x)\|^2$.
 
-The paper reframes the network-dependent target as a compound-predictor regression problem and clarifies the distinction between a sample-specific conditional tangent and a marginal field. The final 1.72 result is a system-level outcome combining objective, guidance, conditioning, architecture, and training changes.
+## Why this matters
 
-## Related pages
+Conditional $e-x$ can vary across sampled pairs consistent with the same state. Passing that sample-specific tangent through a JVP can amplify variance. iMF instead uses state-conditioned $v_\theta(z_t)$ so the compound predictor becomes a legitimate state-conditioned regression function.
 
-- [Research Track: MeanFlow Evolution](/research-handbook/en/meanflow/story/)
-- [Improved MeanFlow deep dive](/research-handbook/en/meanflow/improved-meanflow/)
-- [Original MeanFlow paper](/research-handbook/en/papers/meanflow/)
+## Objective evidence
+
+| Setting | 1-NFE FID ↓ |
+|---|---:|
+| Original MF-B/2 w/ CFG | 6.17 |
+| iMF boundary | 5.97 |
+| iMF aux v-head | 5.68 |
+| Original MF-XL/2 w/ CFG | 3.43 |
+| MF-XL/2 + iMF boundary objective | 2.99 |
+
+## System-level changes
+
+The complete method also adds flexible CFG, $\Omega$-conditioning, in-context conditioning, Transformer block changes, and longer training. The final iMF-XL/2 system reports **FID 1.72**, which is therefore a system-level result rather than an objective-only result.

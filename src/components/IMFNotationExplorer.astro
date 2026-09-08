@@ -1,0 +1,41 @@
+---
+const { lang = 'zh' } = Astro.props;
+const isZh = lang !== 'en';
+const items = isZh ? [
+  ['uθ','Average velocity model','網路主要輸出；表示 interval-average velocity。Inference 真正需要的是它。','uθ(z_t,r,t)'],
+  ['vθ','Instantaneous / marginal-like velocity estimate','iMF 中用來當 JVP 的 tangent。可由 boundary uθ(z_t,t,t) 得到，或用 auxiliary v-head。','vθ(z_t,t) ≡ uθ(z_t,t,t)  (boundary variant)'],
+  ['JVP','Directional derivative of uθ','被微分的是 uθ；vθ 只是告訴 JVP「沿哪個 state 方向走」。完整 tangent 是 [vθ,0,1]。','JVP(uθ;vθ)=J_{uθ}·[vθ,0,1]'],
+  ['Vθ','Compound predictor in the v-loss','大寫 Vθ 不是另一個獨立 head；它是 uθ 加上 JVP correction 後組成的 predictor。','Vθ(z_t)=uθ+(t-r)JVP_sg(uθ;vθ)'],
+  ['e−x','Sample-level conditional supervision','仍然是 loss 右邊的 supervision。iMF 沒有把 e−x 從 supervision 移掉。','L=E||Vθ(z_t)−(e−x)||²']
+] : [
+  ['uθ','Average velocity model','The main network output representing interval-average velocity; this is what inference ultimately needs.','uθ(z_t,r,t)'],
+  ['vθ','Instantaneous / marginal-like velocity estimate','Used as the JVP tangent in iMF. It can come from the boundary uθ(z_t,t,t) or from an auxiliary v-head.','vθ(z_t,t) ≡ uθ(z_t,t,t)  (boundary variant)'],
+  ['JVP','Directional derivative of uθ','The differentiated function is uθ; vθ only supplies the state-space direction. The full tangent is [vθ,0,1].','JVP(uθ;vθ)=J_{uθ}·[vθ,0,1]'],
+  ['Vθ','Compound predictor in the v-loss','Capital Vθ is not a separate standalone head. It is the compound predictor formed from uθ plus the JVP correction.','Vθ(z_t)=uθ+(t-r)JVP_sg(uθ;vθ)'],
+  ['e−x','Sample-level conditional supervision','It remains on the supervision side of the loss. iMF does not remove e−x from supervision.','L=E||Vθ(z_t)−(e−x)||²']
+];
+---
+<div class="notation" data-notation>
+  <div class="notation-title"><strong>{isZh ? 'iMF 符號辨識器｜小 vθ、JVP 與大 Vθ 不要混在一起' : 'iMF notation explorer | separating vθ, JVP, and Vθ'}</strong></div>
+  <div class="notation-layout">
+    <div class="notation-tabs">{items.map((item,i)=><button class={i===0?'active':''} data-i={i}>{item[0]}</button>)}</div>
+    <div class="notation-panel">
+      <span data-role>{items[0][1]}</span>
+      <h3 data-name>{items[0][0]}</h3>
+      <code data-formula>{items[0][3]}</code>
+      <p data-desc>{items[0][2]}</p>
+    </div>
+  </div>
+  <div class="notation-warning">
+    <b>{isZh ? '最常見的誤解' : 'Most common confusion'}</b>
+    <span>{isZh ? 'JVP(uθ; vθ) 不是「對 vθ 做 JVP」。被微分的是 uθ；vθ 是 tangent direction。JVP 的輸出再和 uθ 合成大寫 Vθ。' : 'JVP(uθ; vθ) does not mean “take a JVP of vθ.” The differentiated function is uθ; vθ is the tangent direction. The JVP output is then combined with uθ to form capital Vθ.'}</span>
+  </div>
+</div>
+
+<style>
+.notation{border:1px solid var(--rh-border);border-radius:1rem;padding:1rem;background:var(--rh-surface-2);margin:1rem 0}.notation-title{margin-bottom:.8rem}.notation-layout{display:grid;grid-template-columns:8rem 1fr;gap:.8rem}.notation-tabs{display:grid;gap:.4rem}.notation-tabs button{height:2.45rem;border:1px solid var(--rh-border);border-radius:.55rem;background:var(--rh-surface);color:var(--rh-coffee);cursor:pointer;font:inherit}.notation-tabs button.active{background:var(--rh-coffee);color:white;border-color:var(--rh-coffee)}.notation-panel{border:1px solid var(--rh-border);border-radius:.7rem;padding:.9rem;background:var(--rh-surface)}.notation-panel>span{font-size:.72rem;text-transform:uppercase;letter-spacing:.07em;color:var(--rh-caramel);font-weight:700}.notation-panel h3{margin:.3rem 0 .6rem}.notation-panel code{display:block;padding:.65rem;border:1px solid var(--rh-border);border-radius:.55rem;background:var(--rh-surface-2);white-space:normal}.notation-panel p{color:var(--rh-muted);line-height:1.65;margin-bottom:0}.notation-warning{display:grid;gap:.2rem;margin-top:.8rem;padding:.75rem .85rem;border-left:3px solid var(--rh-caramel);background:color-mix(in srgb,var(--rh-caramel) 8%,transparent);border-radius:.4rem}.notation-warning span{color:var(--rh-muted)}@media(max-width:680px){.notation-layout{grid-template-columns:1fr}.notation-tabs{grid-template-columns:repeat(5,1fr)}.notation-tabs button{min-width:0}}
+</style>
+
+<script define:vars={{items}}>
+for(const root of document.querySelectorAll('[data-notation]')){if(root.dataset.ready)continue;root.dataset.ready='1';const tabs=[...root.querySelectorAll('[data-i]')],name=root.querySelector('[data-name]'),role=root.querySelector('[data-role]'),formula=root.querySelector('[data-formula]'),desc=root.querySelector('[data-desc]');tabs.forEach((b)=>b.addEventListener('click',()=>{const i=Number(b.dataset.i);tabs.forEach((x,j)=>x.classList.toggle('active',j===i));name.textContent=items[i][0];role.textContent=items[i][1];formula.textContent=items[i][3];desc.textContent=items[i][2]}))}
+</script>

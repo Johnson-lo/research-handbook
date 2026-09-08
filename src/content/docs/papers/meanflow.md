@@ -12,50 +12,97 @@ sidebar:
 - **Topic**：one-step generation, flow matching, average velocity
 - **Sources**：[NeurIPS](https://papers.neurips.cc/paper_files/paper/2025/hash/6d13e085b79d454da5910e4ca82a3d9d-Abstract-Conference.html) · [arXiv](https://arxiv.org/abs/2505.13447)
 
-## Summary
+## Core question
 
-MeanFlow 的核心 representation shift 是從 instantaneous velocity $v$ 轉向 interval-average velocity $u$。這使 one-step inference 可以直接使用一個跨完整時間區間的 transport quantity，而不必在 inference 時反覆 query local velocity。
+Flow Matching 已經能穩定學到 instantaneous velocity，但 inference 仍需要 ODE solver 反覆 query local field。這篇 paper 問的是：
 
-## Problem
+> **能不能直接學 finite-time average transport，而不是每一步只問 local direction？**
 
-一般 Flow Matching 在 inference 時數值積分 ODE：state 每改變一次，就可能需要重新估計 local velocity，因此通常需要 multiple NFEs。MeanFlow 的目標是建立一個可以直接支援 one-step transport 的 field representation。
+## Baseline recap
 
-## Core method
-
-MeanFlow 定義
+Linear path：
 
 $$
-u(z_t,r,t)=\frac{1}{t-r}\int_r^t v(z_\tau,\tau)\,d\tau.
+z_t=(1-t)x+te,
 $$
 
-並利用 MeanFlow Identity
+sample-level conditional velocity：
 
 $$
-v=u+(t-r)\frac{du}{dt}
+e-x.
 $$
 
-把 average velocity 與 instantaneous velocity 連接起來。$du/dt$ 透過 total derivative / JVP 計算，因此 training 不需要顯式積分完整 ground-truth trajectory。
+Flow Matching 訓練 $v_\theta(z_t,t)$ 去 regression $e-x$，但 inference 仍要解 $dz_t/dt=v_\theta(z_t,t)$。
 
-## Training vs inference
+## Core idea
 
-**Training**：以 sampled pair 的 conditional velocity $e-x$ 建構 supervision，並透過 JVP-based target construction 訓練 $u_\theta$。
+MeanFlow 把 modeled object 改成 interval-average velocity：
 
-**Inference**：在 one-step case，直接使用
+$$
+u(z_t,r,t)=\frac{1}{t-r}\int_r^t v(z_\tau,\tau)d\tau.
+$$
+
+因此
+
+$$
+z_r=z_t-(t-r)u(z_t,r,t).
+$$
+
+One-step 直接得到
 
 $$
 z_0=z_1-u_\theta(z_1,0,1).
 $$
 
+## Why the derivation is necessary
+
+難點在於 $u$ 沒有像 $e-x$ 一樣直接的 per-sample GT。從
+
+$$
+(t-r)u=\int_r^t v(z_\tau,\tau)d\tau
+$$
+
+對 $t$ 微分：
+
+$$
+v=u+(t-r)\frac{du}{dt}.
+$$
+
+而
+
+$$
+\frac{du}{dt}=\partial_z u\,v+\partial_tu
+=\operatorname{JVP}(u;v).
+$$
+
+若偏微分、total derivative 或 JVP 不熟，先看 [Calculus & JVP](/research-handbook/concepts/calculus-jvp/)；完整逐步推導在 [MeanFlow deep dive](/research-handbook/meanflow/meanflow/)。
+
+## Training objective
+
+Original MF 用 sample conditional velocity $e-x$ 近似 JVP tangent：
+
+$$
+u_{tgt}=(e-x)-(t-r)\operatorname{JVP}(u_\theta;e-x),
+$$
+
+$$
+\mathcal L_{MF}=\mathbb E\|u_\theta-\operatorname{sg}(u_{tgt})\|^2.
+$$
+
+## Training vs inference
+
+**Training**：抽 $x,e,t,r$，直接構造 $z_t$；不需要從 noise rollout 整條 trajectory。JVP 用來建立 average-velocity training relation。
+
+**Inference**：只需要 $u_\theta$；one-step 使用 $z_0=z_1-u_\theta(z_1,0,1)$。
+
 ## Evidence
 
-論文在 ImageNet 256×256、1-NFE、from-scratch setting 下報告 MF-XL/2 的 FID 為 **3.43**。
+ImageNet 256×256、1-NFE、from scratch，MF-XL/2 報告 FID **3.43**。
 
-## Research interpretation
+## Interpretation
 
-這篇 paper 最重要的變化不是單純讓 local velocity 更準，而是改變模型所學 quantity 的時間尺度：$u$ 本身承載 finite-time transport 的語意。這也直接引出後續對 target construction、JVP tangent 與 training stability 的研究。
+這篇 paper 的真正創新不是「把 local velocity regression 做得更準」，而是改變 network output 的時間尺度：從 local derivative 變成 finite-interval average transport。代價是 training target 不再直接，JVP 與 network-dependent target 因而變成後續研究核心。
 
-## Related pages
+## Limitation / next paper
 
-- [Research Track：MeanFlow Evolution](/research-handbook/meanflow/story/)
-- [MeanFlow mathematical deep dive](/research-handbook/meanflow/meanflow/)
-- [Flow Matching concept](/research-handbook/foundations/flow-matching/)
+Original MF 把 sample-specific $e-x$ 放入 JVP tangent。這個設計在 [Improved MeanFlow](/research-handbook/papers/improved-meanflow/) 中被重新檢視，並改寫成 state-conditioned v-loss predictor。

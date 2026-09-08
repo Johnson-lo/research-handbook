@@ -5,31 +5,44 @@ sidebar:
   order: 3
 ---
 
-## Metadata
+## Core question
 
-- **Authors**：Yuhao Huang, Shih-Hsin Wang, Andrea L. Bertozzi, Bao Wang
-- **Publication**：arXiv 2026
-- **Topic**：MeanFlow, refinement, multimodal generation
-- **Source**：[arXiv](https://arxiv.org/abs/2602.00849)
+MeanFlow 的 1-NFE transport 很快，但在更複雜 multimodal generation 中，coarse transport 可能留下明顯 sample / distribution error。RMFlow 問的是：
 
-## Summary
+> **能不能保留一次 MeanFlow evaluation 的速度，同時用一個很便宜的 refinement 把結果拉回更好的 target distribution？**
 
-RMFlow 將 MeanFlow 的 coarse 1-NFE transport 與後續的 tailored noise-injection refinement step 結合。它不是單純增加一個一般的 multi-step ODE solver，而是以額外 refinement mechanism 改善 single-evaluation transport 後的 sample quality。
+## Method
 
-## Method positioning
+RMFlow 先做 1-NFE MeanFlow coarse transport，再加入 tailored noise-injection refinement。概念上是 two-stage，但 neural flow 仍只 evaluation 一次；額外步驟是 noise refinement，不是再跑一個昂貴 ODE solver。
 
-Paper 將 flow path 的 average velocity 交由 neural network 近似，並提出新的 loss，在 probability paths 之間的 Wasserstein-distance minimization 與 sample likelihood 之間取得平衡。這個設計讓 refinement 不只是任意加入 noise，而是和 distribution-level objective 綁在一起。
+## Why noise is not arbitrary
+
+Paper 將 training objective 拆成 Wasserstein-style MeanFlow control 與 likelihood-related term。NLL term 為
+
+$$
+\mathcal L_{NLL}=\mathbb E\left[\left\|(x_{data}+\sigma_{min}\epsilon)-(x_0+\hat u_{0,1}(x_0;\theta))\right\|^2\right].
+$$
+
+Joint objective：
+
+$$
+\mathcal L_{RMFlow}=\mathcal L_{CMFM}+\lambda_1\mathcal L_{NLL}+\lambda_2\mathbb E\|\phi_\omega(c)\|^2.
+$$
+
+因此 refinement 與 likelihood / KL control 有理論關係，不只是「人工加一點 noise」。
+
+## Relation to MeanFlow / iMF
+
+- MeanFlow：改 modeled quantity，直接學 average transport；
+- iMF：改 JVP tangent / regression formulation；
+- RMFlow：接受 coarse 1-NFE transport 可能還有 gap，從 output refinement 與 distribution objective 下手。
+
+這三者代表不同層次的改進，不應混成同一種 trick。
 
 ## Scope
 
-論文把方法展示在多模態生成任務，包括 text-to-image、context-to-molecule 與 time-series generation，顯示 MeanFlow-style fast transport 不只侷限於單一 image benchmark。
+Paper 展示 text-to-image、context-to-molecule、time-series generation；也報告在有限 GPU 資源下的訓練設定，說明這條 branch 對實驗資源受限的研究環境也具有實作吸引力。
 
-## Research interpretation
+## Interpretation
 
-RMFlow 對 MeanFlow 主線的意義在於：one-step / few-step 方法的後續研究不一定只能繼續修改 JVP target，也可以把問題重新拆成 coarse transport 與 distribution-aware refinement。這形成和 iMF objective reformulation 不同的研究分支。
-
-## Related pages
-
-- [Research Track：MeanFlow Evolution](/research-handbook/meanflow/story/)
-- [MeanFlow paper](/research-handbook/papers/meanflow/)
-- [Improved MeanFlow paper](/research-handbook/papers/improved-meanflow/)
+RMFlow 最大的啟發是：MeanFlow 後續 research 不一定只能繼續改 JVP target。若 one-step endpoint quality 才是 bottleneck，可以把問題拆成「coarse deterministic transport + low-cost stochastic refinement」。

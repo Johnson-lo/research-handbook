@@ -1,83 +1,149 @@
 ---
-title: Improved MeanFlow 深入｜Objective Reformulation 與系統改動
-description: 分開理解 objective-level reformulation 與 CFG / architecture changes。
+title: Improved MeanFlow 深入｜vθ、JVP、Vθ 與 Objective Reformulation
+description: 從符號辨識開始，完整理解 iMF 如何把 original MF 重寫成 state-only v-loss predictor。
 sidebar:
   order: 2
 ---
 
+import IMFNotationExplorer from '../../../components/IMFNotationExplorer.astro';
 import MFvsIMFBridge from '../../../components/MFvsIMFBridge.astro';
+
+## 0. iMF 的核心問題不是「再發明一個 velocity」
+
+Original MeanFlow 的 one-step inference 已經成立；iMF 主要處理的是 training objective 與 guidance flexibility。Objective 部分最關鍵的觀察是：original MF 的 JVP tangent 使用 sample-specific $e-x$，使重寫後的 compound predictor 額外依賴 training sample 的 conditional tangent。
 
 <MFvsIMFBridge lang="zh" />
 
-## 1. Original MF 的 equivalent v-loss view
+## 1. 先把最容易混淆的符號拆開
 
-由 MeanFlow Identity：
+<IMFNotationExplorer lang="zh" />
 
-$$
-v=u+(t-r)\frac{du}{dt}
-$$
-
-定義
+尤其要注意：
 
 $$
-V_\theta=u_\theta+(t-r)\operatorname{JVP}_{sg}(u_\theta;e-x).
+\operatorname{JVP}(u_\theta;v_\theta)
 $$
 
-Original MF 可以等價看成
+不是「對小寫 $v_\theta$ 做 JVP」。被微分的是 $u_\theta$；小寫 $v_\theta$ 提供 tangent direction。JVP 的輸出才會被加回 $u_\theta$，形成大寫 $V_\theta$。
+
+## 2. Original MF 為什麼可以重寫成 v-loss？
+
+MeanFlow Identity 是
 
 $$
-\mathcal L=\mathbb E\|V_\theta-(e-x)\|^2.
+v=u+(t-r)\frac{du}{dt}.
 $$
 
-此時 predictor 可寫為
+因此可以把「$u$ 加上 derivative correction」看成一個 instantaneous-velocity-like compound predictor。Original MF 對應為
 
 $$
-V_\theta(z_t,e-x),
+V_\theta(z_t,e-x)
+=u_\theta(z_t,r,t)
++(t-r)\operatorname{JVP}_{sg}(u_\theta;e-x).
 $$
 
-因為 sample-specific $e-x$ 進入 JVP tangent。
-
-## 2. iMF 的 objective-level change
-
-iMF 改成
+然後用 sample-level conditional velocity 做 regression supervision：
 
 $$
-V_\theta(z_t)=u_\theta(z_t)+(t-r)\operatorname{JVP}_{sg}(u_\theta;v_\theta).
+\mathcal L=\mathbb E\|V_\theta(z_t,e-x)-(e-x)\|^2.
 $$
 
-而 supervision 保持
+這個 view 讓問題變得很清楚：prediction path 本身額外看到了 $e-x$。
+
+## 3. iMF 改的是哪裡？
+
+iMF 不再把 conditional velocity $e-x$ 當成 JVP tangent，而是 parameterize marginal-like velocity prediction $v_\theta(z_t,t)$：
 
 $$
-\mathcal L=\mathbb E\|V_\theta(z_t)-(e-x)\|^2.
+V_\theta(z_t)
+=u_\theta(z_t,r,t)
++(t-r)\operatorname{JVP}_{sg}(u_\theta;v_\theta).
+$$
+
+因此 compound predictor 只依賴 state / conditioning，而 supervision 仍是
+
+$$
+\mathcal L_{iMF}=\mathbb E\|V_\theta(z_t)-(e-x)\|^2.
 $$
 
 :::caution[關鍵不變項]
-iMF **沒有**移除 $e-x$ supervision；改變的是 JVP / predictor pathway 中使用的 tangent。
+iMF **沒有把 $e-x$ 從 loss 拿掉**。它把 $e-x$ 從 JVP tangent / predictor pathway 拿掉。
 :::
 
-## 3. $v_\theta$ 從哪裡來？
+## 4. JVP 裡到底發生什麼？
 
-Boundary condition：
+完整 network input 若寫成 $(z,r,t)$，iMF 的 tangent 為
+
+$$
+[v_\theta,0,1].
+$$
+
+所以
+
+$$
+\operatorname{JVP}(u_\theta;v_\theta)
+=J_{u_\theta}[v_\theta,0,1]
+=\partial_z u_\theta\,v_\theta+\partial_tu_\theta.
+$$
+
+這裡 $v_\theta$ 的功能非常具體：它告訴 Jacobian「沿著哪個 state direction 投影」。
+
+## 5. 小寫 $v_\theta$ 從哪裡來？
+
+Paper 提供兩種方式。
+
+### Boundary condition
+
+由定義
 
 $$
 v(z_t,t)=u(z_t,t,t),
 $$
 
-因此可用同一個 network 定義
+因此可以直接設
 
 $$
 v_\theta(z_t,t)\equiv u_\theta(z_t,t,t).
 $$
 
-Paper 也研究 training-only auxiliary $v$-head。
+這個版本不增加額外參數。
 
-## 4. 其他 iMF 系統改動
+### Auxiliary v-head
 
-- random $\omega$ conditioning
-- $\Omega=\{\omega,t_{min},t_{max}\}$ conditioning
-- in-context conditioning
-- 移除 adaLN-zero
-- SwiGLU / RMSNorm / RoPE
-- longer training
+另一個做法是共享大部分 $u_\theta$ backbone，再加 training-only auxiliary head 預測 $v_\theta$。這個 head 另外使用 Flow Matching loss
 
-因此 final FID 1.72 是 system-level result，而不是 objective-only result。
+$$
+\|v_\theta-(e-x)\|^2
+$$
+
+訓練，但 inference 最終仍只需要 $u_\theta$。
+
+## 6. 為什麼這會比較穩？
+
+Original MF 的 JVP tangent 是 conditional $e-x$。對同一個 $z_t$，不同 sampled pairs 可能給出不同 $e-x$，而 Jacobian-vector product 會把 tangent 的 variance 投影 / 放大到 predictor correction 中。
+
+iMF 用 $v_\theta(z_t)$ 作為 state-conditioned marginal-like estimate，因此 $V_\theta$ 變成 legitimate state-conditioned regression function。Paper 的 loss curves 也顯示 original MF 有更高 variance，而 iMF 更穩定。
+
+## 7. Objective change 與 system changes 必須分開
+
+Objective reformulation 之外，iMF 還加入：
+
+- flexible guidance conditioning；
+- $\Omega=\{\omega,t_{min},t_{max}\}$ conditioning；
+- in-context conditioning；
+- Transformer block changes；
+- longer training。
+
+因此最終 FID 1.72 是完整 system result，不應全部歸因於 JVP tangent replacement。
+
+## 8. 實驗如何支持 objective reformulation？
+
+| Setting | 1-NFE FID ↓ |
+|---|---:|
+| Original MF-B/2 w/ CFG | 6.17 |
+| iMF boundary $v_\theta=u_\theta(z_t,t,t)$ | 5.97 |
+| iMF auxiliary $v$-head | 5.68 |
+| Original MF-XL/2 w/ CFG | 3.43 |
+| MF-XL/2 + iMF boundary objective | 2.99 |
+
+這些較 controlled ablations 與後續 guidance / architecture changes 分開看，才能知道 objective 本身確實有改善。

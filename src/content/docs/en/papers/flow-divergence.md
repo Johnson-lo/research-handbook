@@ -5,34 +5,36 @@ sidebar:
   order: 4
 ---
 
-## Metadata
+## Core question
 
-- **Authors**: Yuhao Huang, Taos Transue, Shih-Hsin Wang, William M. Feldman, Hong Zhang, Bao Wang
-- **Venue**: ICML 2025
-- **Topic**: flow matching, divergence, probability-path error
-- **Sources**: [PMLR](https://proceedings.mlr.press/v267/huang25ag.html) · [arXiv](https://arxiv.org/abs/2602.00869) · [Code](https://github.com/Utah-Math-Data-Science/Flow_Div_Matching)
+A low Conditional Flow Matching regression loss does not automatically guarantee that the learned probability path is accurate. The paper asks whether matching velocity values is enough to match the entire distribution evolution.
 
-## Summary
+## Theoretical bridge
 
-The central question is not sampling NFE but whether a good conditional flow-matching regression loss is sufficient to guarantee an accurate learned probability path. The paper derives a PDE characterization of probability-path error and uses it to motivate a stronger training objective.
+The paper derives PDE error dynamics between the learned path $\hat p_t$ and exact path $p_t$, leading to a total-variation control such as
 
-## Theoretical contribution
-
-The paper shows that the total-variation gap between learned and exact probability paths can be upper-bounded by a combination of the CFM loss and an associated divergence loss. Divergence is therefore tied directly to distribution-path error rather than serving only as an auxiliary regularizer.
+$$
+\operatorname{TV}(p_t,\hat p_t)\le \frac12\mathcal L_{CDM}.
+$$
 
 ## Objective
 
-The method simultaneously matches the flow and its divergence. The focus moves from pointwise vector regression toward whether the learned field induces the correct probability evolution.
+The practical objective keeps the CFM term and adds conditional divergence matching:
 
-## Evidence
+$$
+\mathcal L_{FDM}=\lambda_1\mathcal L_{CFM}+\lambda_2\mathcal L_{CDM}.
+$$
 
-The paper reports improvements on benchmarks spanning dynamical systems, DNA sequences, and videos while maintaining generation efficiency.
+The method therefore augments pointwise vector regression with a constraint on distribution evolution.
 
-## Research interpretation
+## Intuition for divergence
 
-This track is complementary to MeanFlow. MeanFlow changes what the model predicts in order to reduce NFE; divergence alignment asks whether an apparently good velocity regression actually yields the right probability path. Distribution-level constraints of this kind may also matter for fast generative models.
+A velocity field says where nearby points move; divergence describes whether the local flow expands or compresses volume. Two fields can be close pointwise yet induce different density compression / expansion, which is why vector matching alone may not fully control the probability path.
 
-## Related pages
+## Computation
 
-- [Research Track: Flow Matching Objectives](/research-handbook/en/tracks/flow-matching-objectives/)
-- [Flow Matching concept](/research-handbook/en/foundations/flow-matching/)
+High-dimensional divergence requires a Jacobian trace, so the paper uses a Hutchinson trace estimator rather than explicitly forming the full Jacobian.
+
+## Interpretation
+
+This direction is complementary to MeanFlow: MeanFlow changes the temporal object being predicted, while divergence alignment asks whether the learned dynamics produce the correct probability evolution regardless of parameterization.

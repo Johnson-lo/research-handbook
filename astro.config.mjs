@@ -54,6 +54,7 @@ export default defineConfig({
           translations: { en: 'Concepts' },
           items: [
             { label: '概念總覽', translations: { en: 'Overview' }, slug: 'concepts' },
+            { label: 'Calculus & JVP', slug: 'concepts/calculus-jvp' },
             { label: 'Distribution & Sampling', slug: 'foundations/distribution-and-sampling' },
             { label: 'Flow Matching', slug: 'foundations/flow-matching' },
             { label: 'Interactive Lab', slug: 'interactive' }

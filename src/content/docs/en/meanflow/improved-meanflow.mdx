@@ -1,83 +1,117 @@
 ---
-title: Improved MeanFlow Deep Dive | Objective Reformulation and System Changes
-description: Separate the objective-level reformulation from CFG and architecture changes.
+title: Improved MeanFlow Deep Dive | vθ, JVP, Vθ, and the objective reformulation
+description: A notation-first explanation of how iMF turns original MF into a state-only compound v-loss predictor.
 sidebar:
   order: 2
 ---
 
+import IMFNotationExplorer from '../../../../components/IMFNotationExplorer.astro';
 import MFvsIMFBridge from '../../../../components/MFvsIMFBridge.astro';
+
+## 0. The core issue is not inventing another velocity
+
+Original MeanFlow already supports one-step inference. iMF primarily addresses the training objective and guidance flexibility. The key objective observation is that original MF uses the sample-specific $e-x$ as the JVP tangent, so the recast compound predictor depends on a conditional training-sample quantity.
 
 <MFvsIMFBridge lang="en" />
 
-## 1. Original MF as an equivalent v-loss
+## 1. Separate the symbols first
 
-From the MeanFlow Identity,
+<IMFNotationExplorer lang="en" />
 
-$$
-v=u+(t-r)\frac{du}{dt},
-$$
-
-define
+In particular,
 
 $$
-V_\theta=u_\theta+(t-r)\operatorname{JVP}_{sg}(u_\theta;e-x).
+\operatorname{JVP}(u_\theta;v_\theta)
 $$
 
-Original MF can be viewed equivalently as
+does not mean taking a JVP of $v_\theta$. The differentiated function is $u_\theta$; lowercase $v_\theta$ supplies the tangent direction. The JVP output is then combined with $u_\theta$ to form capital $V_\theta$.
+
+## 2. Original MF as a v-loss
+
+The MeanFlow Identity is
 
 $$
-\mathcal L=\mathbb E\|V_\theta-(e-x)\|^2.
+v=u+(t-r)\frac{du}{dt}.
 $$
 
-The predictor can then be written as
+Original MF can therefore be recast with the compound predictor
 
 $$
-V_\theta(z_t,e-x),
+V_\theta(z_t,e-x)
+=u_\theta(z_t,r,t)
++(t-r)\operatorname{JVP}_{sg}(u_\theta;e-x),
 $$
 
-because the sample-specific $e-x$ enters the JVP tangent.
-
-## 2. The iMF objective-level change
-
-iMF uses
+and the regression loss
 
 $$
-V_\theta(z_t)=u_\theta(z_t)+(t-r)\operatorname{JVP}_{sg}(u_\theta;v_\theta).
+\mathcal L=\mathbb E\|V_\theta(z_t,e-x)-(e-x)\|^2.
 $$
 
-The supervision remains
+The prediction pathway itself now visibly depends on $e-x$.
+
+## 3. The iMF replacement
+
+iMF parameterizes a marginal-like velocity prediction $v_\theta(z_t,t)$ and uses it as the JVP tangent:
 
 $$
-\mathcal L=\mathbb E\|V_\theta(z_t)-(e-x)\|^2.
+V_\theta(z_t)
+=u_\theta(z_t,r,t)
++(t-r)\operatorname{JVP}_{sg}(u_\theta;v_\theta).
 $$
 
-:::caution[Key invariant]
-iMF does **not** remove $e-x$ supervision; it changes the tangent used in the JVP / predictor pathway.
+Supervision remains
+
+$$
+\mathcal L_{iMF}=\mathbb E\|V_\theta(z_t)-(e-x)\|^2.
+$$
+
+:::caution[What does not change]
+iMF does **not** remove $e-x$ from the loss. It removes $e-x$ from the JVP tangent / predictor pathway.
 :::
 
-## 3. Where does $v_\theta$ come from?
+## 4. What the JVP contains
 
-Boundary condition:
-
-$$
-v(z_t,t)=u(z_t,t,t),
-$$
-
-so the same network can define
+For input $(z,r,t)$, the iMF tangent is
 
 $$
-v_\theta(z_t,t)\equiv u_\theta(z_t,t,t).
+[v_\theta,0,1],
 $$
 
-The paper also studies a training-only auxiliary $v$-head.
+so
 
-## 4. Other iMF system changes
+$$
+\operatorname{JVP}(u_\theta;v_\theta)
+=J_{u_\theta}[v_\theta,0,1]
+=\partial_z u_\theta\,v_\theta+\partial_tu_\theta.
+$$
 
-- random $\omega$ conditioning
-- $\Omega=\{\omega,t_{min},t_{max}\}$ conditioning
-- in-context conditioning
-- removal of adaLN-zero
-- SwiGLU / RMSNorm / RoPE
-- longer training
+The role of $v_\theta$ is therefore precise: it selects the state-space direction along which the Jacobian is projected.
 
-The final FID 1.72 is therefore a system-level result rather than an objective-only result.
+## 5. Where lowercase $v_\theta$ comes from
+
+The boundary variant uses
+
+$$
+v_\theta(z_t,t)\equiv u_\theta(z_t,t,t),
+$$
+
+which adds no parameters. The auxiliary-head variant predicts $v_\theta$ with a training-only head and an additional Flow Matching loss $\|v_\theta-(e-x)\|^2$; inference still uses only $u_\theta$.
+
+## 6. Why this can reduce variance
+
+For a fixed $z_t$, different sampled pairs may yield different conditional velocities $e-x$. A Jacobian-vector product can transmit and magnify this tangent variance into the correction term. iMF instead uses the state-conditioned $v_\theta(z_t)$, yielding a legitimate state-conditioned compound regression function $V_\theta(z_t)$.
+
+## 7. Keep objective and system changes separate
+
+Beyond the objective reformulation, iMF adds flexible guidance conditioning, $\Omega$-conditioning, in-context conditioning, Transformer block changes, and longer training. The final FID 1.72 is therefore a system-level result.
+
+## 8. Controlled objective evidence
+
+| Setting | 1-NFE FID ↓ |
+|---|---:|
+| Original MF-B/2 w/ CFG | 6.17 |
+| iMF boundary $v_\theta=u_\theta(z_t,t,t)$ | 5.97 |
+| iMF auxiliary $v$-head | 5.68 |
+| Original MF-XL/2 w/ CFG | 3.43 |
+| MF-XL/2 + iMF boundary objective | 2.99 |

@@ -8,52 +8,92 @@ sidebar:
 ## Metadata
 
 - **Authors**：Zhengyang Geng, Yiyang Lu, Zongze Wu, Eli Shechtman, J. Zico Kolter, Kaiming He
-- **Venue**：CVPR 2026
+- **Publication**：arXiv 2512.02012, revised 2026
 - **Topic**：MeanFlow, objective reformulation, classifier-free guidance
-- **Sources**：[CVPR Open Access](https://openaccess.thecvf.com/content/CVPR2026/html/Geng_Improved_Mean_Flows_On_the_Challenges_of_Fastforward_Generative_Models_CVPR_2026_paper.html) · [arXiv](https://arxiv.org/abs/2512.02012)
+- **Source**：[arXiv](https://arxiv.org/abs/2512.02012)
 
-## Summary
+## Core question
 
-Improved MeanFlow 直接處理 original MeanFlow 的 training objective 與 guidance flexibility。核心 objective change 是把 JVP tangent 從 sample-specific $e-x$ 改成 estimated marginal velocity $v_\theta(z_t)$，但 $e-x$ 仍然保留為 supervision。
+Original MeanFlow 已經能 one-step generate，但 training target 同時依賴 ground-truth sample quantity 與 network 本身。iMF 問的是：
 
-## Objective reformulation
+> **能不能把 MeanFlow 改寫成更接近 standard regression 的 prediction function，同時保留 one-step inference？**
 
-Original MF 可用 equivalent v-loss 表示為
+## Step 1 — 先看 Original MF 的 v-loss view
 
-$$
-V_\theta=u_\theta+(t-r)\operatorname{JVP}_{sg}(u_\theta;e-x),
-$$
+將 original MF 重寫後，compound predictor 可以表示為
 
 $$
-\mathcal L=\mathbb E\|V_\theta-(e-x)\|^2.
+V_\theta(z_t,e-x)
+=u_\theta(z_t,r,t)
++(t-r)\operatorname{JVP}_{sg}(u_\theta;e-x).
 $$
 
-iMF 則改為
+Loss 是
 
 $$
-V_\theta(z_t)=u_\theta(z_t)+(t-r)\operatorname{JVP}_{sg}(u_\theta;v_\theta),
+\mathcal L=\mathbb E\|V_\theta(z_t,e-x)-(e-x)\|^2.
 $$
 
-而 supervision 仍是
+這暴露出 predictor 額外依賴 sample-specific conditional tangent $e-x$。
+
+## Step 2 — iMF 的核心 replacement
+
+iMF parameterize 一個 marginal-like velocity estimate $v_\theta(z_t,t)$，並改成
 
 $$
-\mathcal L=\mathbb E\|V_\theta(z_t)-(e-x)\|^2.
+V_\theta(z_t)
+=u_\theta(z_t,r,t)
++(t-r)\operatorname{JVP}_{sg}(u_\theta;v_\theta).
 $$
 
-## Additional system changes
+Supervision 仍是
 
-除了 objective reformulation，paper 也加入 flexible guidance conditioning、$\Omega$-conditioning、in-context conditioning、Transformer block changes 與 longer training。這些變化需要和 objective-only improvement 分開解讀。
+$$
+\mathcal L_{iMF}=\mathbb E\|V_\theta(z_t)-(e-x)\|^2.
+$$
 
-## Evidence
+因此 **$e-x$ 沒有從 loss 消失；它只是從 JVP tangent 消失。**
 
-較 controlled 的 objective evidence 包括 MF-B/2 由 6.17 改善到 5.97 / 5.68，以及 MF-XL/2 的 boundary-objective setting 由 3.43 改善到 2.99。完整 iMF-XL/2 system 最終報告 **FID 1.72**。
+## The notation trap: $v_\theta$ vs JVP vs $V_\theta$
 
-## Research interpretation
+這是最容易混淆的地方：
 
-這篇 paper 把「network-dependent target」重新表述成一個更接近 standard regression 的 compound predictor 問題，也凸顯 sample-specific conditional tangent 與 marginal field 之間的差異。最終 1.72 則是 objective、guidance、conditioning、architecture 與 training changes 的 system-level 結果。
+- $u_\theta$：average velocity model；
+- 小寫 $v_\theta$：instantaneous / marginal-like velocity estimate，用來當 tangent；
+- $\operatorname{JVP}(u_\theta;v_\theta)$：對 $u_\theta$ 做 directional derivative，$v_\theta$ 只是方向；
+- 大寫 $V_\theta$：$u_\theta$ 加 JVP correction 後的 compound predictor；
+- $e-x$：sample-level conditional supervision。
 
-## Related pages
+互動式符號拆解與完整公式請看 [Improved MeanFlow deep dive](/research-handbook/meanflow/improved-meanflow/)。
 
-- [Research Track：MeanFlow Evolution](/research-handbook/meanflow/story/)
-- [Improved MeanFlow deep dive](/research-handbook/meanflow/improved-meanflow/)
-- [Original MeanFlow paper](/research-handbook/papers/meanflow/)
+## Where does $v_\theta$ come from?
+
+Boundary variant：
+
+$$
+v_\theta(z_t,t)\equiv u_\theta(z_t,t,t).
+$$
+
+也可以用 training-only auxiliary $v$-head，額外以 $\|v_\theta-(e-x)\|^2$ 訓練。
+
+## Why this matters
+
+同一個 $z_t$ 可能由不同 sampled pairs 產生，所以 conditional $e-x$ 有 sample variance。Original MF 把它當 JVP tangent，variance 可能經 Jacobian-vector product 放大；iMF 改用 state-conditioned $v_\theta(z_t)$，讓 $V_\theta$ 成為只由 current state / conditioning 決定的 prediction function。
+
+## Objective evidence
+
+| Setting | 1-NFE FID ↓ |
+|---|---:|
+| Original MF-B/2 w/ CFG | 6.17 |
+| iMF boundary | 5.97 |
+| iMF aux v-head | 5.68 |
+| Original MF-XL/2 w/ CFG | 3.43 |
+| MF-XL/2 + iMF boundary objective | 2.99 |
+
+## System-level changes
+
+Paper 另外加入 flexible CFG、$\Omega$-conditioning、in-context conditioning、Transformer block changes 與 longer training。完整 iMF-XL/2 system 報告 FID **1.72**，因此不能把 1.72 全部歸因於 objective replacement。
+
+## Interpretation
+
+iMF 的價值是把「MeanFlow 的 target construction 問題」重新表述成 regression-function design：prediction path 應該由 state 決定，而不是額外依賴 sampled conditional tangent。這也把 future work 從單純 target patch 推向 interval difficulty、endpoint error、gradient geometry 與 refinement 等更廣的問題。

@@ -1,27 +1,40 @@
 ---
-title: MeanFlow 深入｜Average Velocity、Identity 與 JVP
-description: MeanFlow average velocity、Identity 與 JVP 的數學結構。
+title: MeanFlow 深入｜Average Velocity、Identity、偏微分與 JVP
+description: 從零基礎微積分開始，完整理解 MeanFlow average velocity、Identity、JVP 與 original objective。
 sidebar:
   order: 1
 ---
 
-import JVPExplorer from '../../../components/JVPExplorer.astro';
+import CalculusJVPPrimer from '../../../components/CalculusJVPPrimer.astro';
 import DerivationStepper from '../../../components/DerivationStepper.astro';
+import JVPExplorer from '../../../components/JVPExplorer.astro';
 
-:::note[章節定位]
-本頁聚焦 MeanFlow 的數學結構；完整方法脈絡可參考 [完整故事線](/research-handbook/meanflow/story/)。
-:::
+## 0. 先回答核心問題：MeanFlow 到底想解什麼？
 
-## Average velocity
+Flow Matching 學的是 local / instantaneous velocity。Inference 時 state 每前進一次，local direction 可能就改變，所以通常要多次 query network。MeanFlow 的核心問題是：
+
+> **能不能直接學一個「跨整段 interval 的 transport quantity」，讓一次 network evaluation 就足以把 $z_t$ 推到 $z_r$？**
+
+因此它把主要 modeling object 從 instantaneous velocity $v$ 改成 average velocity $u$。
+
+## 1. Average velocity 是什麼？
+
+定義
 
 $$
 u(z_t,r,t)=\frac{1}{t-r}\int_r^t v(z_\tau,\tau)\,d\tau.
 $$
 
+直覺上：如果你知道一段旅程的「平均速度」，那麼
+
+$$
+\text{位移}=\text{時間長度}\times\text{平均速度}.
+$$
+
 因此
 
 $$
-(t-r)u=\int_r^t v(z_\tau,\tau)\,d\tau,
+(t-r)u(z_t,r,t)=\int_r^t v(z_\tau,\tau)d\tau
 $$
 
 以及
@@ -30,38 +43,112 @@ $$
 z_r=z_t-(t-r)u(z_t,r,t).
 $$
 
-One-step generation：
+若直接做 one-step generation，取 $(r,t)=(0,1)$：
 
 $$
-(r,t)=(0,1),\qquad z_0=z_1-u_\theta(z_1,0,1).
+z_0=z_1-u_\theta(z_1,0,1).
 $$
 
-## MeanFlow Identity 的推導
+這就是 MeanFlow 為什麼能把 one-step inference 寫得這麼直接。
+
+## 2. 真正的難點：$u$ 沒有方便的 sample-level GT
+
+對 linear path
+
+$$
+z_t=(1-t)x+te,
+$$
+
+我們很容易得到 conditional velocity
+
+$$
+e-x.
+$$
+
+但 $u(z_t,r,t)$ 是一整段 interval 上的平均量，並沒有像 $e-x$ 這麼便宜的 per-sample label。這就是 MeanFlow Identity 必須出現的原因。
+
+## 3. 在進入 JVP 前，先補最小微積分
+
+<CalculusJVPPrimer lang="zh" />
+
+需要保留的 mental model 只有三句：
+
+1. **偏微分**：一次只看一個 input 對 output 的影響。
+2. **total derivative**：如果多個 inputs 一起動，要把所有來源的變化加起來。
+3. **JVP**：不建立完整 Jacobian，只計算沿某個方向走時 output 的變化率。
+
+## 4. MeanFlow Identity 從哪裡來？
 
 <DerivationStepper lang="zh" />
 
-最後得到
+從
 
 $$
-v=u+(t-r)\frac{du}{dt}.
+(t-r)u=\int_r^t v(z_\tau,\tau)d\tau
 $$
 
-Total derivative：
+對 $t$ 微分，右邊依 Fundamental Theorem of Calculus 得到 $v$，左邊用 product rule：
 
 $$
-\frac{du}{dt}=\partial_z u\,v+\partial_tu=\operatorname{JVP}(u;v).
+\frac{d}{dt}[(t-r)u]=u+(t-r)\frac{du}{dt}.
+$$
+
+所以
+
+$$
+\boxed{v=u+(t-r)\frac{du}{dt}}.
+$$
+
+這個 identity 的意思不是「$u=v$」，而是：**local velocity = interval average + 當 endpoint 改變時 average velocity 的 correction。**
+
+## 5. 為什麼 $du/dt$ 會變成 JVP？
+
+$u=u(z_t,r,t)$。在對 $t$ 做 total derivative 時，$r$ 固定，而 $z_t$ 會沿 flow 移動：
+
+$$
+\frac{dz_t}{dt}=v.
+$$
+
+因此
+
+$$
+\frac{du}{dt}
+=\partial_z u\,v+\partial_r u\cdot 0+\partial_tu
+=J_{u(z,r,t)}[v,0,1].
+$$
+
+MeanFlow 用簡寫
+
+$$
+\operatorname{JVP}(u;v)\equiv J_{u(z,r,t)}[v,0,1].
 $$
 
 <JVPExplorer lang="zh" />
 
-## Original MeanFlow objective
+## 6. Original MeanFlow 怎麼從 identity 變成 loss？
+
+理論上 identity 需要 marginal velocity $v(z_t,t)$。但 training sample 最直接拿到的是 conditional velocity $e-x$，所以 original MF 用它近似 JVP tangent：
 
 $$
 u_{tgt}=(e-x)-(t-r)\operatorname{JVP}(u_\theta;e-x).
 $$
 
+再以 stop-gradient target 訓練
+
 $$
-\mathcal L=\mathbb E\|u_\theta-\operatorname{sg}(u_{tgt})\|^2.
+\mathcal L_{MF}=\mathbb E\|u_\theta-\operatorname{sg}(u_{tgt})\|^2.
 $$
 
-這裡 `sg` 表示 stop-gradient。$u_\theta$ 的語意仍是 average velocity；$e-x$ 是 sample-specific conditional velocity supervision，並在 Original MeanFlow 中作為 JVP tangent 的近似。
+### 這裡三個 quantity 不要混在一起
+
+| Quantity | 意義 | 角色 |
+|---|---|---|
+| $e-x$ | 一個 sampled pair 的 conditional velocity | supervision + original MF 的 JVP tangent |
+| $v(z_t,t)$ | 同一 state 上唯一的 marginal instantaneous velocity | theory 中 identity 真正需要的 field |
+| $u(z_t,r,t)$ | interval-average velocity | MeanFlow 真正要學的 inference object |
+
+## 7. 這個 formulation 留下什麼問題？
+
+Original MF 能做到 one-step generation，但它把 sample-specific $e-x$ 放進 JVP tangent。後續 iMF 會把 original objective 重寫成 v-loss，顯示 compound predictor 實際依賴 $(z_t,e-x)$，並指出 conditional tangent 的 variance 可能被 JVP 放大。
+
+這就是 [Improved MeanFlow](/research-handbook/meanflow/improved-meanflow/) 的直接起點。

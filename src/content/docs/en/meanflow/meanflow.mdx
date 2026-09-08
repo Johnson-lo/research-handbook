@@ -1,67 +1,101 @@
 ---
-title: MeanFlow Deep Dive | Average Velocity, Identity, and JVP
-description: The mathematical structure of MeanFlow average velocity, its identity, and the JVP.
+title: MeanFlow Deep Dive | Average Velocity, Calculus, and JVP
+description: A from-zero derivation of MeanFlow average velocity, the MeanFlow Identity, total derivatives, JVPs, and the original objective.
 sidebar:
   order: 1
 ---
 
-import JVPExplorer from '../../../../components/JVPExplorer.astro';
+import CalculusJVPPrimer from '../../../../components/CalculusJVPPrimer.astro';
 import DerivationStepper from '../../../../components/DerivationStepper.astro';
+import JVPExplorer from '../../../../components/JVPExplorer.astro';
 
-:::note[Scope]
-This page focuses on the mathematical structure of MeanFlow. For the complete method sequence, see [The Full Story](/research-handbook/en/meanflow/story/).
-:::
+## 0. What problem is MeanFlow solving?
 
-## Average velocity
+Flow Matching models a local instantaneous velocity. As the state moves, the local direction can change, so inference usually queries the network repeatedly. MeanFlow asks whether a finite-time transport quantity can be learned directly so that one network evaluation can move $z_t$ to $z_r$.
+
+## 1. Average velocity
+
+MeanFlow defines
 
 $$
 u(z_t,r,t)=\frac{1}{t-r}\int_r^t v(z_\tau,\tau)\,d\tau.
 $$
 
-Thus
-
-$$
-(t-r)u=\int_r^t v(z_\tau,\tau)\,d\tau,
-$$
-
-and
+Therefore
 
 $$
 z_r=z_t-(t-r)u(z_t,r,t).
 $$
 
-For one-step generation:
+For one-step generation, $(r,t)=(0,1)$ gives
 
 $$
-(r,t)=(0,1),\qquad z_0=z_1-u_\theta(z_1,0,1).
+z_0=z_1-u_\theta(z_1,0,1).
 $$
 
-## Deriving the MeanFlow Identity
+## 2. Why a special identity is needed
+
+For the linear path $z_t=(1-t)x+te$, the sample-level conditional velocity $e-x$ is cheap to obtain. The interval-average quantity $u(z_t,r,t)$ does not come with an equally convenient per-sample label, which motivates the MeanFlow Identity.
+
+## 3. Minimal calculus before the JVP
+
+<CalculusJVPPrimer lang="en" />
+
+The only mental model needed is: partial derivatives isolate one input, total derivatives combine all moving inputs, and a JVP computes directional change without materializing the full Jacobian.
+
+## 4. Deriving the MeanFlow Identity
 
 <DerivationStepper lang="en" />
 
-The result is
+Differentiating
 
 $$
-v=u+(t-r)\frac{du}{dt}.
+(t-r)u=\int_r^t v(z_\tau,\tau)d\tau
 $$
 
-The total derivative is
+with respect to $t$ gives
 
 $$
-\frac{du}{dt}=\partial_z u\,v+\partial_tu=\operatorname{JVP}(u;v).
+\boxed{v=u+(t-r)\frac{du}{dt}}.
+$$
+
+The local velocity equals the interval average plus a correction for how that average changes as the endpoint moves.
+
+## 5. Why the total derivative is a JVP
+
+Because $u=u(z_t,r,t)$, $r$ is fixed, and $dz_t/dt=v$,
+
+$$
+\frac{du}{dt}=\partial_z u\,v+\partial_r u\cdot 0+\partial_tu
+=J_{u(z,r,t)}[v,0,1].
+$$
+
+MeanFlow abbreviates this as
+
+$$
+\operatorname{JVP}(u;v)\equiv J_{u(z,r,t)}[v,0,1].
 $$
 
 <JVPExplorer lang="en" />
 
-## Original MeanFlow objective
+## 6. Original MeanFlow objective
+
+The theory calls for the marginal velocity $v(z_t,t)$, while a training sample gives the conditional velocity $e-x$. Original MF uses $e-x$ as the JVP tangent approximation:
 
 $$
 u_{tgt}=(e-x)-(t-r)\operatorname{JVP}(u_\theta;e-x).
 $$
 
+and trains
+
 $$
-\mathcal L=\mathbb E\|u_\theta-\operatorname{sg}(u_{tgt})\|^2.
+\mathcal L_{MF}=\mathbb E\|u_\theta-\operatorname{sg}(u_{tgt})\|^2.
 $$
 
-Here `sg` denotes stop-gradient. The semantics of $u_\theta$ remain average velocity; $e-x$ is sample-specific conditional velocity supervision and is used in Original MeanFlow as the JVP tangent approximation.
+| Quantity | Meaning | Role |
+|---|---|---|
+| $e-x$ | sample-specific conditional velocity | supervision + original MF JVP tangent |
+| $v(z_t,t)$ | unique marginal instantaneous velocity | field required by the theoretical identity |
+| $u(z_t,r,t)$ | interval-average velocity | MeanFlow inference object |
+
+This sample-specific tangent becomes the direct starting point of the [Improved MeanFlow](/research-handbook/en/meanflow/improved-meanflow/) reformulation.
