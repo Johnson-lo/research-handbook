@@ -8,7 +8,7 @@ const isZh = lang !== 'en';
       <strong>{isZh ? 'Original MeanFlow → Improved MeanFlow：objective-level 差異' : 'Original MeanFlow → Improved MeanFlow: objective-level difference'}</strong>
       <p>{isZh ? '共同的 supervision 與 inference object 保持不變，差異集中在 JVP tangent。' : 'The supervision and inference object stay shared; the key difference is the JVP tangent.'}</p>
     </div>
-    <div class="bridge-tabs">
+    <div class="bridge-tabs" role="group" aria-label={isZh ? '比較顯示模式' : 'Comparison display mode'}>
       <button class="active" data-view="diff">{isZh ? '核心差異' : 'Core difference'}</button>
       <button data-view="full">{isZh ? '完整流程' : 'Full flow'}</button>
     </div>
@@ -31,7 +31,7 @@ const isZh = lang !== 'en';
       </div>
       <div class="arrow">↓</div>
       <div class="result"><code>Vθ(z_t, e−x)</code></div>
-      <p>{isZh ? 'JVP 的計算路徑使用這一次 sampled pair 的 e−x，因此 compound predictor 額外依賴 sample-specific tangent。' : 'The JVP path uses the sampled pair-specific e−x, so the compound predictor additionally depends on a sample-specific tangent.'}</p>
+      <p>{isZh ? 'JVP 的計算路徑使用 sampled pair 的 e−x，因此 compound predictor 額外依賴 sample-specific tangent。' : 'The JVP path uses the sampled pair-specific e−x, so the compound predictor additionally depends on a sample-specific tangent.'}</p>
     </article>
 
     <div class="change">
@@ -55,7 +55,7 @@ const isZh = lang !== 'en';
   </div>
 
   <div class="supervision-row">
-    <span>{isZh ? '兩者皆以此 supervision 形式比較' : 'Both objectives use the same supervision form'}</span>
+    <span>{isZh ? '兩者皆以相同 supervision 形式比較' : 'Both objectives use the same supervision form'}</span>
     <code>Vθ − (e−x)</code>
   </div>
 
@@ -69,8 +69,14 @@ const isZh = lang !== 'en';
 </div>
 
 <style>
-.bridge{border:1px solid var(--sl-color-gray-5);border-radius:.9rem;padding:1rem;margin:1.2rem 0;background:var(--sl-color-bg-nav)}.bridge-head{display:flex;justify-content:space-between;gap:1rem;align-items:flex-start;flex-wrap:wrap}.bridge-head p{margin:.25rem 0}.bridge-tabs{display:flex;gap:.4rem}.bridge-tabs button{border:1px solid var(--sl-color-gray-4);background:transparent;color:inherit;padding:.45rem .65rem;border-radius:.45rem;cursor:pointer}.bridge-tabs button.active{background:var(--sl-color-accent-low);border-color:var(--sl-color-accent)}
-.shared{display:grid;grid-template-columns:repeat(3,1fr);gap:.55rem;margin:1rem 0}.shared>div,.paper-scope,.supervision-row{border:1px solid var(--sl-color-gray-5);border-radius:.6rem;padding:.75rem}.compare{display:grid;grid-template-columns:1fr .52fr 1fr;gap:.8rem;align-items:center}.compare article{border:1px solid var(--sl-color-gray-5);border-radius:.7rem;padding:.9rem;min-height:21rem}.flowline{display:flex;justify-content:center;gap:.55rem;align-items:center;margin:.8rem 0}.state,.avg,.result,.critical{border:1px solid var(--sl-color-gray-4);border-radius:.55rem;padding:.55rem .7rem}.avg{border-color:#7658a8}.critical{display:grid;gap:.25rem;text-align:center;border:2px dashed #b46b18;background:color-mix(in srgb,#b46b18 8%,transparent)}.critical.improved{border-style:solid}.critical .label{font-size:.75rem;text-transform:uppercase;opacity:.7}.critical code{font-size:1.05rem}.arrow{text-align:center;font-size:1.4rem}.result{text-align:center}.change{text-align:center;display:grid;gap:.55rem}.change b{font-size:1.2rem}.supervision-row{margin-top:.8rem;display:flex;justify-content:center;gap:.8rem;align-items:center;flex-wrap:wrap}.paper-scope{margin-top:.8rem}.scope-grid{display:grid;grid-template-columns:1fr 1fr;gap:.6rem;margin-top:.6rem}.scope-grid>div{border-left:3px solid var(--sl-color-accent);padding-left:.7rem}.bridge[data-view='diff'] .shared{display:none}@media(max-width:760px){.compare{grid-template-columns:1fr}.change{padding:.5rem 0}.shared,.scope-grid{grid-template-columns:1fr}.compare article{min-height:auto}}
+.bridge{border:1px solid var(--sl-color-gray-5);border-radius:.9rem;padding:1rem;margin:1.2rem 0;background:var(--sl-color-bg-nav)}
+.bridge-head{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:1rem;align-items:center}
+.bridge-head p{margin:.3rem 0 0}
+.bridge-tabs{display:grid;grid-template-columns:repeat(2,7.25rem);gap:.5rem;align-items:stretch;justify-content:end}
+.bridge-tabs button{appearance:none;box-sizing:border-box;width:100%;height:2.5rem;margin:0;border:1px solid var(--sl-color-gray-4);background:transparent;color:inherit;padding:0 .75rem;border-radius:.45rem;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;font:inherit;font-size:.95rem;line-height:1;white-space:nowrap}
+.bridge-tabs button.active{background:var(--sl-color-accent-low);border-color:var(--sl-color-accent)}
+.shared{display:grid;grid-template-columns:repeat(3,1fr);gap:.55rem;margin:1rem 0}.shared>div,.paper-scope,.supervision-row{border:1px solid var(--sl-color-gray-5);border-radius:.6rem;padding:.75rem}.compare{display:grid;grid-template-columns:1fr .52fr 1fr;gap:.8rem;align-items:center}.compare article{border:1px solid var(--sl-color-gray-5);border-radius:.7rem;padding:.9rem;min-height:21rem}.flowline{display:flex;justify-content:center;gap:.55rem;align-items:center;margin:.8rem 0}.state,.avg,.result,.critical{border:1px solid var(--sl-color-gray-4);border-radius:.55rem;padding:.55rem .7rem}.avg{border-color:#7658a8}.critical{display:grid;gap:.25rem;text-align:center;border:2px dashed #b46b18;background:color-mix(in srgb,#b46b18 8%,transparent)}.critical.improved{border-style:solid}.critical .label{font-size:.75rem;text-transform:uppercase;opacity:.7}.critical code{font-size:1.05rem}.arrow{text-align:center;font-size:1.4rem}.result{text-align:center}.change{text-align:center;display:grid;gap:.55rem}.change b{font-size:1.2rem}.supervision-row{margin-top:.8rem;display:flex;justify-content:center;gap:.8rem;align-items:center;flex-wrap:wrap}.paper-scope{margin-top:.8rem}.scope-grid{display:grid;grid-template-columns:1fr 1fr;gap:.6rem;margin-top:.6rem}.scope-grid>div{border-left:3px solid var(--sl-color-accent);padding-left:.7rem}.bridge[data-view='diff'] .shared{display:none}
+@media(max-width:760px){.bridge-head{grid-template-columns:1fr}.bridge-tabs{grid-template-columns:repeat(2,minmax(0,1fr));width:100%;justify-content:stretch}.compare{grid-template-columns:1fr}.change{padding:.5rem 0}.shared,.scope-grid{grid-template-columns:1fr}.compare article{min-height:auto}.bridge-tabs button{min-width:0}}
 </style>
 
 <script>
