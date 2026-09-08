@@ -1,5 +1,5 @@
 ---
-title: Improved Mean Flows: On the Challenges of Fastforward Generative Models
+title: "Improved Mean Flows: On the Challenges of Fastforward Generative Models"
 description: iMF reformulates the MeanFlow objective and extends guidance, conditioning, and system design.
 sidebar:
   order: 2

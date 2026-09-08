@@ -1,5 +1,5 @@
 ---
-title: RMFlow: Refined Mean Flow by a Noise-Injection Step for Multimodal Generation
+title: "RMFlow: Refined Mean Flow by a Noise-Injection Step for Multimodal Generation"
 description: RMFlow 在 coarse MeanFlow transport 後加入 tailored noise-injection refinement。
 sidebar:
   order: 3
