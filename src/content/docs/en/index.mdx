@@ -8,22 +8,22 @@ hero:
     - text: Browse Paper Library
       link: /research-handbook/en/papers/
       variant: primary
-    - text: View Research Problem Map
+    - text: View Research Problem Tree
       link: /research-handbook/en/tracks/problem-map/
 ---
 
-import ResearchProblemMap from '../../../components/ResearchProblemMap.astro';
+import ResearchTreeMap from '../../../components/ResearchTreeMap.astro';
 import PaperLibraryGrid from '../../../components/PaperLibraryGrid.astro';
 
-## Research Problem Map
+## Research Problem Tree
 
-The site is not organized only by paper title. Questions encountered during reading and experimentation are collected into a research graph: **foundations on the left, research questions in the middle, and papers providing evidence on the right.**
+The homepage now uses a **Diffusion → Flow Matching → MeanFlow** trunk, then branches from MeanFlow into the research questions that remain active. Select a question for evidence; select a paper name to open its note.
 
-<ResearchProblemMap lang="en" />
+<ResearchTreeMap lang="en" />
 
 ## Paper Library
 
-Each paper has an independent entry for its core question, derivations, method, training / inference, experiments, interpretation, and limitations. Cross-paper questions are connected through the Research Problem Map and Research Tracks.
+Each paper has an independent entry for its core question, derivations, method, training / inference, experiments, interpretation, and limitations. Cross-paper questions are connected through the Research Problem Tree and Research Tracks.
 
 <PaperLibraryGrid lang="en" />
 

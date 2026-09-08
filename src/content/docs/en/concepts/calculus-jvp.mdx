@@ -1,68 +1,65 @@
 ---
 title: Calculus & JVP | Minimal calculus for MeanFlow
-description: A beginner introduction from derivatives and partial derivatives to total derivatives and Jacobian-vector products.
+description: Derivatives, partial derivatives, total derivatives, and Jacobian-vector products for first-time MeanFlow readers.
 sidebar:
   order: 1
 ---
 
 import CalculusJVPPrimer from '../../../../components/CalculusJVPPrimer.astro';
+import DistributionFlowLab from '../../../../components/DistributionFlowLab.astro';
 
-# From zero to the calculus used by MeanFlow
+# From zero to the partial derivatives and JVP used by MeanFlow
 
-This page covers only the multivariable-calculus ideas actually needed for MeanFlow.
+This page covers only the calculus MeanFlow actually needs, without turning into a full multivariable-calculus course.
 
 <CalculusJVPPrimer lang="en" />
 
+## Geometric intuition: a direction is not an abstract symbol
+
+<DistributionFlowLab lang="en" />
+
+The Conditional → Marginal tab shows multiple sample-specific directions, while the Average velocity tab separates the instantaneous tangent from the finite-interval average. A JVP asks how a network output changes when its input moves along such a direction.
+
 ## 1. Why partial derivatives appear
 
-The MeanFlow average velocity depends on several inputs:
+MeanFlow models
 
 $$
 u=u(z_t,r,t).
 $$
 
-When asking how $u$ changes with $t$, two things happen: $t$ changes directly, and the state $z_t$ also moves. Therefore the relevant quantity is the total derivative
+When asking how $u$ changes with $t$, both $t$ and the state $z_t$ move, giving
 
 $$
 \frac{du}{dt}=\partial_z u\,\frac{dz_t}{dt}+\partial_tu.
 $$
 
-Using the flow ODE $dz_t/dt=v(z_t,t)$ gives
+Since $dz_t/dt=v$,
 
 $$
 \frac{du}{dt}=\partial_z u\,v+\partial_tu.
 $$
 
-## 2. What is the Jacobian?
+## 2. Jacobian and JVP
 
-When both $z$ and $u$ are high-dimensional vectors, $\partial_z u$ is a Jacobian matrix. MeanFlow does not need to materialize the entire matrix. It only needs the change in $u$ along the flow direction $v$, namely $J_u v$.
+When $z$ and $u$ are high-dimensional, $\partial_z u$ is a Jacobian matrix. MeanFlow does not need the whole matrix, only its product with the flow direction. That is the Jacobian-vector product.
 
-That quantity is the Jacobian-vector product (JVP).
+## 3. Why the tangent is $[v,0,1]$
 
-## 3. Why is the tangent $[v,0,1]$?
-
-For the full input $(z,r,t)$, the state moves with tangent $v$, the left endpoint $r$ is held fixed, and time moves with tangent $1$. Therefore
+For input $(z,r,t)$, state moves at velocity $v$, $r$ is held fixed, and $t$ advances at unit speed:
 
 $$
 \operatorname{JVP}(u;v)=J_{u(z,r,t)}[v,0,1]=\partial_z u\,v+\partial_tu.
 $$
 
-This is the mathematical meaning of code such as `jvp(fn, (z,r,t), (v,0,1))`.
-
-## 4. A notation warning for iMF
-
-In
+## 4. iMF notation reminder
 
 $$
-\operatorname{JVP}(u_\theta;v_\theta),
+\operatorname{JVP}(u_\theta;v_\theta)
 $$
 
-the differentiated function is $u_\theta$. The quantity $v_\theta$ is the state-space tangent direction; it is not the function being differentiated.
-
-The JVP output is then combined with $u_\theta$ to form capital $V_\theta$:
+does **not** mean differentiating $v_\theta$. The differentiated function is $u_\theta$; $v_\theta$ supplies the state-space tangent direction. The JVP output is then assembled into capital
 
 $$
 V_\theta=u_\theta+(t-r)\operatorname{JVP}_{sg}(u_\theta;v_\theta).
 $$
-
-Continue with the [Improved MeanFlow deep dive](/research-handbook/en/meanflow/improved-meanflow/) for the full notation and objective.

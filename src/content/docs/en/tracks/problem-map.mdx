@@ -1,37 +1,31 @@
 ---
-title: Research Problem Map
-description: A question-centered graph connecting hypotheses, paper evidence, unresolved gaps, and testable experiments.
+title: Research Problem Tree
+description: A Diffusion → Flow Matching → MeanFlow trunk branching into unresolved MeanFlow questions, paper evidence, and transferable ideas from earlier methods.
 sidebar:
   order: 1
 ---
 
-import ResearchProblemMap from '../../../../components/ResearchProblemMap.astro';
+import ResearchTreeMap from '../../../../components/ResearchTreeMap.astro';
 
-# Research Problem Map
+# Research Problem Tree
 
-The primary unit of this page is the **research question**, not the paper. A question can be partially answered by several papers and still leave a more specific experimental hypothesis unresolved.
+This map is organized by **parent-child research questions**, not publication year: first trace the mainstream path into MeanFlow, then inspect the questions MeanFlow has not fully closed.
 
-<ResearchProblemMap lang="en" />
+<ResearchTreeMap lang="en" />
 
-## Reading the graph
+## How to use the tree
 
-- **Foundation**: the framework on which the question depends.
-- **Research Question**: a concrete issue surfaced through reading, derivation, implementation, or experiments.
-- **Paper / Evidence**: theoretical, ablation, controlled-experiment, or empirical evidence relevant to the question.
-- **Open hypothesis**: a more specific protocol that is plausible from current evidence but not directly established.
+- Trunk: **Diffusion / Score-based → Flow Matching → MeanFlow**.
+- Question nodes: active issues in representation, training dynamics, JVP objective design, endpoint quality, and distribution correctness.
+- Paper children: papers that provide direct evidence for that question.
+- Transfer lenses: design ideas from earlier methods that are plausible to test but are not yet established MeanFlow solutions.
 
-## Example evidence chain: should $r=t$ be learned first?
+## Example: should $r=t$ / small-$\Delta t$ be learned first?
 
-### Hypothesis
+At $r=t$,
 
-Because $u(z,t,t)=v(z,t)$ at the boundary, establishing boundary / instantaneous competence before large temporal gaps may be more stable than mixing all intervals from the start.
+$$
+u(z_t,t,t)=v(z_t,t),
+$$
 
-### Paper-supported evidence
-
-**AlphaFlow** analyzes the heavy $r=t$ boundary supervision used by MeanFlow, decomposes the objective into trajectory flow matching and trajectory consistency, finds strong gradient conflict, and improves optimization by annealing from trajectory flow matching toward MeanFlow.
-
-**Understanding, Accelerating, and Improving MeanFlow Training** uses controlled experiments to show that instantaneous velocity must form first, small-gap average velocity helps it, and large-gap supervision can damage it when introduced too early. The resulting curriculum moves from short to long temporal gaps.
-
-### Still unresolved
-
-A fixed-duration pure-$r=t$ pretraining stage is a more specific protocol than either paper directly establishes. It remains a clean ablation to test against small-gap warm-up and progressive-gap curricula.
+so boundary learning is the limiting instantaneous-velocity case. AlphaFlow's gradient-conflict analysis and the CVPR 2026 MeanFlow training-dynamics experiments both support forming more local capabilities before large-gap MeanFlow learning. Whether a strict $r=t$-only warm-up is the best protocol remains an open ablation.

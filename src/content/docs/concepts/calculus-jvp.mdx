@@ -6,12 +6,19 @@ sidebar:
 ---
 
 import CalculusJVPPrimer from '../../../components/CalculusJVPPrimer.astro';
+import DistributionFlowLab from '../../../components/DistributionFlowLab.astro';
 
 # 從 0 開始理解 MeanFlow 裡的偏微分與 JVP
 
 這頁只補 MeanFlow 真正會用到的微積分，不把讀者先帶進完整 multivariable calculus 課程。
 
 <CalculusJVPPrimer lang="zh" />
+
+## 幾何直覺：direction 不是抽象符號
+
+<DistributionFlowLab lang="zh" />
+
+在 **Conditional → Marginal** tab 裡，橘色箭頭對應多個 sample-specific directions；在 **Average velocity** tab 裡，橘色 instantaneous tangent 與紫色 finite-interval average 會明確分開。JVP 中的 tangent 就是在問「如果 input 沿某個方向移動，network output 如何改變」。
 
 ## 1. 為什麼 MeanFlow 需要偏微分？
 
@@ -21,73 +28,44 @@ $$
 u=u(z_t,r,t).
 $$
 
-所以當我們問「$u$ 隨 $t$ 怎麼變」時，有兩種來源：
-
-1. $t$ 自己變了；
-2. state $z_t$ 也會隨 $t$ 移動。
-
-因此不能只寫 $\partial_tu$，而要用 total derivative：
+所以當我們問「$u$ 隨 $t$ 怎麼變」時，有兩種來源：$t$ 自己變了，以及 state $z_t$ 也隨 $t$ 移動。因此
 
 $$
 \frac{du}{dt}=\partial_z u\,\frac{dz_t}{dt}+\partial_tu.
 $$
 
-Flow 的 ODE 告訴我們
-
-$$
-\frac{dz_t}{dt}=v(z_t,t),
-$$
-
-所以
+Flow ODE 給出 $dz_t/dt=v$，所以
 
 $$
 \frac{du}{dt}=\partial_z u\,v+\partial_tu.
 $$
 
-## 2. Jacobian 是什麼？
+## 2. Jacobian 與 JVP
 
-若 $z$ 與 $u$ 都是高維向量，$\partial_z u$ 不再是一個數字，而是一個 Jacobian matrix。它描述「每一個 input dimension 改一點，所有 output dimensions 分別怎麼變」。
-
-但 MeanFlow 不需要完整 Jacobian；它只要知道沿著 flow direction $v$ 前進時，$u$ 會怎麼變。因此只需要
+若 $z$ 與 $u$ 都是高維向量，$\partial_z u$ 是 Jacobian matrix。但 MeanFlow 不需要整張矩陣，只需要沿 flow direction 的 product：
 
 $$
 J_u v.
 $$
 
-這就是 Jacobian-vector product（JVP）。
+這就是 Jacobian-vector product。
 
 ## 3. 為什麼 tangent 是 $[v,0,1]$？
 
-把 network input 完整寫成 $(z,r,t)$：
-
-- $z$ 沿 flow 移動，所以 tangent 是 $v$；
-- $r$ 在這個 derivative 中固定，所以 tangent 是 $0$；
-- $t$ 自己以速度 1 增加，所以 tangent 是 $1$。
-
-因此
+把 network input 寫成 $(z,r,t)$：$z$ 沿 flow 以 $v$ 移動、$r$ 固定、$t$ 以速度 1 增加，因此
 
 $$
-\operatorname{JVP}(u;v)
-=J_{u(z,r,t)}[v,0,1]
-=\partial_z u\,v+\partial_tu.
+\operatorname{JVP}(u;v)=J_{u(z,r,t)}[v,0,1]=\partial_z u\,v+\partial_tu.
 $$
 
-這也是 iMF pseudo-code 中 `jvp(fn, (z,r,t), (v,0,1))` 的數學含義。
-
-## 4. 一個非常重要的符號提醒
-
-在 iMF 中
+## 4. iMF 的符號提醒
 
 $$
 \operatorname{JVP}(u_\theta;v_\theta)
 $$
 
-**不是對 $v_\theta$ 做微分**。被微分的 function 是 $u_\theta$；$v_\theta$ 只是 tangent vector 的 state 部分。
-
-接著 JVP 的輸出才會被組進大寫 $V_\theta$：
+**不是對 $v_\theta$ 做微分**。被微分的是 $u_\theta$；$v_\theta$ 只是 tangent vector 的 state 部分。接著 JVP 的輸出才會被組進大寫
 
 $$
 V_\theta=u_\theta+(t-r)\operatorname{JVP}_{sg}(u_\theta;v_\theta).
 $$
-
-若要繼續看這些符號各自扮演什麼角色，可讀 [Improved MeanFlow deep dive](/research-handbook/meanflow/improved-meanflow/)。

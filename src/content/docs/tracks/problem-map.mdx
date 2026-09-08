@@ -1,46 +1,38 @@
 ---
-title: Research Problem Map｜研究問題地圖
-description: 以 research question 為節點，把假設、paper evidence、未解問題與可驗證實驗串在同一張圖。
+title: Research Problem Tree｜研究問題樹
+description: 以 Diffusion → Flow Matching → MeanFlow 為主幹，從 MeanFlow 拆出尚未解完的研究問題、paper evidence 與可借鏡方法。
 sidebar:
   order: 1
 ---
 
-import ResearchProblemMap from '../../../components/ResearchProblemMap.astro';
+import ResearchTreeMap from '../../../components/ResearchTreeMap.astro';
 
-# Research Problem Map
+# Research Problem Tree
 
-這張圖的單位不是「章節」或「paper」，而是 **research question**。每個問題都可能由多篇論文部分回答，也可能產生新的可驗證 hypothesis。
+這張圖不是按照 paper 年份排，而是按照 **研究問題的父子關係** 排：先看主流方法如何一路走到 MeanFlow，再看 MeanFlow 還有哪些核心問題沒有完全解完。
 
-<ResearchProblemMap lang="zh" />
+<ResearchTreeMap lang="zh" />
 
-## 如何讀這張圖
+## 怎麼使用這張樹
 
-- **Foundation**：目前問題依賴的基礎 framework。
-- **Research Question**：從閱讀、推導、實驗或實作中浮現的具體疑問。
-- **Paper / Evidence**：對該問題提供理論、ablation、controlled experiment 或 empirical result 的 paper。
-- **Open hypothesis**：目前證據只支持較一般的方向，但更具體的版本仍值得自己做實驗。
+- 主幹：**Diffusion / Score-based → Flow Matching → MeanFlow**。
+- 問題節點：MeanFlow 目前仍在演進的 representation、training dynamics、JVP objective、endpoint quality、distribution correctness。
+- Paper children：對這個問題已經提供直接 evidence 的 paper。
+- Transfer lens：過去方法留下、但還沒有被證明可以直接套到 MeanFlow 的 design ideas。
 
-## Q2 的證據層級示例：$r=t$ 是否應該先學？
+## 例子：$r=t$ / small-$\Delta t$ 是否應先學？
 
-### Hypothesis
+$r=t$ 時
 
-$r=t$ 時 $u(z,t,t)=v(z,t)$，因此先建立 boundary / instantaneous ability，再學 large temporal gap，可能比一開始混合所有 interval 更穩。
+$$
+u(z_t,t,t)=v(z_t,t),
+$$
 
-### Paper-supported evidence
-
-**AlphaFlow**：指出原始 MeanFlow 大量使用 $r=t$ boundary supervision；其分析把 MeanFlow 拆成 trajectory flow matching 與 trajectory consistency，發現兩者存在強 gradient conflict，並用從 trajectory flow matching 漸進到 MeanFlow 的 curriculum 改善 convergence。
-
-**Understanding, Accelerating, and Improving MeanFlow Training**：controlled experiments 顯示 instantaneous velocity 要先形成；small-gap average velocity 會幫助 $v$，large-gap supervision 太早加入會破壞 $v$；因此提出 short-to-long temporal-gap curriculum。
-
-### 尚未被完全回答
-
-「先做固定 epochs 的 pure $r=t$ pretraining，再打開其他 interval」是比上述 papers 更具體的 protocol。現有證據讓它成為合理 hypothesis，但仍需要直接 ablation：
+因此 boundary learning 是 instantaneous-velocity learning 的極限情況。AlphaFlow 的 gradient-conflict 分析與 CVPR 2026 的 MeanFlow training-dynamics experiments 都支持「先形成較 local 的能力，再進入 large-gap MeanFlow」這個方向；但 pure $r=t$-only warm-up 是否是最好的 protocol，仍需要直接 ablation。
 
 | Protocol | Stage 1 | Stage 2 | 要回答的問題 |
 |---|---|---|---|
 | Baseline | 全 gap 混合 | 全 gap 混合 | 原始參考 |
 | Boundary warm-up | 只取 $r=t$ | 全 gap | pure boundary 是否最穩？ |
-| Small-gap warm-up | $\Delta t\le\delta$ | 全 gap | 是否比 pure boundary 更有 transfer？ |
-| Progressive gap | small → medium | → large | curriculum 是否需要平滑 transition？ |
-
-這種「**Hypothesis → Existing Evidence → Missing Ablation**」會成為本站之後整理研究問題的固定格式。
+| Small-gap warm-up | $\Delta t\le\delta$ | 全 gap | 是否比 pure boundary 有更好的 transfer？ |
+| Progressive gap | small → medium | → large | 是否需要平滑 curriculum？ |

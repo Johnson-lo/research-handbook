@@ -5,6 +5,7 @@ sidebar:
   order: 1
 ---
 
+import DistributionFlowLab from '../../../../components/DistributionFlowLab.astro';
 import CalculusJVPPrimer from '../../../../components/CalculusJVPPrimer.astro';
 import DerivationStepper from '../../../../components/DerivationStepper.astro';
 import JVPExplorer from '../../../../components/JVPExplorer.astro';
@@ -13,7 +14,13 @@ import JVPExplorer from '../../../../components/JVPExplorer.astro';
 
 Flow Matching models a local instantaneous velocity. As the state moves, the local direction can change, so inference usually queries the network repeatedly. MeanFlow asks whether a finite-time transport quantity can be learned directly so that one network evaluation can move $z_t$ to $z_r$.
 
-## 1. Average velocity
+## 1. Visualize the distribution and velocities first
+
+<DistributionFlowLab lang="en" />
+
+The toy lab has three views: probability-path point clouds, conditional-to-marginal velocity averaging, and instantaneous-vs-average velocity on a curved trajectory. These are geometric toy examples, not outputs from a trained MeanFlow model.
+
+## 2. Average velocity
 
 MeanFlow defines
 
@@ -33,17 +40,15 @@ $$
 z_0=z_1-u_\theta(z_1,0,1).
 $$
 
-## 2. Why a special identity is needed
+## 3. Why a special identity is needed
 
 For the linear path $z_t=(1-t)x+te$, the sample-level conditional velocity $e-x$ is cheap to obtain. The interval-average quantity $u(z_t,r,t)$ does not come with an equally convenient per-sample label, which motivates the MeanFlow Identity.
 
-## 3. Minimal calculus before the JVP
+## 4. Minimal calculus before the JVP
 
 <CalculusJVPPrimer lang="en" />
 
-The only mental model needed is: partial derivatives isolate one input, total derivatives combine all moving inputs, and a JVP computes directional change without materializing the full Jacobian.
-
-## 4. Deriving the MeanFlow Identity
+## 5. Deriving the MeanFlow Identity
 
 <DerivationStepper lang="en" />
 
@@ -59,9 +64,7 @@ $$
 \boxed{v=u+(t-r)\frac{du}{dt}}.
 $$
 
-The local velocity equals the interval average plus a correction for how that average changes as the endpoint moves.
-
-## 5. Why the total derivative is a JVP
+## 6. Why the total derivative is a JVP
 
 Because $u=u(z_t,r,t)$, $r$ is fixed, and $dz_t/dt=v$,
 
@@ -78,7 +81,7 @@ $$
 
 <JVPExplorer lang="en" />
 
-## 6. Original MeanFlow objective
+## 7. Original MeanFlow objective
 
 The theory calls for the marginal velocity $v(z_t,t)$, while a training sample gives the conditional velocity $e-x$. Original MF uses $e-x$ as the JVP tangent approximation:
 

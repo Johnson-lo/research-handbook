@@ -8,22 +8,22 @@ hero:
     - text: 瀏覽 Paper Library
       link: /research-handbook/papers/
       variant: primary
-    - text: 查看 Research Problem Map
+    - text: 查看 Research Problem Tree
       link: /research-handbook/tracks/problem-map/
 ---
 
-import ResearchProblemMap from '../../components/ResearchProblemMap.astro';
+import ResearchTreeMap from '../../components/ResearchTreeMap.astro';
 import PaperLibraryGrid from '../../components/PaperLibraryGrid.astro';
 
-## Research Problem Map
+## Research Problem Tree
 
-本站不只按 paper 排列內容，也把閱讀與實驗中遇到的問題整理成一張 research graph：**左側是基礎框架，中間是尚待回答或已被部分回答的問題，右側是提供證據的論文。** 這讓同一個問題可以跨越多篇 paper，而不是被藏在單篇心得裡。
+主頁地圖改成 **Diffusion → Flow Matching → MeanFlow** 的主幹，再從 MeanFlow 往下拆出目前仍在演進中的 research questions。點問題節點可看 evidence；點 paper 名稱可直接進筆記。
 
-<ResearchProblemMap lang="zh" />
+<ResearchTreeMap lang="zh" />
 
 ## Paper Library
 
-每篇論文有獨立入口。單篇頁面負責整理該 paper 的 core question、derivation、method、training / inference、experiments、interpretation 與 limitations；跨論文的問題演進則由上方 Research Problem Map 與 Research Tracks 串接。
+每篇論文有獨立入口。單篇頁面負責整理該 paper 的 core question、derivation、method、training / inference、experiments、interpretation 與 limitations；跨論文的問題演進則由上方 Research Problem Tree 與 Research Tracks 串接。
 
 <PaperLibraryGrid lang="zh" />
 

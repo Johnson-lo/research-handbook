@@ -5,6 +5,7 @@ sidebar:
   order: 1
 ---
 
+import DistributionFlowLab from '../../../components/DistributionFlowLab.astro';
 import CalculusJVPPrimer from '../../../components/CalculusJVPPrimer.astro';
 import DerivationStepper from '../../../components/DerivationStepper.astro';
 import JVPExplorer from '../../../components/JVPExplorer.astro';
@@ -17,7 +18,19 @@ Flow Matching 學的是 local / instantaneous velocity。Inference 時 state 每
 
 因此它把主要 modeling object 從 instantaneous velocity $v$ 改成 average velocity $u$。
 
-## 1. Average velocity 是什麼？
+## 1. 先把 distribution 與 velocity 真的畫出來
+
+<DistributionFlowLab lang="zh" />
+
+這個 toy lab 分成三種 view：
+
+- **Probability path**：直接看 data point cloud、prior point cloud 與中間 $z_t$。
+- **Conditional → Marginal**：在某個 state 附近看多個 sample-specific $e-x$，再做有限樣本平均近似 marginal direction。
+- **Average velocity**：用 curved trajectory 明確看出 instantaneous tangent $v$ 與 finite-interval average $u$ 的差異。
+
+這些圖是幾何 toy example，不是 trained MeanFlow 的生成結果；用途是先建立正確 mental model。
+
+## 2. Average velocity 是什麼？
 
 定義
 
@@ -49,9 +62,7 @@ $$
 z_0=z_1-u_\theta(z_1,0,1).
 $$
 
-這就是 MeanFlow 為什麼能把 one-step inference 寫得這麼直接。
-
-## 2. 真正的難點：$u$ 沒有方便的 sample-level GT
+## 3. 真正的難點：$u$ 沒有方便的 sample-level GT
 
 對 linear path
 
@@ -67,7 +78,7 @@ $$
 
 但 $u(z_t,r,t)$ 是一整段 interval 上的平均量，並沒有像 $e-x$ 這麼便宜的 per-sample label。這就是 MeanFlow Identity 必須出現的原因。
 
-## 3. 在進入 JVP 前，先補最小微積分
+## 4. 在進入 JVP 前，先補最小微積分
 
 <CalculusJVPPrimer lang="zh" />
 
@@ -77,7 +88,7 @@ $$
 2. **total derivative**：如果多個 inputs 一起動，要把所有來源的變化加起來。
 3. **JVP**：不建立完整 Jacobian，只計算沿某個方向走時 output 的變化率。
 
-## 4. MeanFlow Identity 從哪裡來？
+## 5. MeanFlow Identity 從哪裡來？
 
 <DerivationStepper lang="zh" />
 
@@ -99,9 +110,7 @@ $$
 \boxed{v=u+(t-r)\frac{du}{dt}}.
 $$
 
-這個 identity 的意思不是「$u=v$」，而是：**local velocity = interval average + 當 endpoint 改變時 average velocity 的 correction。**
-
-## 5. 為什麼 $du/dt$ 會變成 JVP？
+## 6. 為什麼 $du/dt$ 會變成 JVP？
 
 $u=u(z_t,r,t)$。在對 $t$ 做 total derivative 時，$r$ 固定，而 $z_t$ 會沿 flow 移動：
 
@@ -125,7 +134,7 @@ $$
 
 <JVPExplorer lang="zh" />
 
-## 6. Original MeanFlow 怎麼從 identity 變成 loss？
+## 7. Original MeanFlow 怎麼從 identity 變成 loss？
 
 理論上 identity 需要 marginal velocity $v(z_t,t)$。但 training sample 最直接拿到的是 conditional velocity $e-x$，所以 original MF 用它近似 JVP tangent：
 
@@ -139,15 +148,13 @@ $$
 \mathcal L_{MF}=\mathbb E\|u_\theta-\operatorname{sg}(u_{tgt})\|^2.
 $$
 
-### 這裡三個 quantity 不要混在一起
-
 | Quantity | 意義 | 角色 |
 |---|---|---|
 | $e-x$ | 一個 sampled pair 的 conditional velocity | supervision + original MF 的 JVP tangent |
 | $v(z_t,t)$ | 同一 state 上唯一的 marginal instantaneous velocity | theory 中 identity 真正需要的 field |
 | $u(z_t,r,t)$ | interval-average velocity | MeanFlow 真正要學的 inference object |
 
-## 7. 這個 formulation 留下什麼問題？
+## 8. 這個 formulation 留下什麼問題？
 
 Original MF 能做到 one-step generation，但它把 sample-specific $e-x$ 放進 JVP tangent。後續 iMF 會把 original objective 重寫成 v-loss，顯示 compound predictor 實際依賴 $(z_t,e-x)$，並指出 conditional tangent 的 variance 可能被 JVP 放大。
 
