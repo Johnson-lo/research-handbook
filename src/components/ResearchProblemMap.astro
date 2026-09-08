@@ -1,0 +1,154 @@
+---
+const { lang = 'zh' } = Astro.props;
+const isZh = lang !== 'en';
+const prefix = isZh ? '/research-handbook' : '/research-handbook/en';
+const panels = isZh ? [
+  {
+    title: 'Q1｜如何把 local velocity 變成 one-step transport？',
+    status: '方法問題 · 已形成主線',
+    body: 'Flow Matching 預測 instantaneous velocity；state 一變，local direction 也可能變，因此通常需要 multiple NFEs。MeanFlow 的回答是改學 interval-average velocity u，讓模型直接表示 finite-time transport。',
+    papers: [['MeanFlow', `${prefix}/papers/meanflow/`]]
+  },
+  {
+    title: 'Q2｜是否應先建立 r=t / small-Δt 的能力，再學 large-gap u？',
+    status: 'Training dynamics · 有直接實驗證據，但仍非完全封閉',
+    body: 'r=t 對應 Δt=t-r=0，此時 u(z,t,t)=v(z,t)，因此 boundary supervision 本質上接近 instantaneous-velocity learning。AlphaFlow 直接分析 MeanFlow 為何大量使用 r=t boundary supervision；另一篇 CVPR 2026 工作則顯示 v 必須先形成、small-Δt supervision 能建立與改善 v，而 large-Δt supervision 太早加入會破壞 v。這支持「由 local / boundary-like → large gap」的 curriculum，但不等同於證明嚴格的 r=t-only pretraining 在所有設定下都最佳。',
+    papers: [['AlphaFlow', `${prefix}/papers/alphaflow/`], ['Understanding & Improving MF Training', `${prefix}/papers/meanflow-training/`]]
+  },
+  {
+    title: 'Q3｜JVP tangent 應該使用 sample-specific e−x，還是 marginal-like vθ？',
+    status: 'Objective design · iMF 直接處理',
+    body: 'Original MeanFlow 的 JVP pathway 使用 sample-specific conditional velocity e−x。Improved MeanFlow 把 tangent 換成 vθ(z_t)，但 supervision 仍保留 e−x。這把 compound predictor 重新拉回較接近 state-conditioned regression 的形式。',
+    papers: [['Improved MeanFlow', `${prefix}/papers/improved-meanflow/`]]
+  },
+  {
+    title: 'Q4｜one-step coarse transport 已經足夠嗎？',
+    status: 'Sampling quality · active branch',
+    body: '即使 one-step transport 很快，endpoint quality 仍可能不足。RMFlow 把問題拆成 coarse MeanFlow transport 與後續 distribution-aware refinement，代表「更好的 target」不是唯一改善方向。',
+    papers: [['RMFlow', `${prefix}/papers/rmflow/`]]
+  },
+  {
+    title: 'Q5｜vector regression loss 變小，是否代表 probability path 真的正確？',
+    status: 'Distribution-level objective · theory-driven',
+    body: 'Conditional Flow Matching 主要約束 pointwise velocity regression，但 learned vector field 是否產生正確 probability evolution 是更高一層的問題。Divergence alignment 直接把 flow divergence 與 probability-path error 連起來。',
+    papers: [['Flow Divergence Alignment', `${prefix}/papers/flow-divergence/`]]
+  }
+] : [
+  {
+    title: 'Q1 | How can local velocity become one-step transport?',
+    status: 'Method question · established track',
+    body: 'Flow Matching predicts an instantaneous velocity. As the state moves, the local direction can change, usually requiring multiple NFEs. MeanFlow changes the modeled object to interval-average velocity u so that the model directly represents finite-time transport.',
+    papers: [['MeanFlow', `${prefix}/papers/meanflow/`]]
+  },
+  {
+    title: 'Q2 | Should r=t / small-Δt competence be established before large-gap u?',
+    status: 'Training dynamics · direct evidence, not fully closed',
+    body: 'At r=t, Δt=t-r=0 and u(z,t,t)=v(z,t), so boundary supervision is closely tied to instantaneous-velocity learning. AlphaFlow directly analyzes why MeanFlow spends heavy supervision on the r=t boundary. A separate CVPR 2026 study shows that v must be established early, small-Δt supervision forms and improves v, and large-Δt supervision can damage v when introduced too early. Together these support a local/boundary-like → large-gap curriculum, without proving that strict r=t-only pretraining is universally optimal.',
+    papers: [['AlphaFlow', `${prefix}/papers/alphaflow/`], ['Understanding & Improving MF Training', `${prefix}/papers/meanflow-training/`]]
+  },
+  {
+    title: 'Q3 | Should the JVP tangent be sample-specific e−x or marginal-like vθ?',
+    status: 'Objective design · directly addressed by iMF',
+    body: 'Original MeanFlow uses the sample-specific conditional velocity e−x inside the JVP pathway. Improved MeanFlow replaces that tangent with vθ(z_t), while retaining e−x as supervision, giving a more state-conditioned compound predictor.',
+    papers: [['Improved MeanFlow', `${prefix}/papers/improved-meanflow/`]]
+  },
+  {
+    title: 'Q4 | Is coarse one-step transport sufficient?',
+    status: 'Sampling quality · active branch',
+    body: 'One-step transport can be fast but still leave endpoint quality on the table. RMFlow decomposes the problem into coarse MeanFlow transport followed by distribution-aware refinement, showing that objective reformulation is not the only route to better few-step generation.',
+    papers: [['RMFlow', `${prefix}/papers/rmflow/`]]
+  },
+  {
+    title: 'Q5 | Does low vector-regression loss imply the correct probability path?',
+    status: 'Distribution-level objective · theory-driven',
+    body: 'Conditional Flow Matching constrains pointwise velocity regression, but whether the learned field induces the correct probability evolution is a higher-level question. Divergence alignment connects flow divergence directly to probability-path error.',
+    papers: [['Flow Divergence Alignment', `${prefix}/papers/flow-divergence/`]]
+  }
+];
+---
+<div class="rpm" data-problem-map>
+  <div class="rpm-head">
+    <div>
+      <span class="rpm-kicker">RESEARCH PROBLEM GRAPH</span>
+      <strong>{isZh ? '從研究問題出發，而不是從論文清單出發' : 'Navigate from research questions, not only from paper titles'}</strong>
+      <p>{isZh ? '點擊中間的問題節點可展開證據；右側論文節點可直接進入對應筆記。' : 'Select a question node to inspect the evidence; paper nodes link directly to the corresponding notes.'}</p>
+    </div>
+    <div class="rpm-legend">
+      <span><i class="foundation-dot"></i>{isZh ? '基礎框架' : 'Foundation'}</span>
+      <span><i class="question-dot"></i>{isZh ? '研究問題' : 'Question'}</span>
+      <span><i class="paper-dot"></i>{isZh ? '論文證據' : 'Paper evidence'}</span>
+    </div>
+  </div>
+
+  <div class="rpm-scroll" aria-label={isZh ? 'MeanFlow research problem graph' : 'MeanFlow research problem graph'}>
+    <svg class="rpm-svg" viewBox="0 0 1180 690" role="img">
+      <text x="50" y="28" class="axis-label">FOUNDATION</text>
+      <text x="330" y="28" class="axis-label">RESEARCH QUESTION</text>
+      <text x="770" y="28" class="axis-label">PAPER / EVIDENCE</text>
+
+      <path class="edge" d="M240 345 C280 345 285 85 320 85"/><path class="edge" d="M240 345 C280 345 285 215 320 215"/>
+      <path class="edge" d="M240 345 C280 345 285 345 320 345"/><path class="edge" d="M240 345 C280 345 285 475 320 475"/>
+      <path class="edge" d="M240 345 C280 345 285 605 320 605"/>
+      <path class="edge strong" d="M610 85 C690 85 705 80 760 80"/>
+      <path class="edge strong" d="M610 215 C680 215 700 170 760 170"/>
+      <path class="edge strong" d="M610 215 C680 215 700 250 760 250"/>
+      <path class="edge strong" d="M610 345 C690 345 710 345 760 345"/>
+      <path class="edge strong" d="M610 475 C690 475 710 475 760 475"/>
+      <path class="edge strong" d="M610 605 C690 605 710 605 760 605"/>
+
+      <g class="foundation-node">
+        <rect x="50" y="300" width="190" height="90" rx="14"/>
+        <text x="145" y="333" text-anchor="middle">Flow-based</text>
+        <text x="145" y="355" text-anchor="middle">Generative Modeling</text>
+        <text x="145" y="377" text-anchor="middle" class="node-sub">velocity field → transport</text>
+      </g>
+
+      <g class="problem-node" data-problem="0" tabindex="0" role="button">
+        <rect x="320" y="45" width="290" height="80" rx="12"/><text x="340" y="74">Q1 · Multi-NFE</text><text x="340" y="97" class="node-sub">local velocity → finite-time transport?</text>
+      </g>
+      <g class="problem-node active" data-problem="1" tabindex="0" role="button">
+        <rect x="320" y="175" width="290" height="80" rx="12"/><text x="340" y="204">Q2 · Training order</text><text x="340" y="227" class="node-sub">r=t / small Δt first → large gap?</text>
+      </g>
+      <g class="problem-node" data-problem="2" tabindex="0" role="button">
+        <rect x="320" y="305" width="290" height="80" rx="12"/><text x="340" y="334">Q3 · JVP tangent</text><text x="340" y="357" class="node-sub">e−x or marginal-like vθ?</text>
+      </g>
+      <g class="problem-node" data-problem="3" tabindex="0" role="button">
+        <rect x="320" y="435" width="290" height="80" rx="12"/><text x="340" y="464">Q4 · Endpoint quality</text><text x="340" y="487" class="node-sub">is coarse one-step transport enough?</text>
+      </g>
+      <g class="problem-node" data-problem="4" tabindex="0" role="button">
+        <rect x="320" y="565" width="290" height="80" rx="12"/><text x="340" y="594">Q5 · Probability path</text><text x="340" y="617" class="node-sub">does low vector loss imply correct path?</text>
+      </g>
+
+      <a href={`${prefix}/papers/meanflow/`} class="paper-node"><rect x="760" y="45" width="350" height="70" rx="12"/><text x="780" y="74">Mean Flows for One-step Generative Modeling</text><text x="780" y="97" class="node-sub">NeurIPS 2025 · average velocity</text></a>
+      <a href={`${prefix}/papers/alphaflow/`} class="paper-node"><rect x="760" y="135" width="350" height="70" rx="12"/><text x="780" y="164">AlphaFlow</text><text x="780" y="187" class="node-sub">ICLR 2026 · r=t boundary + curriculum</text></a>
+      <a href={`${prefix}/papers/meanflow-training/`} class="paper-node"><rect x="760" y="215" width="350" height="70" rx="12"/><text x="780" y="244">Understanding & Improving MF Training</text><text x="780" y="267" class="node-sub">CVPR 2026 · small Δt → large Δt</text></a>
+      <a href={`${prefix}/papers/improved-meanflow/`} class="paper-node"><rect x="760" y="310" width="350" height="70" rx="12"/><text x="780" y="339">Improved MeanFlow</text><text x="780" y="362" class="node-sub">CVPR 2026 · objective reformulation</text></a>
+      <a href={`${prefix}/papers/rmflow/`} class="paper-node"><rect x="760" y="440" width="350" height="70" rx="12"/><text x="780" y="469">RMFlow</text><text x="780" y="492" class="node-sub">2026 · noise-injection refinement</text></a>
+      <a href={`${prefix}/papers/flow-divergence/`} class="paper-node"><rect x="760" y="570" width="350" height="70" rx="12"/><text x="780" y="599">Aligning Flow Divergence</text><text x="780" y="622" class="node-sub">ICML 2025 · probability-path accuracy</text></a>
+    </svg>
+  </div>
+
+  <div class="rpm-details">
+    {panels.map((panel, i) => (
+      <section data-panel={i} hidden={i !== 1}>
+        <div class="detail-top"><div><span class="detail-status">{panel.status}</span><h3>{panel.title}</h3></div><span class="detail-id">Q{i+1}</span></div>
+        <p>{panel.body}</p>
+        <div class="paper-links"><span>{isZh ? '對應論文' : 'Linked papers'}</span>{panel.papers.map(([name, href]) => <a href={href}>{name} →</a>)}</div>
+      </section>
+    ))}
+  </div>
+
+  <a class="rpm-full-link" href={`${prefix}/tracks/problem-map/`}>{isZh ? '開啟完整 Research Problem Map →' : 'Open the full Research Problem Map →'}</a>
+</div>
+
+<style>
+.rpm{border:1px solid var(--rh-border);border-radius:1.1rem;background:linear-gradient(180deg,var(--rh-surface-2),var(--rh-surface));padding:1rem;margin:1rem 0 1.7rem;box-shadow:0 16px 42px rgba(74,49,34,.06)}
+.rpm-head{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:1rem;align-items:end}.rpm-head strong{display:block;font-size:1.05rem;color:var(--rh-text)}.rpm-head p{margin:.3rem 0 0;color:var(--rh-muted)}.rpm-kicker{display:block;font-size:.68rem;letter-spacing:.14em;color:var(--rh-caramel);font-weight:800;margin-bottom:.25rem}.rpm-legend{display:flex;gap:.8rem;flex-wrap:wrap;font-size:.72rem;color:var(--rh-muted)}.rpm-legend span{display:flex;align-items:center;gap:.3rem}.rpm-legend i{width:.65rem;height:.65rem;border-radius:3px;display:inline-block}.foundation-dot{background:var(--rh-coffee)}.question-dot{background:var(--rh-caramel)}.paper-dot{background:var(--rh-surface);border:1px solid var(--rh-coffee)}
+.rpm-scroll{overflow-x:auto;margin-top:.8rem;border:1px solid var(--rh-border);border-radius:.85rem;background:color-mix(in srgb,var(--rh-surface) 94%,white)}.rpm-svg{display:block;width:100%;min-width:940px;height:auto}.axis-label{font-size:12px;letter-spacing:2px;fill:var(--rh-muted)}.edge{fill:none;stroke:var(--rh-border);stroke-width:2}.edge.strong{stroke:color-mix(in srgb,var(--rh-caramel) 55%,var(--rh-border));stroke-width:2.2}.foundation-node rect{fill:var(--rh-coffee);stroke:var(--rh-coffee)}.foundation-node text{fill:#fff;font-size:15px;font-weight:700}.foundation-node .node-sub{fill:#efe3d6;font-weight:500;font-size:12px}.problem-node{cursor:pointer;outline:none}.problem-node rect{fill:var(--rh-surface-2);stroke:var(--rh-border);stroke-width:1.5;transition:.16s}.problem-node text{fill:var(--rh-text);font-size:15px;font-weight:700;pointer-events:none}.problem-node .node-sub{fill:var(--rh-muted);font-size:12px;font-weight:500}.problem-node:hover rect,.problem-node:focus rect,.problem-node.active rect{stroke:var(--rh-caramel);stroke-width:2.5;fill:color-mix(in srgb,var(--rh-caramel) 9%,var(--rh-surface-2))}.paper-node{text-decoration:none;cursor:pointer}.paper-node rect{fill:var(--rh-surface);stroke:var(--rh-coffee);stroke-width:1.2;transition:.16s}.paper-node text{fill:var(--rh-text);font-size:14px;font-weight:700}.paper-node .node-sub{fill:var(--rh-muted);font-size:12px;font-weight:500}.paper-node:hover rect{fill:color-mix(in srgb,var(--rh-caramel) 8%,var(--rh-surface));stroke:var(--rh-caramel);stroke-width:2}
+.rpm-details{margin-top:.8rem}.rpm-details section{border:1px solid var(--rh-border);border-radius:.8rem;padding:1rem;background:var(--rh-surface-2)}.detail-top{display:flex;justify-content:space-between;gap:1rem;align-items:flex-start}.detail-top h3{margin:.25rem 0 0;font-size:1rem}.detail-status{font-size:.72rem;color:var(--rh-caramel);font-weight:750;text-transform:uppercase;letter-spacing:.04em}.detail-id{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:.78rem;border:1px solid var(--rh-border);padding:.25rem .45rem;border-radius:.45rem;color:var(--rh-muted)}.rpm-details p{color:var(--rh-muted);line-height:1.7}.paper-links{display:flex;gap:.5rem;flex-wrap:wrap;align-items:center;border-top:1px solid var(--rh-border);padding-top:.7rem}.paper-links>span{font-size:.72rem;color:var(--rh-muted);margin-right:.2rem}.paper-links a,.rpm-full-link{font-size:.78rem;text-decoration:none!important;color:var(--rh-coffee)!important;border:1px solid var(--rh-border);background:var(--rh-surface);padding:.35rem .55rem;border-radius:.5rem}.paper-links a:hover,.rpm-full-link:hover{border-color:var(--rh-caramel)}.rpm-full-link{display:inline-block;margin-top:.7rem}
+@media(max-width:760px){.rpm-head{grid-template-columns:1fr}.rpm-legend{justify-content:flex-start}.rpm{padding:.8rem}}
+</style>
+
+<script>
+for(const root of document.querySelectorAll('[data-problem-map]')){if(root.dataset.ready)continue;root.dataset.ready='1';const nodes=[...root.querySelectorAll('[data-problem]')],panels=[...root.querySelectorAll('[data-panel]')];function setProblem(i){nodes.forEach(n=>n.classList.toggle('active',Number(n.dataset.problem)===i));panels.forEach((p,j)=>p.hidden=j!==i)}nodes.forEach(n=>{const i=Number(n.dataset.problem);n.addEventListener('click',()=>setProblem(i));n.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();setProblem(i)}})});setProblem(1)}
+</script>
