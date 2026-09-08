@@ -1,38 +1,25 @@
 ---
-title: Research Problem Tree｜研究問題樹
-description: 以 Diffusion → Flow Matching → MeanFlow 為主幹，從 MeanFlow 拆出尚未解完的研究問題、paper evidence 與可借鏡方法。
+title: Research Knowledge Graph｜研究關聯地圖
+description: 以 Diffusion → Flow Matching → MeanFlow 為主幹，再把 MeanFlow 的問題、論文、概念與可借鏡方法形成可展開的關聯集合。
 sidebar:
   order: 1
 ---
 
-import ResearchTreeMap from '../../../components/ResearchTreeMap.astro';
+import ResearchKnowledgeGraph from '../../../components/ResearchKnowledgeGraph.astro';
 
-# Research Problem Tree
+# Research Knowledge Graph
 
-這張圖不是按照 paper 年份排，而是按照 **研究問題的父子關係** 排：先看主流方法如何一路走到 MeanFlow，再看 MeanFlow 還有哪些核心問題沒有完全解完。
+這張圖不是單向的 paper timeline，也不是每個節點只能有一個 parent 的樹。**Diffusion → Flow Matching → MeanFlow** 只負責提供主線；MeanFlow 之後的問題會向外發散，同一篇 paper、concept 或過去方法也可以和多個問題產生關聯。
 
-<ResearchTreeMap lang="zh" />
+<ResearchKnowledgeGraph lang="zh" />
 
-## 怎麼使用這張樹
+## 怎麼讀
 
-- 主幹：**Diffusion / Score-based → Flow Matching → MeanFlow**。
-- 問題節點：MeanFlow 目前仍在演進的 representation、training dynamics、JVP objective、endpoint quality、distribution correctness。
-- Paper children：對這個問題已經提供直接 evidence 的 paper。
-- Transfer lens：過去方法留下、但還沒有被證明可以直接套到 MeanFlow 的 design ideas。
+- **主線**：理解方法怎麼一路走到 MeanFlow。
+- **Research branch**：representation / NFE、training dynamics、objective / JVP、endpoint / refinement、distribution correctness。
+- **Paper node**：已有直接理論或實驗 evidence 的工作，可點進獨立筆記。
+- **Concept / transfer node**：可能從過去方法移植的 design lens；虛線表示「可借鏡，不代表已證明有效」。
 
-## 例子：$r=t$ / small-$\Delta t$ 是否應先學？
+## 目前最值得追的交叉問題
 
-$r=t$ 時
-
-$$
-u(z_t,t,t)=v(z_t,t),
-$$
-
-因此 boundary learning 是 instantaneous-velocity learning 的極限情況。AlphaFlow 的 gradient-conflict 分析與 CVPR 2026 的 MeanFlow training-dynamics experiments 都支持「先形成較 local 的能力，再進入 large-gap MeanFlow」這個方向；但 pure $r=t$-only warm-up 是否是最好的 protocol，仍需要直接 ablation。
-
-| Protocol | Stage 1 | Stage 2 | 要回答的問題 |
-|---|---|---|---|
-| Baseline | 全 gap 混合 | 全 gap 混合 | 原始參考 |
-| Boundary warm-up | 只取 $r=t$ | 全 gap | pure boundary 是否最穩？ |
-| Small-gap warm-up | $\Delta t\le\delta$ | 全 gap | 是否比 pure boundary 有更好的 transfer？ |
-| Progressive gap | small → medium | → large | 是否需要平滑 curriculum？ |
+$r=t$ 時有 $u(z_t,t,t)=v(z_t,t)$，因此 boundary learning 與 instantaneous velocity 直接相連；另一方面 AlphaFlow 與 MeanFlow training-dynamics work 都指出 optimization / temporal-gap ordering 的重要性。這讓「先 local / small-gap，再 large-gap」不只是一條 training branch，也和 representation、objective stability 有交叉連結。

@@ -1,31 +1,25 @@
 ---
-title: Research Problem Tree
-description: A Diffusion → Flow Matching → MeanFlow trunk branching into unresolved MeanFlow questions, paper evidence, and transferable ideas from earlier methods.
+title: Research Knowledge Graph
+description: An expandable relation graph with Diffusion → Flow Matching → MeanFlow as the trunk and cross-linked problems, papers, concepts, and transferable ideas around MeanFlow.
 sidebar:
   order: 1
 ---
 
-import ResearchTreeMap from '../../../../components/ResearchTreeMap.astro';
+import ResearchKnowledgeGraph from '../../../../components/ResearchKnowledgeGraph.astro';
 
-# Research Problem Tree
+# Research Knowledge Graph
 
-This map is organized by **parent-child research questions**, not publication year: first trace the mainstream path into MeanFlow, then inspect the questions MeanFlow has not fully closed.
+This is not a one-way paper timeline and not a rigid tree in which every node has a single parent. **Diffusion → Flow Matching → MeanFlow** provides the mainline; MeanFlow then expands into research problems whose papers, concepts, and earlier-method design lenses can have multiple relationships.
 
-<ResearchTreeMap lang="en" />
+<ResearchKnowledgeGraph lang="en" />
 
-## How to use the tree
+## How to read it
 
-- Trunk: **Diffusion / Score-based → Flow Matching → MeanFlow**.
-- Question nodes: active issues in representation, training dynamics, JVP objective design, endpoint quality, and distribution correctness.
-- Paper children: papers that provide direct evidence for that question.
-- Transfer lenses: design ideas from earlier methods that are plausible to test but are not yet established MeanFlow solutions.
+- **Mainline**: the method lineage leading to MeanFlow.
+- **Research branches**: representation / NFE, training dynamics, objective / JVP, endpoint / refinement, and distribution correctness.
+- **Paper nodes**: work with direct theoretical or empirical evidence; select a paper to open its note.
+- **Concept / transfer nodes**: design lenses from earlier methods. Dashed connections mean plausible transfer, not established effectiveness.
 
-## Example: should $r=t$ / small-$\Delta t$ be learned first?
+## A currently important cross-question
 
-At $r=t$,
-
-$$
-u(z_t,t,t)=v(z_t,t),
-$$
-
-so boundary learning is the limiting instantaneous-velocity case. AlphaFlow's gradient-conflict analysis and the CVPR 2026 MeanFlow training-dynamics experiments both support forming more local capabilities before large-gap MeanFlow learning. Whether a strict $r=t$-only warm-up is the best protocol remains an open ablation.
+At $r=t$, $u(z_t,t,t)=v(z_t,t)$, directly linking boundary learning to instantaneous velocity. AlphaFlow and MeanFlow training-dynamics work also emphasize optimization conflict and temporal-gap ordering. This makes local/small-gap → large-gap learning a question that crosses training, representation, and objective stability rather than belonging to only one branch.

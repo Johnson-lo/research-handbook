@@ -1,6 +1,6 @@
 ---
 title: Johnson 的研究手冊
-description: 持續累積 generative modeling、flow-based methods 與 robotics 論文、研究脈絡與技術概念的公開研究手冊。
+description: 持續累積 generative modeling、flow-based methods 與 robotics 論文、研究問題與技術概念的公開研究手冊。
 template: splash
 hero:
   tagline: 一個持續累積論文、研究問題與技術概念的公開 research handbook
@@ -8,22 +8,22 @@ hero:
     - text: 瀏覽 Paper Library
       link: /research-handbook/papers/
       variant: primary
-    - text: 查看 Research Problem Tree
+    - text: 查看 Research Knowledge Graph
       link: /research-handbook/tracks/problem-map/
 ---
 
-import ResearchTreeMap from '../../components/ResearchTreeMap.astro';
+import ResearchKnowledgeGraph from '../../components/ResearchKnowledgeGraph.astro';
 import PaperLibraryGrid from '../../components/PaperLibraryGrid.astro';
 
-## Research Problem Tree
+## Research Knowledge Graph
 
-主頁地圖改成 **Diffusion → Flow Matching → MeanFlow** 的主幹，再從 MeanFlow 往下拆出目前仍在演進中的 research questions。點問題節點可看 evidence；點 paper 名稱可直接進筆記。
+主頁以 **Diffusion → Flow Matching → MeanFlow** 作為方法主幹，但不是固定樹狀目錄。點擊 **MeanFlow** 後會向外展開 representation、training dynamics、objective / JVP、endpoint quality 與 distribution correctness；再點任一分支，可以看到相互連接的 papers、concepts 與可借鏡的過去方法。
 
-<ResearchTreeMap lang="zh" />
+<ResearchKnowledgeGraph lang="zh" />
 
 ## Paper Library
 
-每篇論文有獨立入口。單篇頁面負責整理該 paper 的 core question、derivation、method、training / inference、experiments、interpretation 與 limitations；跨論文的問題演進則由上方 Research Problem Tree 與 Research Tracks 串接。
+每篇論文有獨立入口。單篇頁面負責整理 core question、derivation、method、training / inference、experiments、interpretation 與 limitations；跨論文關係則由上方 knowledge graph 與 Research Tracks 串接。
 
 <PaperLibraryGrid lang="zh" />
 
@@ -39,5 +39,5 @@ import PaperLibraryGrid from '../../components/PaperLibraryGrid.astro';
 <div class="rh-section-grid rh-section-grid-3">
   <a class="rh-hub-card" href="/research-handbook/concepts/calculus-jvp/"><small>Concept</small><strong>Calculus & JVP</strong><span>從 ordinary derivative、偏微分與 total derivative 一路到 MeanFlow 的 JVP。</span></a>
   <a class="rh-hub-card" href="/research-handbook/foundations/flow-matching/"><small>Concept</small><strong>Flow Matching</strong><span>Conditional velocity、marginal velocity 與 training / inference。</span></a>
-  <a class="rh-hub-card" href="/research-handbook/interactive/"><small>Interactive</small><strong>Interactive Lab</strong><span>以互動元件檢視 probability path、JVP 與 MeanFlow objective。</span></a>
+  <a class="rh-hub-card" href="/research-handbook/interactive/"><small>Interactive</small><strong>Interactive Lab</strong><span>以 point cloud 與互動元件檢視 probability path、JVP 與 MeanFlow objective。</span></a>
 </div>

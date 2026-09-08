@@ -8,22 +8,22 @@ hero:
     - text: Browse Paper Library
       link: /research-handbook/en/papers/
       variant: primary
-    - text: View Research Problem Tree
+    - text: View Research Knowledge Graph
       link: /research-handbook/en/tracks/problem-map/
 ---
 
-import ResearchTreeMap from '../../../components/ResearchTreeMap.astro';
+import ResearchKnowledgeGraph from '../../../components/ResearchKnowledgeGraph.astro';
 import PaperLibraryGrid from '../../../components/PaperLibraryGrid.astro';
 
-## Research Problem Tree
+## Research Knowledge Graph
 
-The homepage now uses a **Diffusion → Flow Matching → MeanFlow** trunk, then branches from MeanFlow into the research questions that remain active. Select a question for evidence; select a paper name to open its note.
+The homepage uses **Diffusion → Flow Matching → MeanFlow** as the method trunk, but not as a rigid tree. Select **MeanFlow** to expand representation, training dynamics, objective / JVP, endpoint quality, and distribution correctness; then select a branch to reveal connected papers, concepts, and transferable ideas from earlier methods.
 
-<ResearchTreeMap lang="en" />
+<ResearchKnowledgeGraph lang="en" />
 
 ## Paper Library
 
-Each paper has an independent entry for its core question, derivations, method, training / inference, experiments, interpretation, and limitations. Cross-paper questions are connected through the Research Problem Tree and Research Tracks.
+Each paper has an independent entry for its core question, derivations, method, training / inference, experiments, interpretation, and limitations. Cross-paper relationships are connected through the graph and Research Tracks.
 
 <PaperLibraryGrid lang="en" />
 
@@ -39,5 +39,5 @@ Each paper has an independent entry for its core question, derivations, method, 
 <div class="rh-section-grid rh-section-grid-3">
   <a class="rh-hub-card" href="/research-handbook/en/concepts/calculus-jvp/"><small>Concept</small><strong>Calculus & JVP</strong><span>From ordinary derivatives and partial derivatives to the total derivative used by MeanFlow.</span></a>
   <a class="rh-hub-card" href="/research-handbook/en/foundations/flow-matching/"><small>Concept</small><strong>Flow Matching</strong><span>Conditional velocity, marginal velocity, training, and inference.</span></a>
-  <a class="rh-hub-card" href="/research-handbook/en/interactive/"><small>Interactive</small><strong>Interactive Lab</strong><span>Interactive views of probability paths, JVPs, and MeanFlow objectives.</span></a>
+  <a class="rh-hub-card" href="/research-handbook/en/interactive/"><small>Interactive</small><strong>Interactive Lab</strong><span>Point-cloud and interactive views of probability paths, JVPs, and MeanFlow objectives.</span></a>
 </div>

@@ -1,0 +1,83 @@
+---
+const { lang = 'zh' } = Astro.props;
+const isZh = lang !== 'en';
+const prefix = isZh ? '/research-handbook' : '/research-handbook/en';
+const panels = isZh ? {
+  representation:['Representation / NFE','如何把 local velocity 壓縮成 finite-time transport？','MeanFlow 把 instantaneous velocity v 換成 interval-average velocity u。這一支同時連到 Flow Map Matching 與 Shortcut-style finite-time representation。'],
+  training:['Training dynamics','如何安排 r=t、small-Δt 與 large-gap learning？','現有證據支持先形成 instantaneous / small-gap 能力，再逐步進入 large-gap MeanFlow；pure r=t-only warm-up 仍可做直接 ablation。'],
+  objective:['Objective / JVP','JVP tangent、uθ、vθ、Vθ 應如何分工？','Original MF 與 iMF 的關鍵差異集中在 JVP tangent；這一支連到偏微分、marginalization 與 compound predictor。'],
+  endpoint:['Endpoint / refinement','one-step coarse transport 之後是否還需要 correction？','RMFlow 代表另一條分支：不只改 objective，也可以把問題拆成 coarse transport + refinement。'],
+  distribution:['Distribution correctness','vector regression 變好，是否代表 probability path 真的正確？','Divergence alignment 提供 distribution-level constraint / diagnostic lens，可作為 fast-flow 方法的跨方法參考。']
+} : {
+  representation:['Representation / NFE','How can local velocity be compressed into finite-time transport?','MeanFlow replaces instantaneous velocity v with interval-average velocity u, connecting naturally to finite-time representations such as Flow Map Matching and Shortcut-style ideas.'],
+  training:['Training dynamics','How should r=t, small-Δt, and large-gap learning be scheduled?','Existing evidence supports establishing instantaneous / small-gap competence before large-gap MeanFlow; strict r=t-only warm-up remains a direct ablation question.'],
+  objective:['Objective / JVP','How should the JVP tangent, uθ, vθ, and Vθ interact?','The key Original-MF → iMF change sits in the JVP tangent and connects to partial derivatives, marginalization, and the compound predictor.'],
+  endpoint:['Endpoint / refinement','Does one-step coarse transport still need correction?','RMFlow represents a different branch: improve quality through coarse transport plus refinement rather than only reformulating the objective.'],
+  distribution:['Distribution correctness','Does better vector regression imply the correct probability path?','Divergence alignment provides a distribution-level constraint / diagnostic lens that may transfer to fast-flow research.']
+};
+---
+<div class="kg" data-kg data-lang={isZh?'zh':'en'}>
+  <div class="kg-head">
+    <div><span class="kicker">RESEARCH KNOWLEDGE GRAPH</span><strong>{isZh ? 'MeanFlow-centered 關聯地圖' : 'MeanFlow-centered relation graph'}</strong><p>{isZh ? '點 MeanFlow 展開研究分支；再點任一分支展開 papers、concepts 與可借鏡方法。相同節點可以同時連到多個問題。' : 'Select MeanFlow to expand the research branches, then open any branch to reveal papers, concepts, and transferable ideas. Nodes may connect to more than one problem.'}</p></div>
+    <div class="kg-actions"><button data-expand>{isZh ? '展開 MeanFlow' : 'Expand MeanFlow'}</button><button data-all>{isZh ? '全部展開' : 'Expand all'}</button></div>
+  </div>
+  <div class="legend"><span><i class="main"></i>{isZh?'主線':'mainline'}</span><span><i class="question"></i>{isZh?'問題':'question'}</span><span><i class="paper"></i>{isZh?'論文':'paper'}</span><span><i class="concept"></i>{isZh?'概念 / 舊方法':'concept / transfer'}</span></div>
+  <div class="graph-scroll">
+    <svg class="graph" viewBox="0 0 1200 780" role="img" aria-label={isZh?'MeanFlow 研究關聯圖':'MeanFlow research relation graph'}>
+      <defs><filter id="shadow" x="-20%" y="-20%" width="140%" height="140%"><feDropShadow dx="0" dy="4" stdDeviation="5" flood-opacity=".08"/></filter></defs>
+      <g class="base-edges"><path d="M600 92 L600 145"/><path d="M600 197 L600 252"/></g>
+      <g class="main-node"><rect x="480" y="42" width="240" height="50" rx="13"/><text x="600" y="72">Diffusion / Score-based</text></g>
+      <g class="main-node"><rect x="480" y="145" width="240" height="52" rx="13"/><text x="600" y="176">Flow Matching</text></g>
+      <g class="main-node focus" data-toggle-main tabindex="0" role="button"><rect x="465" y="252" width="270" height="62" rx="15"/><text x="600" y="280">MeanFlow</text><text x="600" y="300" class="sub">average velocity u · one/few-step</text></g>
+
+      <g class="branch-layer">
+        <g class="branch-edges"><path d="M465 280 C390 280 365 245 330 235"/><path d="M490 310 C405 350 360 390 320 435"/><path d="M600 314 L600 430"/><path d="M735 280 C815 280 850 245 885 235"/><path d="M710 310 C805 350 850 390 890 435"/></g>
+        <g class="branch-node" data-branch="representation" tabindex="0" role="button"><rect x="180" y="195" width="220" height="70" rx="13"/><text x="290" y="224">Representation / NFE</text><text x="290" y="246" class="sub">local → finite-time</text></g>
+        <g class="branch-node" data-branch="training" tabindex="0" role="button"><rect x="165" y="400" width="230" height="72" rx="13"/><text x="280" y="428">Training dynamics</text><text x="280" y="451" class="sub">r=t · small Δt · curriculum</text></g>
+        <g class="branch-node" data-branch="objective" tabindex="0" role="button"><rect x="485" y="430" width="230" height="72" rx="13"/><text x="600" y="458">Objective / JVP</text><text x="600" y="481" class="sub">e−x · vθ · Vθ</text></g>
+        <g class="branch-node" data-branch="endpoint" tabindex="0" role="button"><rect x="805" y="195" width="230" height="70" rx="13"/><text x="920" y="224">Endpoint / refinement</text><text x="920" y="246" class="sub">coarse → correction</text></g>
+        <g class="branch-node" data-branch="distribution" tabindex="0" role="button"><rect x="805" y="400" width="230" height="72" rx="13"/><text x="920" y="428">Distribution correctness</text><text x="920" y="451" class="sub">vector loss → path?</text></g>
+      </g>
+
+      <g class="child-layer" data-group="representation">
+        <path class="child-edge" d="M180 220 L118 150"/><path class="child-edge" d="M180 240 L118 290"/><path class="cross-edge" d="M180 250 C150 365 190 390 190 410"/>
+        <a href={`${prefix}/papers/meanflow/`}><g class="paper-node"><rect x="20" y="112" width="190" height="54" rx="11"/><text x="115" y="145">MeanFlow paper</text></g></a>
+        <g class="concept-node"><rect x="20" y="270" width="190" height="54" rx="11"/><text x="115" y="293">Flow Map Matching</text><text x="115" y="311" class="sub">finite displacement</text></g>
+        <g class="concept-node"><rect x="215" y="95" width="185" height="54" rx="11"/><text x="307" y="118">Shortcut Models</text><text x="307" y="136" class="sub">two-time consistency</text></g>
+      </g>
+      <g class="child-layer" data-group="training">
+        <path class="child-edge" d="M165 430 L115 535"/><path class="child-edge" d="M260 472 L260 570"/><path class="child-edge" d="M395 440 L455 545"/>
+        <a href={`${prefix}/papers/alphaflow/`}><g class="paper-node"><rect x="20" y="525" width="180" height="54" rx="11"/><text x="110" y="558">AlphaFlow</text></g></a>
+        <a href={`${prefix}/papers/meanflow-training/`}><g class="paper-node"><rect x="205" y="570" width="220" height="58" rx="11"/><text x="315" y="596">MF Training Dynamics</text><text x="315" y="615" class="sub">short → long gap</text></g></a>
+        <g class="concept-node"><rect x="420" y="525" width="205" height="58" rx="11"/><text x="522" y="550">Consistency curriculum</text><text x="522" y="569" class="sub">transfer lens</text></g>
+      </g>
+      <g class="child-layer" data-group="objective">
+        <path class="child-edge" d="M530 502 L470 610"/><path class="child-edge" d="M600 502 L600 650"/><path class="child-edge" d="M670 502 L745 610"/>
+        <a href={`${prefix}/papers/improved-meanflow/`}><g class="paper-node"><rect x="370" y="600" width="205" height="58" rx="11"/><text x="472" y="626">Improved MeanFlow</text><text x="472" y="645" class="sub">JVP tangent reformulation</text></g></a>
+        <a href={`${prefix}/concepts/calculus-jvp/`}><g class="concept-node"><rect x="500" y="665" width="200" height="56" rx="11"/><text x="600" y="691">Calculus & JVP</text><text x="600" y="709" class="sub">partials · total derivative</text></g></a>
+        <g class="concept-node"><rect x="700" y="600" width="210" height="58" rx="11"/><text x="805" y="626">uθ · vθ · Vθ</text><text x="805" y="645" class="sub">notation / roles</text></g>
+      </g>
+      <g class="child-layer" data-group="endpoint">
+        <path class="child-edge" d="M1035 220 L1090 145"/><path class="child-edge" d="M1035 245 L1090 300"/>
+        <a href={`${prefix}/papers/rmflow/`}><g class="paper-node"><rect x="1010" y="112" width="170" height="54" rx="11"/><text x="1095" y="145">RMFlow</text></g></a>
+        <g class="concept-node"><rect x="995" y="285" width="185" height="58" rx="11"/><text x="1087" y="310">Refinement / corrector</text><text x="1087" y="329" class="sub">transfer lens</text></g>
+      </g>
+      <g class="child-layer" data-group="distribution">
+        <path class="child-edge" d="M1035 430 L1090 535"/><path class="child-edge" d="M930 472 L930 610"/><path class="cross-edge" d="M805 430 C740 350 700 250 690 195"/>
+        <a href={`${prefix}/papers/flow-divergence/`}><g class="paper-node"><rect x="995" y="525" width="190" height="58" rx="11"/><text x="1090" y="550">Flow Divergence</text><text x="1090" y="569" class="sub">path-level objective</text></g></a>
+        <g class="concept-node"><rect x="835" y="600" width="205" height="58" rx="11"/><text x="937" y="626">Continuity / divergence</text><text x="937" y="645" class="sub">distribution constraint</text></g>
+      </g>
+    </svg>
+  </div>
+  <div class="kg-inspector">
+    <div class="inspector-placeholder"><span>{isZh?'使用方式':'How to use'}</span><strong>{isZh?'先點 MeanFlow，再點任一研究分支。':'Select MeanFlow, then select any research branch.'}</strong></div>
+    {Object.entries(panels).map(([id,p])=><section data-panel={id} hidden><span>{p[0]}</span><h3>{p[1]}</h3><p>{p[2]}</p></section>)}
+  </div>
+</div>
+<style>
+.kg{box-sizing:border-box;width:100%;border:1px solid var(--rh-border);border-radius:1rem;padding:1rem;background:var(--rh-surface);margin:1rem 0 1.5rem;box-shadow:0 14px 38px rgba(74,49,34,.055)}.kg-head{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:1rem;align-items:end}.kg-head strong{display:block;font-size:1.08rem}.kg-head p{margin:.3rem 0 0;color:var(--rh-muted);line-height:1.55}.kicker{display:block;color:var(--rh-caramel);font-size:.68rem;font-weight:800;letter-spacing:.13em;margin-bottom:.25rem}.kg-actions{display:flex;gap:.45rem;flex-wrap:wrap}.kg-actions button{height:2.5rem;border:1px solid var(--rh-border);border-radius:.55rem;background:var(--rh-surface-2);color:var(--rh-text);padding:0 .75rem;font:inherit;cursor:pointer}.kg-actions button:hover{border-color:var(--rh-caramel)}.legend{display:flex;gap:.75rem;flex-wrap:wrap;margin:.75rem 0;font-size:.7rem;color:var(--rh-muted)}.legend span{display:flex;gap:.3rem;align-items:center}.legend i{width:.65rem;height:.65rem;border-radius:3px;display:inline-block}.legend .main{background:var(--rh-coffee)}.legend .question{background:var(--rh-caramel)}.legend .paper{background:var(--rh-surface-2);border:1px solid var(--rh-coffee)}.legend .concept{background:transparent;border:1px dashed var(--rh-caramel)}.graph-scroll{border:1px solid var(--rh-border);border-radius:.8rem;background:color-mix(in srgb,var(--rh-surface) 94%,white);overflow:auto}.graph{display:block;width:100%;min-width:980px;height:auto}.base-edges path,.branch-edges path,.child-edge,.cross-edge{fill:none;stroke:var(--rh-border);stroke-width:2}.cross-edge{stroke:var(--rh-caramel);stroke-dasharray:7 7;opacity:.55}.main-node rect{fill:var(--rh-surface-2);stroke:var(--rh-border);stroke-width:1.5}.main-node text,.branch-node text,.paper-node text,.concept-node text{fill:var(--rh-text);font-size:14px;font-weight:700;text-anchor:middle;pointer-events:none}.main-node .sub,.branch-node .sub,.paper-node .sub,.concept-node .sub{fill:var(--rh-muted);font-size:11px;font-weight:500}.main-node.focus{cursor:pointer}.main-node.focus rect{fill:color-mix(in srgb,var(--rh-coffee) 9%,var(--rh-surface-2));stroke:var(--rh-coffee);stroke-width:2.5}.branch-layer{opacity:0;pointer-events:none;transition:opacity .22s ease}.kg.expanded .branch-layer{opacity:1;pointer-events:auto}.branch-node{cursor:pointer}.branch-node rect{fill:var(--rh-surface-2);stroke:var(--rh-border);stroke-width:1.5;transition:.16s}.branch-node:hover rect,.branch-node.active rect{stroke:var(--rh-caramel);stroke-width:2.5;fill:color-mix(in srgb,var(--rh-caramel) 8%,var(--rh-surface-2))}.child-layer{opacity:0;pointer-events:none;transition:opacity .2s ease}.child-layer.open{opacity:1;pointer-events:auto}.paper-node rect{fill:var(--rh-surface);stroke:var(--rh-coffee);stroke-width:1.4}.paper-node:hover rect{stroke:var(--rh-caramel);stroke-width:2.3}.concept-node rect{fill:var(--rh-surface);stroke:var(--rh-caramel);stroke-width:1.3;stroke-dasharray:5 4}.kg-inspector{margin-top:.8rem}.kg-inspector>div,.kg-inspector section{border:1px solid var(--rh-border);border-radius:.75rem;padding:.85rem;background:var(--rh-surface-2)}.kg-inspector span{display:block;color:var(--rh-caramel);font-size:.7rem;text-transform:uppercase;letter-spacing:.06em;font-weight:800}.kg-inspector strong{display:block;margin-top:.25rem}.kg-inspector h3{margin:.3rem 0;font-size:1rem}.kg-inspector p{margin:.35rem 0 0;color:var(--rh-muted);line-height:1.6;font-size:.84rem}
+@media(max-width:760px){.kg-head{grid-template-columns:1fr}.kg-actions{width:100%}.kg-actions button{flex:1}.graph{min-width:900px}}
+</style>
+<script>
+for(const root of document.querySelectorAll('[data-kg]')){if(root.dataset.ready)continue;root.dataset.ready='1';const main=root.querySelector('[data-toggle-main]'),expand=root.querySelector('[data-expand]'),all=root.querySelector('[data-all]'),branches=[...root.querySelectorAll('[data-branch]')],groups=[...root.querySelectorAll('[data-group]')],panels=[...root.querySelectorAll('[data-panel]')],placeholder=root.querySelector('.inspector-placeholder');let expanded=false;function setExpanded(v){expanded=v;root.classList.toggle('expanded',v);expand.textContent=v?(root.dataset.lang==='zh'?'收合 MeanFlow':'Collapse MeanFlow'):(root.dataset.lang==='zh'?'展開 MeanFlow':'Expand MeanFlow');if(!v){branches.forEach(b=>b.classList.remove('active'));groups.forEach(g=>g.classList.remove('open'));panels.forEach(p=>p.hidden=true);placeholder.hidden=false}}function setBranch(id){setExpanded(true);branches.forEach(b=>b.classList.toggle('active',b.dataset.branch===id));groups.forEach(g=>g.classList.toggle('open',g.dataset.group===id));panels.forEach(p=>p.hidden=p.dataset.panel!==id);placeholder.hidden=true}function toggleAll(){setExpanded(true);const open=groups.every(g=>g.classList.contains('open'));groups.forEach(g=>g.classList.toggle('open',!open));branches.forEach(b=>b.classList.toggle('active',!open));all.textContent=!open?(root.dataset.lang==='zh'?'全部收合':'Collapse all'):(root.dataset.lang==='zh'?'全部展開':'Expand all');if(open){panels.forEach(p=>p.hidden=true);placeholder.hidden=false}}main.addEventListener('click',()=>setExpanded(!expanded));main.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();setExpanded(!expanded)}});expand.addEventListener('click',()=>setExpanded(!expanded));all.addEventListener('click',toggleAll);branches.forEach(b=>{b.addEventListener('click',()=>setBranch(b.dataset.branch));b.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();setBranch(b.dataset.branch)}})});setExpanded(false)}
+</script>

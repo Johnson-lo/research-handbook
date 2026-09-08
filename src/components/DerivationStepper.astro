@@ -2,93 +2,32 @@
 import katex from 'katex';
 const { lang = 'zh' } = Astro.props;
 const isZh = lang !== 'en';
-const render = (s) => katex.renderToString(s, { displayMode: true, throwOnError: false, strict: false });
+const render = (s) => katex.renderToString(s,{displayMode:true,throwOnError:false,strict:false});
 const steps = isZh ? [
-  {
-    why: 'Average velocity 乘上 interval 長度，就是這一段累積位移。',
-    formula: String.raw`A(r,t)=(t-r)u(z_t,r,t)=\int_r^t v(z_\tau,\tau)\,d\tau`,
-    note: '先把「平均速度」還原成「總位移」，後面才方便對 endpoint 做微分。'
-  },
-  {
-    why: '固定 r，對右端點 t 微分。右邊依 Fundamental Theorem of Calculus 變成當下的 instantaneous velocity。',
-    formula: String.raw`\frac{d}{dt}\Big[(t-r)u\Big]=v(z_t,t)`,
-    note: '直覺上：累積位移多延長一小段 dt，新增加的位移就是當下速度乘上 dt。'
-  },
-  {
-    why: '左邊是兩個都會隨 t 改變的量相乘，因此使用 product rule。',
-    formula: String.raw`\frac{d}{dt}\Big[(t-r)u\Big]=u+(t-r)\frac{du}{dt}`,
-    formula2: String.raw`\boxed{v=u+(t-r)\frac{du}{dt}}`,
-    note: 'MeanFlow Identity：instantaneous velocity = interval average + endpoint 移動造成的 correction。'
-  },
-  {
-    why: '關鍵是 u 並不是只依賴 t；它其實是 u(z_t,r,t)。因此 du/dt 必須用 total derivative。',
-    formula: String.raw`\frac{du}{dt}=\partial_z u\,\frac{dz_t}{dt}+\partial_r u\,\frac{dr}{dt}+\partial_t u`,
-    formula2: String.raw`\frac{dr}{dt}=0,\quad \frac{dz_t}{dt}=v\quad\Longrightarrow\quad \frac{du}{dt}=\partial_z u\,v+\partial_tu`,
-    note: '第一項是 state 移動造成的變化；第二項是 time 本身造成的變化。r 在這個 derivative 中固定。'
-  },
-  {
-    why: 'JVP 只是把上一行 total derivative 寫成「Jacobian × tangent direction」。',
-    formula: String.raw`q(t)=(z_t,r,t),\qquad q'(t)=[v,0,1]`,
-    formula2: String.raw`\operatorname{JVP}(u;v)=J_u(q)\,[v,0,1]=\partial_z u\,v+\partial_tu`,
-    note: '被微分的是 u；v 只是 state 部分的 tangent direction。JVP 不需要把完整 Jacobian 矩陣真的展開。'
-  }
+  ['1｜從平均量回到總位移','Average velocity 乘上 interval 長度，就是這段路徑的總位移。',String.raw`(t-r)u(z_t,r,t)=\int_r^t v(z_\tau,\tau)\,d\tau`,'先把「平均」還原成「累積量」，才方便對 endpoint 做微分。'],
+  ['2｜對右端點 t 微分','固定 r。右側依微積分基本定理，對上限 t 微分後得到當下 velocity。',String.raw`\frac{d}{dt}\left[(t-r)u\right]=v(z_t,t)`,'把區間延長一個很小的 dt，新增加的位移約等於 v(t)dt。'],
+  ['3｜Product rule','左側的 (t-r) 與 u 都會隨 t 改變，因此必須用乘法法則。',String.raw`\frac{d}{dt}\left[(t-r)u\right]=u+(t-r)\frac{du}{dt}`,String.raw`\boxed{v=u+(t-r)\frac{du}{dt}}`],
+  ['4｜為什麼是 total derivative？','u 真正的輸入是 (z_t,r,t)。當 t 改變時，z_t 也會沿 flow 移動；r 在此固定。',String.raw`\frac{du}{dt}=\frac{\partial u}{\partial z}\frac{dz_t}{dt}+\frac{\partial u}{\partial r}\frac{dr}{dt}+\frac{\partial u}{\partial t}`,'這裡不能只看 ∂u/∂t，因為 state z_t 也正在變。'],
+  ['5｜代入 flow 的移動方向','Flow ODE 給出 dz_t/dt=v，而固定 r 代表 dr/dt=0。',String.raw`\frac{dz_t}{dt}=v,\qquad \frac{dr}{dt}=0\quad\Longrightarrow\quad\frac{du}{dt}=\partial_z u\,v+\partial_tu`,'第一項是 state motion，第二項是 time 本身造成的變化。'],
+  ['6｜JVP 從哪裡來？','把 network input 寫成 q(t)=(z_t,r,t)。Chain rule 可直接寫成 Jacobian 乘上 q 的 tangent。',String.raw`q'(t)=\left[v,0,1\right],\qquad\frac{du}{dt}=J_u(q)\,q'(t)`,String.raw`\boxed{\operatorname{JVP}(u;v)=J_u(z,r,t)[v,0,1]=\partial_z u\,v+\partial_tu}`]
 ] : [
-  {
-    why: 'Average velocity multiplied by the interval length gives the accumulated displacement.',
-    formula: String.raw`A(r,t)=(t-r)u(z_t,r,t)=\int_r^t v(z_\tau,\tau)\,d\tau`,
-    note: 'Convert the average quantity back into total displacement before differentiating the endpoint.'
-  },
-  {
-    why: 'Hold r fixed and differentiate with respect to the right endpoint t. The Fundamental Theorem of Calculus gives the instantaneous velocity.',
-    formula: String.raw`\frac{d}{dt}\Big[(t-r)u\Big]=v(z_t,t)`,
-    note: 'Extending the interval by dt adds approximately v(t)dt of displacement.'
-  },
-  {
-    why: 'The left side is a product of quantities that vary with t, so use the product rule.',
-    formula: String.raw`\frac{d}{dt}\Big[(t-r)u\Big]=u+(t-r)\frac{du}{dt}`,
-    formula2: String.raw`\boxed{v=u+(t-r)\frac{du}{dt}}`,
-    note: 'MeanFlow Identity: instantaneous velocity equals interval average plus an endpoint-change correction.'
-  },
-  {
-    why: 'The key point is that u is really u(z_t,r,t), so du/dt is a total derivative.',
-    formula: String.raw`\frac{du}{dt}=\partial_z u\,\frac{dz_t}{dt}+\partial_r u\,\frac{dr}{dt}+\partial_t u`,
-    formula2: String.raw`\frac{dr}{dt}=0,\quad \frac{dz_t}{dt}=v\quad\Longrightarrow\quad \frac{du}{dt}=\partial_z u\,v+\partial_tu`,
-    note: 'The first term comes from state motion; the second from time itself. r is held fixed.'
-  },
-  {
-    why: 'A JVP is simply the same total derivative written as Jacobian times a tangent direction.',
-    formula: String.raw`q(t)=(z_t,r,t),\qquad q'(t)=[v,0,1]`,
-    formula2: String.raw`\operatorname{JVP}(u;v)=J_u(q)\,[v,0,1]=\partial_z u\,v+\partial_tu`,
-    note: 'The differentiated function is u; v supplies only the state-space tangent direction. The full Jacobian never needs to be materialized.'
-  }
+  ['1 | Recover displacement','Average velocity times interval length is the accumulated displacement.',String.raw`(t-r)u(z_t,r,t)=\int_r^t v(z_\tau,\tau)\,d\tau`,'Convert the average quantity back into an accumulated quantity before differentiating the endpoint.'],
+  ['2 | Differentiate the endpoint','Hold r fixed. By the Fundamental Theorem of Calculus, differentiating the upper limit t gives the instantaneous velocity.',String.raw`\frac{d}{dt}\left[(t-r)u\right]=v(z_t,t)`,'Extending the interval by a tiny dt adds approximately v(t)dt of displacement.'],
+  ['3 | Product rule','Both (t-r) and u change with t, so the left side uses the product rule.',String.raw`\frac{d}{dt}\left[(t-r)u\right]=u+(t-r)\frac{du}{dt}`,String.raw`\boxed{v=u+(t-r)\frac{du}{dt}}`],
+  ['4 | Why a total derivative?','The true inputs are (z_t,r,t). When t changes, z_t also moves along the flow while r is fixed.',String.raw`\frac{du}{dt}=\frac{\partial u}{\partial z}\frac{dz_t}{dt}+\frac{\partial u}{\partial r}\frac{dr}{dt}+\frac{\partial u}{\partial t}`,'We cannot keep only ∂u/∂t because the state z_t is moving too.'],
+  ['5 | Substitute the flow direction','The flow ODE gives dz_t/dt=v and holding r fixed gives dr/dt=0.',String.raw`\frac{dz_t}{dt}=v,\qquad \frac{dr}{dt}=0\quad\Longrightarrow\quad\frac{du}{dt}=\partial_z u\,v+\partial_tu`,'The first term is state motion; the second is explicit time dependence.'],
+  ['6 | Where the JVP comes from','Write the network input as q(t)=(z_t,r,t). The chain rule is Jacobian times the tangent of q.',String.raw`q'(t)=\left[v,0,1\right],\qquad\frac{du}{dt}=J_u(q)\,q'(t)`,String.raw`\boxed{\operatorname{JVP}(u;v)=J_u(z,r,t)[v,0,1]=\partial_z u\,v+\partial_tu}`]
 ];
 ---
-<div class="derivation" data-derivation data-lang={isZh ? 'zh' : 'en'}>
-  <div class="derivation-head">
-    <strong>{isZh ? 'MeanFlow Identity｜逐步推導' : 'MeanFlow Identity | step-by-step derivation'}</strong>
-    <div class="controls" role="group" aria-label={isZh ? '推導步驟控制' : 'Derivation controls'}>
-      <button type="button" data-prev>{isZh ? '上一步' : 'Prev'}</button>
-      <button type="button" data-play>{isZh ? '播放' : 'Play'}</button>
-      <button type="button" data-next>{isZh ? '下一步' : 'Next'}</button>
-    </div>
-  </div>
-  <div class="progress" aria-hidden="true">{steps.map(() => <i></i>)}</div>
-  {steps.map((step, i) => (
-    <section data-step={i} hidden={i !== 0}>
-      <p class="why">{step.why}</p>
-      <div class="math-scroll" set:html={render(step.formula)}></div>
-      {step.formula2 && <div class="math-scroll second" set:html={render(step.formula2)}></div>}
-      <p class="takeaway">{step.note}</p>
-    </section>
-  ))}
+<div class="derivation" data-derivation data-lang={isZh?'zh':'en'}>
+  <div class="derivation-head"><strong>{isZh?'MeanFlow Identity｜從積分一路推到 JVP':'MeanFlow Identity | from integral to JVP'}</strong><div class="controls"><button data-prev>{isZh?'上一步':'Prev'}</button><button data-play>{isZh?'播放':'Play'}</button><button data-next>{isZh?'下一步':'Next'}</button></div></div>
+  <div class="progress">{steps.map(()=><i></i>)}</div>
+  {steps.map((s,i)=><section data-step={i} hidden={i!==0}><span class="step-label">{s[0]}</span><p class="why">{s[1]}</p><div class="math-box" set:html={render(s[2])}></div>{s[3] && (s[3].includes('\\')||s[3].includes('\boxed')) ? <div class="math-box secondary" set:html={render(s[3])}></div> : <p class="takeaway">{s[3]}</p>}</section>)}
 </div>
-
 <style>
-.derivation{box-sizing:border-box;width:100%;border:1px solid var(--rh-border);border-radius:1rem;padding:1rem;margin:1.2rem 0;background:var(--rh-surface)}
-.derivation-head{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:1rem;align-items:center}.controls{display:grid;grid-template-columns:repeat(3,6.25rem);gap:.5rem}.controls button{box-sizing:border-box;width:100%;height:2.55rem;margin:0;border:1px solid var(--rh-border);border-radius:.55rem;background:var(--rh-surface-2);color:var(--rh-text);display:flex;align-items:center;justify-content:center;font:inherit;white-space:nowrap;cursor:pointer}.controls button:hover{border-color:var(--rh-caramel)}.controls button:disabled{opacity:.45;cursor:default}.progress{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:.35rem;margin:.85rem 0}.progress i{height:4px;border-radius:999px;background:var(--rh-border)}.progress i.active{background:var(--rh-coffee)}.derivation section{box-sizing:border-box;min-height:17rem;padding:.2rem 0;animation:fadein .18s ease}.why{font-weight:700;line-height:1.6}.math-scroll{width:100%;overflow-x:auto;overflow-y:hidden;padding:.55rem .2rem}.math-scroll :global(.katex-display){margin:.4rem 0;min-width:max-content}.math-scroll.second{border-top:1px dashed var(--rh-border);margin-top:.15rem}.takeaway{border-left:3px solid var(--rh-caramel);padding:.65rem .8rem;margin:.65rem 0 0;background:color-mix(in srgb,var(--rh-caramel) 6%,transparent);border-radius:.35rem;line-height:1.65}@keyframes fadein{from{opacity:.3;transform:translateY(3px)}to{opacity:1;transform:none}}
-@media(max-width:720px){.derivation-head{grid-template-columns:1fr}.controls{grid-template-columns:repeat(3,minmax(0,1fr));width:100%}.controls button{min-width:0}.derivation section{min-height:19rem}}
+.derivation{box-sizing:border-box;width:100%;border:1px solid var(--rh-border);border-radius:1rem;padding:1rem;margin:1.2rem 0;background:var(--rh-surface);overflow:hidden}.derivation-head{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:1rem;align-items:center}.controls{display:grid;grid-template-columns:repeat(3,minmax(0,6.2rem));gap:.45rem}.controls button{width:100%;height:2.5rem;border:1px solid var(--rh-border);border-radius:.55rem;background:var(--rh-surface-2);color:var(--rh-text);font:inherit;cursor:pointer}.controls button:disabled{opacity:.45}.progress{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:.3rem;margin:.8rem 0}.progress i{height:4px;border-radius:999px;background:var(--rh-border)}.progress i.active{background:var(--rh-coffee)}.derivation section{min-height:18rem;border-top:1px solid var(--rh-border);padding-top:.9rem}.step-label{display:block;color:var(--rh-caramel);font-size:.72rem;letter-spacing:.05em;font-weight:800}.why{font-weight:650;line-height:1.6}.math-box{max-width:100%;overflow-x:auto;overflow-y:hidden;border:1px solid var(--rh-border);border-radius:.7rem;background:var(--rh-surface-2);padding:.65rem .8rem;margin:.65rem 0}.math-box :global(.katex-display){width:max-content;min-width:100%;margin:.2rem 0}.math-box.secondary{background:color-mix(in srgb,var(--rh-caramel) 7%,var(--rh-surface-2))}.takeaway{border-left:3px solid var(--rh-caramel);padding:.65rem .8rem;background:color-mix(in srgb,var(--rh-caramel) 6%,transparent);border-radius:.35rem;line-height:1.6}
+@media(max-width:720px){.derivation-head{grid-template-columns:1fr}.controls{grid-template-columns:repeat(3,minmax(0,1fr));max-width:none}.derivation section{min-height:20rem}}
 </style>
-
 <script>
-for(const root of document.querySelectorAll('[data-derivation]')){if(root.dataset.ready)continue;root.dataset.ready='1';const steps=[...root.querySelectorAll('[data-step]')],bars=[...root.querySelectorAll('.progress i')],prev=root.querySelector('[data-prev]'),next=root.querySelector('[data-next]'),play=root.querySelector('[data-play]');const isZh=root.dataset.lang==='zh';let idx=0,timer=null;function render(){steps.forEach((s,i)=>s.hidden=i!==idx);bars.forEach((b,i)=>b.classList.toggle('active',i<=idx));prev.disabled=idx===0;next.disabled=idx===steps.length-1}function stop(){if(timer){clearInterval(timer);timer=null}play.textContent=isZh?'播放':'Play'}prev.addEventListener('click',()=>{stop();idx=Math.max(0,idx-1);render()});next.addEventListener('click',()=>{stop();idx=Math.min(steps.length-1,idx+1);render()});play.addEventListener('click',()=>{if(timer){stop();return}play.textContent=isZh?'暫停':'Pause';timer=setInterval(()=>{if(idx===steps.length-1){stop();return}idx++;render()},3000)});render()}
+for(const root of document.querySelectorAll('[data-derivation]')){if(root.dataset.ready)continue;root.dataset.ready='1';const steps=[...root.querySelectorAll('[data-step]')],bars=[...root.querySelectorAll('.progress i')],prev=root.querySelector('[data-prev]'),next=root.querySelector('[data-next]'),play=root.querySelector('[data-play]');const zh=root.dataset.lang==='zh';let idx=0,timer=null;function render(){steps.forEach((s,i)=>s.hidden=i!==idx);bars.forEach((b,i)=>b.classList.toggle('active',i<=idx));prev.disabled=idx===0;next.disabled=idx===steps.length-1}function stop(){if(timer){clearInterval(timer);timer=null}play.textContent=zh?'播放':'Play'}prev.addEventListener('click',()=>{stop();idx=Math.max(0,idx-1);render()});next.addEventListener('click',()=>{stop();idx=Math.min(steps.length-1,idx+1);render()});play.addEventListener('click',()=>{if(timer){stop();return}play.textContent=zh?'暫停':'Pause';timer=setInterval(()=>{if(idx>=steps.length-1){stop();return}idx++;render()},3000)});render()}
 </script>
