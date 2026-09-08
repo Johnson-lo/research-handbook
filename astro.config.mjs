@@ -36,6 +36,8 @@ export default defineConfig({
             { label: '論文總覽', translations: { en: 'Overview' }, slug: 'papers' },
             { label: 'Mean Flows for One-step Generative Modeling', slug: 'papers/meanflow' },
             { label: 'Improved Mean Flows', slug: 'papers/improved-meanflow' },
+            { label: 'AlphaFlow', slug: 'papers/alphaflow' },
+            { label: 'Understanding & Improving MeanFlow Training', slug: 'papers/meanflow-training' },
             { label: 'RMFlow', slug: 'papers/rmflow' },
             { label: 'Improving Flow Matching by Aligning Flow Divergence', slug: 'papers/flow-divergence' }
           ]
@@ -45,6 +47,7 @@ export default defineConfig({
           translations: { en: 'Research Tracks' },
           items: [
             { label: '研究脈絡總覽', translations: { en: 'Overview' }, slug: 'tracks' },
+            { label: 'Research Problem Map', slug: 'tracks/problem-map' },
             { label: 'MeanFlow Evolution', slug: 'meanflow/story' },
             { label: 'Flow Matching Objectives', slug: 'tracks/flow-matching-objectives' }
           ]

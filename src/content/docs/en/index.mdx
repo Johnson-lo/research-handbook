@@ -1,44 +1,43 @@
 ---
 title: Johnson's Research Handbook
-description: A growing public research handbook for papers, research tracks, and technical concepts across generative modeling, flow-based methods, and robotics.
+description: A growing public research handbook for papers, research questions, and technical concepts across generative modeling, flow-based methods, and robotics.
 template: splash
 hero:
-  tagline: A growing research library for papers, research tracks, and technical concepts
+  tagline: A growing research library organized by papers, research questions, and technical concepts
   actions:
     - text: Browse Paper Library
       link: /research-handbook/en/papers/
       variant: primary
-    - text: Explore Research Tracks
-      link: /research-handbook/en/tracks/
+    - text: View Research Problem Map
+      link: /research-handbook/en/tracks/problem-map/
 ---
 
+import ResearchProblemMap from '../../../components/ResearchProblemMap.astro';
 import PaperLibraryGrid from '../../../components/PaperLibraryGrid.astro';
+
+## Research Problem Map
+
+The site is not organized only by paper title. Questions encountered during reading and experimentation are collected into a research graph: **foundations on the left, research questions in the middle, and papers providing evidence on the right.**
+
+<ResearchProblemMap lang="en" />
 
 ## Paper Library
 
-Each paper has its own entry for the problem, method, equations, training / inference, experiments, interpretation, and limitations. Cross-paper evolution is organized separately under Research Tracks.
+Each paper has an independent entry for its core question, derivations, method, training / inference, experiments, interpretation, and limitations. Cross-paper questions are connected through the Research Problem Map and Research Tracks.
 
 <PaperLibraryGrid lang="en" />
 
 ## Research Tracks
 
 <div class="rh-section-grid">
-  <a class="rh-hub-card" href="/research-handbook/en/meanflow/story/">
-    <small>Research Track</small>
-    <strong>MeanFlow Evolution</strong>
-    <span>Flow Matching → MeanFlow → Improved MeanFlow, with a link to the later RMFlow branch.</span>
-  </a>
-  <a class="rh-hub-card" href="/research-handbook/en/tracks/flow-matching-objectives/">
-    <small>Research Track</small>
-    <strong>Flow Matching Objectives</strong>
-    <span>From conditional velocity regression to probability-path accuracy and divergence alignment.</span>
-  </a>
+  <a class="rh-hub-card" href="/research-handbook/en/meanflow/story/"><small>Research Track</small><strong>MeanFlow Evolution</strong><span>Flow Matching → MeanFlow → Improved MeanFlow, with branches into AlphaFlow, training curricula, and RMFlow.</span></a>
+  <a class="rh-hub-card" href="/research-handbook/en/tracks/flow-matching-objectives/"><small>Research Track</small><strong>Flow Matching Objectives</strong><span>From conditional velocity regression to probability-path accuracy and divergence alignment.</span></a>
 </div>
 
 ## Concepts
 
 <div class="rh-section-grid rh-section-grid-3">
-  <a class="rh-hub-card" href="/research-handbook/en/foundations/distribution-and-sampling/"><small>Concept</small><strong>Distribution & Sampling</strong><span>Data distributions, priors, and sampling semantics.</span></a>
+  <a class="rh-hub-card" href="/research-handbook/en/concepts/calculus-jvp/"><small>Concept</small><strong>Calculus & JVP</strong><span>From ordinary derivatives and partial derivatives to the total derivative used by MeanFlow.</span></a>
   <a class="rh-hub-card" href="/research-handbook/en/foundations/flow-matching/"><small>Concept</small><strong>Flow Matching</strong><span>Conditional velocity, marginal velocity, training, and inference.</span></a>
   <a class="rh-hub-card" href="/research-handbook/en/interactive/"><small>Interactive</small><strong>Interactive Lab</strong><span>Interactive views of probability paths, JVPs, and MeanFlow objectives.</span></a>
 </div>

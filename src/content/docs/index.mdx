@@ -3,42 +3,41 @@ title: Johnson 的研究手冊
 description: 持續累積 generative modeling、flow-based methods 與 robotics 論文、研究脈絡與技術概念的公開研究手冊。
 template: splash
 hero:
-  tagline: 一個持續累積論文、研究脈絡與技術概念的公開 research handbook
+  tagline: 一個持續累積論文、研究問題與技術概念的公開 research handbook
   actions:
     - text: 瀏覽 Paper Library
       link: /research-handbook/papers/
       variant: primary
-    - text: 查看 Research Tracks
-      link: /research-handbook/tracks/
+    - text: 查看 Research Problem Map
+      link: /research-handbook/tracks/problem-map/
 ---
 
+import ResearchProblemMap from '../../components/ResearchProblemMap.astro';
 import PaperLibraryGrid from '../../components/PaperLibraryGrid.astro';
+
+## Research Problem Map
+
+本站不只按 paper 排列內容，也把閱讀與實驗中遇到的問題整理成一張 research graph：**左側是基礎框架，中間是尚待回答或已被部分回答的問題，右側是提供證據的論文。** 這讓同一個問題可以跨越多篇 paper，而不是被藏在單篇心得裡。
+
+<ResearchProblemMap lang="zh" />
 
 ## Paper Library
 
-每篇論文有獨立入口。單篇頁面負責整理該 paper 的 problem、method、equations、training / inference、experiments、interpretation 與 limitations；跨論文的演進關係則另外放在 Research Tracks。
+每篇論文有獨立入口。單篇頁面負責整理該 paper 的 core question、derivation、method、training / inference、experiments、interpretation 與 limitations；跨論文的問題演進則由上方 Research Problem Map 與 Research Tracks 串接。
 
 <PaperLibraryGrid lang="zh" />
 
 ## Research Tracks
 
 <div class="rh-section-grid">
-  <a class="rh-hub-card" href="/research-handbook/meanflow/story/">
-    <small>Research Track</small>
-    <strong>MeanFlow Evolution</strong>
-    <span>Flow Matching → MeanFlow → Improved MeanFlow，並連到後續 RMFlow 分支。</span>
-  </a>
-  <a class="rh-hub-card" href="/research-handbook/tracks/flow-matching-objectives/">
-    <small>Research Track</small>
-    <strong>Flow Matching Objectives</strong>
-    <span>從 conditional velocity regression 延伸到 probability-path accuracy 與 divergence alignment。</span>
-  </a>
+  <a class="rh-hub-card" href="/research-handbook/meanflow/story/"><small>Research Track</small><strong>MeanFlow Evolution</strong><span>Flow Matching → MeanFlow → Improved MeanFlow，並連到 AlphaFlow、training curriculum 與 RMFlow 等分支。</span></a>
+  <a class="rh-hub-card" href="/research-handbook/tracks/flow-matching-objectives/"><small>Research Track</small><strong>Flow Matching Objectives</strong><span>從 conditional velocity regression 延伸到 probability-path accuracy 與 divergence alignment。</span></a>
 </div>
 
 ## Concepts
 
 <div class="rh-section-grid rh-section-grid-3">
-  <a class="rh-hub-card" href="/research-handbook/foundations/distribution-and-sampling/"><small>Concept</small><strong>Distribution & Sampling</strong><span>資料分布、prior 與 sampling 的基礎語意。</span></a>
+  <a class="rh-hub-card" href="/research-handbook/concepts/calculus-jvp/"><small>Concept</small><strong>Calculus & JVP</strong><span>從 ordinary derivative、偏微分與 total derivative 一路到 MeanFlow 的 JVP。</span></a>
   <a class="rh-hub-card" href="/research-handbook/foundations/flow-matching/"><small>Concept</small><strong>Flow Matching</strong><span>Conditional velocity、marginal velocity 與 training / inference。</span></a>
   <a class="rh-hub-card" href="/research-handbook/interactive/"><small>Interactive</small><strong>Interactive Lab</strong><span>以互動元件檢視 probability path、JVP 與 MeanFlow objective。</span></a>
 </div>
