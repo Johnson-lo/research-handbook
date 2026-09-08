@@ -4,17 +4,17 @@ const isZh = lang !== 'en';
 const nodes = isZh ? [
   ['Flow Matching','如何學一個能把 noise transport 到 data 的 local field？','instantaneous velocity v','simulation-free velocity regression','通常仍需要多次 ODE query'],
   ['MeanFlow','如何把多次 local query 壓到 one-step？','average velocity u','直接學 finite-time average transport','u 沒有直接 sample GT；JVP target 變複雜'],
-  ['Improved MeanFlow','Original MF 的 objective 為何不穩定？','compound predictor Vθ','把 JVP tangent 從 e−x 換成 vθ(z_t)','仍有 endpoint / interval / system-level 問題'],
-  ['RMFlow','若 1-NFE coarse transport 還不夠好，除了改 JVP 還能做什麼？','coarse transport + refinement','在 1-NFE MeanFlow 後加入 tailored noise refinement','形成 distribution-aware refinement branch']
+  ['Improved MeanFlow','Original MF 的 objective 為何有額外 variance / dependency？','compound predictor Vθ','JVP tangent：e−x → vθ(z_t)','training dynamics 與 endpoint quality 仍未完全解決'],
+  ['RMFlow','若 coarse 1-NFE transport 不夠好，除了改 JVP 還能做什麼？','coarse transport + refinement','在 MeanFlow 後加入 tailored refinement','形成 distribution-aware refinement branch']
 ] : [
-  ['Flow Matching','How can we learn a local field that transports noise to data?','instantaneous velocity v','simulation-free velocity regression','Inference still usually needs repeated ODE queries'],
+  ['Flow Matching','How can a local field transport noise to data?','instantaneous velocity v','simulation-free velocity regression','Inference still usually needs repeated ODE queries'],
   ['MeanFlow','How can repeated local queries be compressed toward one step?','average velocity u','learn finite-time average transport directly','u has no simple sample GT; the JVP target becomes nontrivial'],
-  ['Improved MeanFlow','Why is the original MF objective unstable?','compound predictor Vθ','replace the e−x JVP tangent with vθ(z_t)','endpoint, interval, and system-level questions remain'],
-  ['RMFlow','If coarse 1-NFE transport is still imperfect, what can change besides the JVP?','coarse transport + refinement','add tailored noise refinement after 1-NFE MeanFlow','opens a distribution-aware refinement branch']
+  ['Improved MeanFlow','Why does the original MF objective introduce extra dependency / variance?','compound predictor Vθ','JVP tangent: e−x → vθ(z_t)','training dynamics and endpoint quality remain open'],
+  ['RMFlow','If coarse 1-NFE transport is imperfect, what can change besides the JVP?','coarse transport + refinement','add tailored refinement after MeanFlow','opens a distribution-aware refinement branch']
 ];
 ---
 <div class="track-map" data-track>
-  <div class="track-nodes">{nodes.map((n,i)=><button class={i===0?'active':''} data-node={i}><span>{i+1}</span>{n[0]}</button>)}</div>
+  <div class="track-nodes">{nodes.map((n,i)=><button class={i===0?'active':''} data-node={i}><span>{i+1}</span><b>{n[0]}</b></button>)}</div>
   <div class="track-panel">
     <div><small>{isZh ? '核心問題' : 'Core question'}</small><strong data-q>{nodes[0][1]}</strong></div>
     <div><small>{isZh ? '模型主要 quantity' : 'Main modeled quantity'}</small><strong data-object>{nodes[0][2]}</strong></div>
@@ -22,11 +22,10 @@ const nodes = isZh ? [
     <div><small>{isZh ? '留下的問題' : 'What remains'}</small><strong data-gap>{nodes[0][4]}</strong></div>
   </div>
 </div>
-
 <style>
-.track-map{border:1px solid var(--rh-border);border-radius:1rem;padding:1rem;background:var(--rh-surface-2);margin:1rem 0 1.3rem}.track-nodes{display:grid;grid-template-columns:repeat(4,1fr);gap:.45rem}.track-nodes button{min-height:3.4rem;border:1px solid var(--rh-border);border-radius:.65rem;background:var(--rh-surface);color:var(--rh-text);cursor:pointer;padding:.5rem;display:flex;gap:.45rem;align-items:center;justify-content:center;font:inherit;font-size:.84rem;line-height:1.25}.track-nodes button span{display:inline-grid;place-items:center;width:1.35rem;height:1.35rem;border-radius:50%;background:var(--rh-surface-2);color:var(--rh-coffee);font-size:.7rem}.track-nodes button.active{border-color:var(--rh-caramel);background:color-mix(in srgb,var(--rh-caramel) 9%,var(--rh-surface))}.track-panel{display:grid;grid-template-columns:repeat(2,1fr);gap:.65rem;margin-top:.8rem}.track-panel>div{border:1px solid var(--rh-border);border-radius:.65rem;padding:.75rem;background:var(--rh-surface)}.track-panel small{display:block;color:var(--rh-caramel);font-size:.7rem;text-transform:uppercase;letter-spacing:.07em;margin-bottom:.25rem}.track-panel strong{font-size:.9rem;line-height:1.45}@media(max-width:760px){.track-nodes{grid-template-columns:1fr 1fr}.track-panel{grid-template-columns:1fr}}
+.track-map{box-sizing:border-box;width:100%;border:1px solid var(--rh-border);border-radius:1rem;padding:1rem;background:var(--rh-surface-2);margin:1rem 0 1.3rem}.track-nodes{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:.5rem;align-items:stretch}.track-nodes button{box-sizing:border-box;width:100%;min-width:0;height:3.55rem;margin:0;border:1px solid var(--rh-border);border-radius:.65rem;background:var(--rh-surface);color:var(--rh-text);cursor:pointer;padding:.55rem .65rem;display:flex;gap:.45rem;align-items:center;justify-content:center;font:inherit;font-size:.82rem;line-height:1.2}.track-nodes button b{font-weight:600;overflow-wrap:anywhere}.track-nodes button span{flex:0 0 auto;display:inline-grid;place-items:center;width:1.4rem;height:1.4rem;border-radius:50%;background:var(--rh-surface-2);color:var(--rh-coffee);font-size:.7rem}.track-nodes button.active{border-color:var(--rh-caramel);background:color-mix(in srgb,var(--rh-caramel) 8%,var(--rh-surface))}.track-panel{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));grid-auto-rows:1fr;gap:.65rem;margin-top:.8rem}.track-panel>div{box-sizing:border-box;min-width:0;min-height:6.8rem;border:1px solid var(--rh-border);border-radius:.65rem;padding:.75rem;background:var(--rh-surface);display:flex;flex-direction:column}.track-panel small{display:block;color:var(--rh-caramel);font-size:.7rem;text-transform:uppercase;letter-spacing:.07em;margin-bottom:.3rem}.track-panel strong{font-size:.9rem;line-height:1.45;overflow-wrap:anywhere}
+@media(max-width:760px){.track-nodes{grid-template-columns:repeat(2,minmax(0,1fr))}.track-panel{grid-template-columns:1fr}.track-panel>div{min-height:auto}}
 </style>
-
 <script define:vars={{nodes}}>
 for(const root of document.querySelectorAll('[data-track]')){if(root.dataset.ready)continue;root.dataset.ready='1';const tabs=[...root.querySelectorAll('[data-node]')],q=root.querySelector('[data-q]'),obj=root.querySelector('[data-object]'),idea=root.querySelector('[data-idea]'),gap=root.querySelector('[data-gap]');tabs.forEach((b)=>b.addEventListener('click',()=>{const i=Number(b.dataset.node);tabs.forEach((x,j)=>x.classList.toggle('active',j===i));q.textContent=nodes[i][1];obj.textContent=nodes[i][2];idea.textContent=nodes[i][3];gap.textContent=nodes[i][4]}))}
 </script>

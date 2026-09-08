@@ -1,12 +1,14 @@
 ---
+import katex from 'katex';
 const { lang = 'zh' } = Astro.props;
 const isZh = lang !== 'en';
+const render = (s) => katex.renderToString(s, { displayMode: true, throwOnError: false, strict: false });
 ---
 <div class="calc-primer" data-calc-primer data-lang={isZh ? 'zh' : 'en'}>
   <div class="calc-head">
     <div>
       <strong>{isZh ? '從偏微分到 JVP｜零基礎互動解釋' : 'From partial derivatives to JVP | beginner interactive'}</strong>
-      <p>{isZh ? '把 MeanFlow 中 du/dt 拆成你熟悉的「某個量如何隨輸入改變」。' : 'Decompose the MeanFlow total derivative into ordinary changes with respect to each input.'}</p>
+      <p>{isZh ? '只補 MeanFlow 真正需要的微積分：單變數導數 → 偏微分 → total derivative → JVP。' : 'Only the calculus MeanFlow actually needs: derivative → partial derivative → total derivative → JVP.'}</p>
     </div>
     <div class="calc-tabs" role="group" aria-label={isZh ? '微積分概念切換' : 'Calculus concept tabs'}>
       <button class="active" data-step="0">1</button><button data-step="1">2</button><button data-step="2">3</button><button data-step="3">4</button>
@@ -14,44 +16,52 @@ const isZh = lang !== 'en';
   </div>
 
   <section data-panel="0">
-    <span class="eyebrow">{isZh ? 'Ordinary derivative' : 'Ordinary derivative'}</span>
-    <h3>{isZh ? '只有一個輸入時：導數就是斜率' : 'With one input, a derivative is a slope'}</h3>
-    <code>f(x)=x²  →  df/dx=2x</code>
-    <p>{isZh ? '把 x 稍微增加一點，f 會增加多少？導數回答的就是這件事。' : 'If x moves a tiny amount, how much does f move? That is what the derivative measures.'}</p>
+    <span class="eyebrow">Ordinary derivative</span>
+    <h3>{isZh ? '只有一個輸入時：導數就是局部斜率' : 'With one input, a derivative is a local slope'}</h3>
+    <div class="math-scroll" set:html={render(String.raw`f(x)=x^2,\qquad \frac{df}{dx}=2x`)}></div>
+    <p>{isZh ? '把 x 稍微增加一點，f 會改變多少？導數回答的就是這個局部變化率。' : 'If x moves a tiny amount, how much does f change? The derivative is that local rate of change.'}</p>
   </section>
 
   <section data-panel="1" hidden>
-    <span class="eyebrow">{isZh ? 'Partial derivative' : 'Partial derivative'}</span>
-    <h3>{isZh ? '有多個輸入時：一次只看一個方向' : 'With multiple inputs, vary one input at a time'}</h3>
-    <code>u(z,t)=z²+2t</code>
+    <span class="eyebrow">Partial derivative</span>
+    <h3>{isZh ? '多個輸入時：一次只問一個 input 的影響' : 'With multiple inputs, isolate one input at a time'}</h3>
+    <div class="math-scroll" set:html={render(String.raw`u(z,t)=z^2+2t`)}></div>
     <div class="formula-grid"><div><b>∂u/∂z = 2z</b><small>{isZh ? '固定 t，只看 z 的影響' : 'hold t fixed; vary z'}</small></div><div><b>∂u/∂t = 2</b><small>{isZh ? '固定 z，只看 t 的影響' : 'hold z fixed; vary t'}</small></div></div>
-    <p>{isZh ? '偏微分不是新的神祕運算；只是「其他輸入先不動，單獨問某一個輸入造成多少變化」。' : 'A partial derivative simply asks how one input changes the output while the others are held fixed.'}</p>
+    <p>{isZh ? '偏微分不是新的神祕運算；它只是把其他 inputs 暫時固定。' : 'A partial derivative simply holds the other inputs fixed.'}</p>
   </section>
 
   <section data-panel="2" hidden>
-    <span class="eyebrow">{isZh ? 'Total derivative' : 'Total derivative'}</span>
-    <h3>{isZh ? '如果 z 本身也隨 t 移動，就要把兩種變化加起來' : 'If z also moves with t, combine both sources of change'}</h3>
-    <code>du/dt = (∂u/∂z)(dz/dt) + ∂u/∂t</code>
-    <p>{isZh ? 'MeanFlow 中 dz/dt=v，所以變成 du/dt=(∂u/∂z)v+∂u/∂t。第一項是「state 移動造成的變化」，第二項是「time 本身造成的變化」。' : 'In MeanFlow, dz/dt=v, giving du/dt=(∂u/∂z)v+∂u/∂t. The first term comes from state motion; the second from time itself.'}</p>
+    <span class="eyebrow">Total derivative</span>
+    <h3>{isZh ? '如果 z 自己也隨 t 移動，兩種變化要一起算' : 'If z also moves with t, combine both sources of change'}</h3>
+    <div class="math-scroll" set:html={render(String.raw`\frac{du}{dt}=\frac{\partial u}{\partial z}\frac{dz}{dt}+\frac{\partial u}{\partial t}`)}></div>
+    <div class="formula-grid"><div><b>{isZh ? 'state contribution' : 'state contribution'}</b><small>∂u/∂z · dz/dt</small></div><div><b>{isZh ? 'time contribution' : 'time contribution'}</b><small>∂u/∂t</small></div></div>
+    <p>{isZh ? 'MeanFlow 裡 dz/dt=v，因此 du/dt=∂_z u·v+∂_t u。這就是 JVP 前的完整 chain rule。' : 'In MeanFlow dz/dt=v, so du/dt=∂_z u·v+∂_t u. This is the full chain rule behind the JVP.'}</p>
   </section>
 
   <section data-panel="3" hidden>
     <span class="eyebrow">JVP</span>
-    <h3>{isZh ? 'JVP 只是一次算出「沿某個方向走時，輸出怎麼變」' : 'A JVP computes how the output changes along one direction'}</h3>
+    <h3>{isZh ? '沿一個指定方向走時，u 會變多少？' : 'How much does u change along one chosen direction?'}</h3>
     <div class="toy-controls">
-      <label>z <input data-z type="range" min="-2" max="2" step="0.1" value="1"/><output data-zout>1.0</output></label>
-      <label>v=dz/dt <input data-v type="range" min="-2" max="2" step="0.1" value="0.5"/><output data-vout>0.5</output></label>
+      <label class="slider-control"><span>z</span><input data-z type="range" min="-2" max="2" step="0.1" value="1"/><output data-zout>1.0</output></label>
+      <label class="slider-control"><span>v = dz/dt</span><input data-v type="range" min="-2" max="2" step="0.1" value="0.5"/><output data-vout>0.5</output></label>
     </div>
-    <code data-eq>u=z²+2t → JVP=[2z,2]·[v,1] = 3.0</code>
-    <p>{isZh ? '在完整 MeanFlow 輸入 (z,r,t) 中，r 固定，所以 tangent 是 [v,0,1]。因此 JVP(u;v)=J_u·[v,0,1]=∂_z u·v+∂_t u。' : 'For the full MeanFlow input (z,r,t), r is held fixed, so the tangent is [v,0,1]. Thus JVP(u;v)=J_u·[v,0,1]=∂_z u·v+∂_t u.'}</p>
-    <div class="important">{isZh ? 'JVP 不需要把完整 Jacobian 矩陣存出來；它直接算 Jacobian × vector。這就是它在高維 neural network 中實用的原因。' : 'A JVP does not require materializing the full Jacobian; it directly computes Jacobian × vector, which is why it is practical for high-dimensional neural networks.'}</div>
+    <div class="jvp-breakdown">
+      <div><small>∂u/∂z</small><strong data-dz>2.00</strong></div>
+      <div><small>state term</small><strong data-state>1.00</strong></div>
+      <div><small>∂u/∂t</small><strong>2.00</strong></div>
+      <div><small>JVP / du/dt</small><strong data-jvp>3.00</strong></div>
+    </div>
+    <div class="math-note">u(z,t)=z²+2t　→　JVP = [2z, 2] · [v, 1]</div>
+    <p>{isZh ? '完整 MeanFlow 輸入是 (z,r,t)。r 固定，所以 tangent 是 [v,0,1]；被微分的 function 一直都是 u。' : 'For full MeanFlow input (z,r,t), r is fixed, so the tangent is [v,0,1]. The differentiated function is always u.'}</p>
+    <div class="important">{isZh ? 'JVP 不需要先建立完整 Jacobian；它直接得到 Jacobian × vector，因此適合高維 neural network。' : 'A JVP directly computes Jacobian × vector without materializing the full Jacobian, which makes it practical for high-dimensional networks.'}</div>
   </section>
 </div>
 
 <style>
-.calc-primer{border:1px solid var(--rh-border);border-radius:1rem;padding:1rem;margin:1.1rem 0;background:var(--rh-surface-2)}.calc-head{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:1rem;align-items:center}.calc-head p{margin:.25rem 0 0;color:var(--rh-muted)}.calc-tabs{display:grid;grid-template-columns:repeat(4,2.6rem);gap:.4rem}.calc-tabs button{height:2.4rem;border:1px solid var(--rh-border);border-radius:.55rem;background:var(--rh-surface);color:var(--rh-coffee);cursor:pointer}.calc-tabs button.active{background:var(--rh-coffee);color:#fff;border-color:var(--rh-coffee)}.calc-primer section{margin-top:1rem;border-top:1px solid var(--rh-border);padding-top:1rem;min-height:13rem}.calc-primer h3{margin:.3rem 0 .8rem}.calc-primer code{display:block;padding:.8rem;border-radius:.65rem;background:var(--rh-surface);border:1px solid var(--rh-border);font-size:1rem;white-space:normal}.eyebrow{font-size:.72rem;letter-spacing:.08em;text-transform:uppercase;color:var(--rh-caramel);font-weight:700}.formula-grid{display:grid;grid-template-columns:1fr 1fr;gap:.7rem;margin:.8rem 0}.formula-grid>div{padding:.75rem;border:1px solid var(--rh-border);border-radius:.65rem;background:var(--rh-surface)}.formula-grid small{display:block;color:var(--rh-muted);margin-top:.25rem}.toy-controls{display:grid;grid-template-columns:1fr 1fr;gap:.8rem;margin:.7rem 0}.toy-controls label{display:grid;grid-template-columns:auto 1fr auto;gap:.5rem;align-items:center}.important{border-left:3px solid var(--rh-caramel);padding:.7rem .8rem;background:color-mix(in srgb,var(--rh-caramel) 8%,transparent);border-radius:.4rem;margin-top:.8rem}.calc-primer p{color:var(--rh-muted);line-height:1.65}@media(max-width:720px){.calc-head{grid-template-columns:1fr}.calc-tabs{grid-template-columns:repeat(4,1fr)}.formula-grid,.toy-controls{grid-template-columns:1fr}}
+.calc-primer{box-sizing:border-box;width:100%;border:1px solid var(--rh-border);border-radius:1rem;padding:1rem;margin:1.1rem 0;background:var(--rh-surface-2);overflow:hidden}.calc-head{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:1rem;align-items:center}.calc-head p{margin:.25rem 0 0;color:var(--rh-muted);line-height:1.55}.calc-tabs{display:grid;grid-template-columns:repeat(4,2.7rem);gap:.4rem}.calc-tabs button{box-sizing:border-box;width:100%;height:2.45rem;border:1px solid var(--rh-border);border-radius:.55rem;background:var(--rh-surface);color:var(--rh-coffee);cursor:pointer}.calc-tabs button.active{background:var(--rh-coffee);color:#fff;border-color:var(--rh-coffee)}.calc-primer section{box-sizing:border-box;margin-top:1rem;border-top:1px solid var(--rh-border);padding-top:1rem;min-height:16rem;overflow:hidden}.calc-primer h3{margin:.3rem 0 .65rem;line-height:1.35}.calc-primer p{color:var(--rh-muted);line-height:1.65}.eyebrow{font-size:.72rem;letter-spacing:.08em;text-transform:uppercase;color:var(--rh-caramel);font-weight:700}.math-scroll{width:100%;overflow-x:auto;overflow-y:hidden;padding:.35rem 0}.math-scroll :global(.katex-display){min-width:max-content;margin:.25rem 0}.formula-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.7rem;margin:.8rem 0}.formula-grid>div{box-sizing:border-box;min-width:0;padding:.75rem;border:1px solid var(--rh-border);border-radius:.65rem;background:var(--rh-surface)}.formula-grid small{display:block;color:var(--rh-muted);margin-top:.25rem;overflow-wrap:anywhere}.toy-controls{display:grid;gap:.7rem;margin:.8rem 0}.slider-control{display:grid;grid-template-columns:7.2rem minmax(0,1fr) 3.4rem;gap:.65rem;align-items:center;min-width:0}.slider-control input{width:100%;min-width:0}.slider-control output{text-align:right;font-variant-numeric:tabular-nums}.jvp-breakdown{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:.55rem;margin:.75rem 0}.jvp-breakdown>div{min-width:0;border:1px solid var(--rh-border);border-radius:.6rem;padding:.65rem;background:var(--rh-surface);text-align:center}.jvp-breakdown small{display:block;color:var(--rh-muted);font-size:.7rem}.jvp-breakdown strong{display:block;margin-top:.2rem;font-variant-numeric:tabular-nums}.math-note{overflow-wrap:anywhere;border:1px solid var(--rh-border);border-radius:.6rem;padding:.7rem;background:var(--rh-surface);font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:.86rem}.important{border-left:3px solid var(--rh-caramel);padding:.7rem .8rem;background:color-mix(in srgb,var(--rh-caramel) 8%,transparent);border-radius:.4rem;margin-top:.8rem;line-height:1.6}
+@media(max-width:720px){.calc-head{grid-template-columns:1fr}.calc-tabs{grid-template-columns:repeat(4,1fr)}.formula-grid{grid-template-columns:1fr}.jvp-breakdown{grid-template-columns:repeat(2,1fr)}.slider-control{grid-template-columns:6rem minmax(0,1fr) 3rem}.calc-primer section{min-height:18rem}}
 </style>
 
 <script>
-for(const root of document.querySelectorAll('[data-calc-primer]')){if(root.dataset.ready)continue;root.dataset.ready='1';const tabs=[...root.querySelectorAll('[data-step]')],panels=[...root.querySelectorAll('[data-panel]')];function setStep(n){tabs.forEach((b,i)=>b.classList.toggle('active',i===n));panels.forEach((p,i)=>p.hidden=i!==n)}tabs.forEach((b,i)=>b.addEventListener('click',()=>setStep(i)));const z=root.querySelector('[data-z]'),v=root.querySelector('[data-v]'),zo=root.querySelector('[data-zout]'),vo=root.querySelector('[data-vout]'),eq=root.querySelector('[data-eq]');function update(){if(!z||!v)return;const zz=Number(z.value),vv=Number(v.value),j=2*zz*vv+2;zo.textContent=zz.toFixed(1);vo.textContent=vv.toFixed(1);eq.textContent=`u=z²+2t → JVP=[2z,2]·[v,1] = ${j.toFixed(2)}`}z?.addEventListener('input',update);v?.addEventListener('input',update);update()}
+for(const root of document.querySelectorAll('[data-calc-primer]')){if(root.dataset.ready)continue;root.dataset.ready='1';const tabs=[...root.querySelectorAll('[data-step]')],panels=[...root.querySelectorAll('[data-panel]')];function setStep(n){tabs.forEach((b,i)=>b.classList.toggle('active',i===n));panels.forEach((p,i)=>p.hidden=i!==n)}tabs.forEach((b,i)=>b.addEventListener('click',()=>setStep(i)));const z=root.querySelector('[data-z]'),v=root.querySelector('[data-v]'),zo=root.querySelector('[data-zout]'),vo=root.querySelector('[data-vout]'),dz=root.querySelector('[data-dz]'),state=root.querySelector('[data-state]'),jvp=root.querySelector('[data-jvp]');function update(){if(!z||!v)return;const zz=Number(z.value),vv=Number(v.value),d=2*zz,s=d*vv,j=s+2;zo.textContent=zz.toFixed(1);vo.textContent=vv.toFixed(1);dz.textContent=d.toFixed(2);state.textContent=s.toFixed(2);jvp.textContent=j.toFixed(2)}z?.addEventListener('input',update);v?.addEventListener('input',update);update()}
 </script>
