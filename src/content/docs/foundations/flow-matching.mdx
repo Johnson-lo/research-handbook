@@ -6,6 +6,21 @@ sidebar:
 ---
 
 import VelocityGTExplorer from '../../../components/VelocityGTExplorer.astro';
+import FlowMatchingNumericExample from '../../../components/FlowMatchingNumericExample.astro';
+
+## 先不要背公式：用一組數字把 Flow Matching 算完
+
+Flow Matching 最容易卡住的地方，是一開始就看到 $x$、$e$、$z_t$、$v$、MSE，卻不知道每個量到底「是什麼數字」。下面先固定一組 2D sample，把整個 training example 算一次。
+
+<FlowMatchingNumericExample lang="zh" />
+
+從這個例子先保留三件事：
+
+1. training 直接抽 $x,e,t$ 後建構 $z_t$；
+2. 對單一 sampled pair，target velocity 是 $e-x$；
+3. 同一個 $(z_t,t)$ 若可能來自很多不同 pair，MSE 最後學到的是這些 conditional targets 的 conditional mean。
+
+## 再回到一般公式
 
 由
 
