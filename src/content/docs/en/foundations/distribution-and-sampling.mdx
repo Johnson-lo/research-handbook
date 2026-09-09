@@ -6,6 +6,7 @@ sidebar:
 ---
 
 import ProbabilityPath from '../../../../components/ProbabilityPath.astro';
+import DistributionFamilyExplorer from '../../../../components/DistributionFamilyExplorer.astro';
 
 ## Distribution is not a single sample
 
@@ -35,3 +36,19 @@ $$
 :::note[Training is not rollout]
 During training, $x$, $e$, and $t$ are sampled and $z_t$ is **constructed directly** from the equation. The model does not start from Gaussian noise and simulate through all previous times to obtain this training point.
 :::
+
+## What if the data distribution changes but the linear path stays the same?
+
+The intermediate distributions do not look the same. Even with the same Gaussian prior and the same formula $z_t=(1-t)x+te$, the geometry of $p_t$ still depends strongly on $p_{data}$.
+
+Use the explorer below to switch among Gaussian, bimodal, ring, checkerboard, two moons, and spiral distributions. Drag $t$ and watch:
+
+- when modes start to blur or connect;
+- whether the hole inside a ring is preserved;
+- how curved manifolds thicken under noise;
+- how disconnected modes mix at intermediate time;
+- how one paired sample moves along $x\rightarrow z_t\rightarrow e$.
+
+<DistributionFamilyExplorer lang="en" />
+
+The key intuition is that a probability path is not just one “line.” It is a whole family of time-indexed distributions $p_t$. A single sample interpolation is simple, while the full density geometry can still be complicated.
