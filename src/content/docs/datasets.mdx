@@ -7,8 +7,6 @@ import DatasetCatalog from '../../components/DatasetCatalog.astro';
 import ComputeFeasibilityPlanner from '../../components/ComputeFeasibilityPlanner.astro';
 import LabGPUEnhancer from '../../components/LabGPUEnhancer.astro';
 
-# Datasets｜訓練資料集與任務地圖
-
 這一頁不是要宣稱「列完世界上所有資料集」，而是建立一個**可以持續擴充的 experiment-planning reference**：當一個研究想法出現時，可以從任務、modality、資料量、conditioning、license、storage 與 compute budget 反推適合的 dataset 與實驗尺度。
 
 :::caution[資料授權與可取得性]
@@ -16,10 +14,6 @@ import LabGPUEnhancer from '../../components/LabGPUEnhancer.astro';
 :::
 
 ## 先用 GPU / Storage 反推可行實驗
-
-你目前提供的實驗室 GPU 資源是 **RTX 3080、RTX 4090、V100、L40S**。其中 RTX 3080 有 10 GB / 12 GB 官方版本，V100 有 16 GB / 32 GB 版本，因此 planner 先把這些常見變體都列出，正式排程前再用 `nvidia-smi` 確認實驗室每台機器的實際型號與數量。
-
-<LabGPUEnhancer lang="zh" />
 
 下面的 planner 不是把「dataset」硬綁一個 VRAM，而是把 **dataset + model / experiment profile** 一起估算。選擇目前可用 GPU、每張 VRAM、GPU 數量、任務與 storage 後，會把候選實驗分成：
 
@@ -32,6 +26,7 @@ import LabGPUEnhancer from '../../components/LabGPUEnhancer.astro';
 普通 DDP 會在每張 GPU 上各放一份 model，因此 `4 × 24 GB` **不是**一張 96 GB GPU。只有 FSDP、ZeRO、tensor/model parallel 等 sharding 方法，才可能把 model / optimizer state 分散到多張卡。
 :::
 
+<LabGPUEnhancer lang="zh" />
 <ComputeFeasibilityPlanner lang="zh" />
 
 ## MeanFlow 系列目前最直接相關的資料
