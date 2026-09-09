@@ -6,6 +6,7 @@ sidebar:
 ---
 
 import DistributionFlowLab from '../../../../components/DistributionFlowLab.astro';
+import DistributionFamilyExplorer from '../../../../components/DistributionFamilyExplorer.astro';
 import CalculusJVPPrimer from '../../../../components/CalculusJVPPrimer.astro';
 import DerivationStepper from '../../../../components/DerivationStepper.astro';
 import JVPExplorer from '../../../../components/JVPExplorer.astro';
@@ -19,6 +20,20 @@ Flow Matching models a local instantaneous velocity. As the state moves, the loc
 <DistributionFlowLab lang="en" />
 
 The toy lab has three views: probability-path point clouds, conditional-to-marginal velocity averaging, and instantaneous-vs-average velocity on a curved trajectory. These are geometric toy examples, not outputs from a trained MeanFlow model.
+
+### 1.1 Change the data distribution while keeping the same linear path
+
+A two-cluster Gaussian is only one geometry. Use the explorer below to switch among **Gaussian, Bimodal, Ring, Checkerboard, Two Moons, and Spiral** distributions and drag $t$ to watch the full $p_t$ change.
+
+<DistributionFamilyExplorer lang="en" />
+
+Each individual sample still follows
+
+$$
+z_t=(1-t)x+te,
+$$
+
+but the geometry of the full distribution can differ dramatically. This is useful later when thinking about marginal velocity fields, mode coverage, and probability-path correctness.
 
 ## 2. Average velocity
 
