@@ -1,17 +1,28 @@
 ---
 title: Datasets | Training Data & Task Map
-description: A practical catalog of training data sources across image, multimodal, video, robotics, driving, audio, text, molecules, time series, 3D, and medical tasks.
+description: A practical catalog of training data sources across image, multimodal, video, robotics, driving, audio, text, molecules, time series, 3D, and medical tasks, with GPU-aware experiment feasibility planning.
 ---
 
 import DatasetCatalog from '../../../components/DatasetCatalog.astro';
+import ComputeFeasibilityPlanner from '../../../components/ComputeFeasibilityPlanner.astro';
 
 # Datasets | Training Data & Task Map
 
-This page is not a claim to list every dataset in existence. It is an **expandable training-data reference** for choosing data from the research question, modality, conditioning, scale, access constraints, and compute budget.
+This page is not a claim to list every dataset in existence. It is an **expandable experiment-planning reference** for choosing data and experiment scale from the research question, modality, conditioning, scale, access constraints, storage, and compute budget.
 
 :::caution[Licenses and availability change]
 Dataset licenses, download mechanisms, URL survival, and versions can change. Re-check the official source before training or redistributing data, especially for web-scraped image/video corpora, medical datasets, and autonomous-driving data. “Public download” does not mean unrestricted commercial use or redistribution.
 :::
+
+## Start from available GPU / storage
+
+The planner below does not assign one fixed VRAM requirement to a dataset. It estimates a **dataset + model / experiment profile** and classifies each candidate as comfortable, tight-but-feasible, sharding-required, or a collaboration / cluster candidate.
+
+:::note[GPU count does not simply add VRAM]
+Ordinary DDP keeps a model replica on each GPU, so `4 × 24 GB` is **not** equivalent to one 96 GB GPU. FSDP, ZeRO, tensor/model parallelism, or other sharding methods are needed to distribute model / optimizer state.
+:::
+
+<ComputeFeasibilityPlanner lang="en" />
 
 ## Data directly connected to the current MeanFlow track
 
@@ -26,7 +37,21 @@ Dataset licenses, download mechanisms, URL survival, and versions can change. Re
 | RMFlow | text-to-image evaluation | **COCO 2017, 5k split** | additional image-text evaluation; keep this distinct from training-data claims |
 | [Flow Divergence Matching](/research-handbook/en/papers/flow-divergence/) | density / dynamics / DNA / video | **2D checkerboard, DNA benchmark, Lorenz / FitzHugh–Nagumo, KTH** | tests probability-path/divergence objectives across modalities |
 
-> A dataset name alone is not enough for reproduction. Pin the split, resolution, preprocessing, augmentation, class filtering, VAE/tokenizer, cached features, and evaluation subset.
+> A dataset name alone is not enough for reproduction. Pin the split, resolution, preprocessing, augmentation, class filtering, VAE/tokenizer, cached features, model scale, GPU count, and evaluation subset.
+
+## Compute budget is part of experiment design
+
+Dataset size and GPU VRAM are not one-to-one. Memory / training cost is usually driven by:
+
+1. **backbone size** — DiT-B / L / XL, video transformers, and VLA backbones differ greatly in activation and optimizer-state cost;
+2. **input size** — image resolution, video frames, trajectory horizon, point/token count;
+3. **representation** — pixel vs latent training, frozen encoders / VAEs, precomputed embeddings;
+4. **autodiff complexity** — MeanFlow JVPs, divergence estimators, and higher-order derivatives can cost more memory than ordinary forward/backward;
+5. **optimizer / precision** — FP32, BF16 / FP16, Adam states, 8-bit optimizers;
+6. **distributed strategy** — DDP vs FSDP / ZeRO / tensor parallel and activation checkpointing;
+7. **data pipeline** — video decoding, RGB-D / lidar, web crawling, and robot-trajectory caching can become CPU / SSD / network bottlenecks before GPU compute.
+
+The planner therefore labels VRAM/GPU values as **planning estimates**. When a paper or official repository reports a concrete training setup, the reproduction note should prefer the paper-reported hardware and batch configuration.
 
 ## How to choose a dataset
 
@@ -60,8 +85,8 @@ Dataset licenses, download mechanisms, URL survival, and versions can change. Re
 
 <DatasetCatalog lang="en" />
 
-## Dataset metadata to record for every experiment
+## Dataset / compute metadata to record for every experiment
 
-At minimum record: **dataset version / release date, train-val-test split, actual sample count used, resolution / sampling rate, preprocessing, augmentation, conditioning fields, whether latents/embeddings are precomputed, filtering/deduplication, license/access date, evaluation subset, and metric implementation**.
+At minimum record: **dataset version / release date, train-val-test split, actual sample count used, resolution / sampling rate, preprocessing, augmentation, conditioning fields, whether latents/embeddings are precomputed, filtering/deduplication, license/access date, evaluation subset, metric implementation, GPU model/count, precision, global/per-GPU batch size, gradient accumulation, optimizer, activation checkpointing, distributed strategy, wall-clock time, peak VRAM, and checkpoint/cache storage**.
 
 For robotics also record **embodiment, camera placement, action representation, control frequency, trajectory horizon, and whether failure episodes are retained**. For time series record **sampling interval, forecast horizon, normalization, and missing-value policy**. For molecule/3D tasks record **graph/coordinate representation, canonicalization, and conformer/structure filtering**.
