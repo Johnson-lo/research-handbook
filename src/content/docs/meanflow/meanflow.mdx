@@ -6,6 +6,7 @@ sidebar:
 ---
 
 import DistributionFlowLab from '../../../components/DistributionFlowLab.astro';
+import DistributionFamilyExplorer from '../../../components/DistributionFamilyExplorer.astro';
 import CalculusJVPPrimer from '../../../components/CalculusJVPPrimer.astro';
 import DerivationStepper from '../../../components/DerivationStepper.astro';
 import JVPExplorer from '../../../components/JVPExplorer.astro';
@@ -29,6 +30,20 @@ Flow Matching 學的是 local / instantaneous velocity。Inference 時 state 每
 - **Average velocity**：用 curved trajectory 明確看出 instantaneous tangent $v$ 與 finite-interval average $u$ 的差異。
 
 這些圖是幾何 toy example，不是 trained MeanFlow 的生成結果；用途是先建立正確 mental model。
+
+### 1.1 換不同 data distribution，看同一條 linear path
+
+單看雙群 Gaussian 還不夠直觀，所以這裡再把 $p_{data}$ 換成幾種不同 geometry。你可以直接切換 **Gaussian、Bimodal、Ring、Checkerboard、Two Moons、Spiral**，並拖動 $t$ 看整個 $p_t$ 如何變化。
+
+<DistributionFamilyExplorer lang="zh" />
+
+特別注意：每個 sample 的 interpolation 仍然只是
+
+$$
+z_t=(1-t)x+te,
+$$
+
+但整群 samples 組成的 distribution geometry 可以差非常多。這也是之後理解 marginal velocity field、mode coverage 與 probability-path correctness 很重要的直覺。
 
 ## 2. Average velocity 是什麼？
 
