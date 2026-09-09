@@ -1,0 +1,49 @@
+---
+const { lang = 'zh' } = Astro.props;
+const isZh = lang !== 'en';
+const labGpus = [
+  {id:'3080-10', name:'RTX 3080 10 GB', vram:10, precision:'FP16', note:isZh?'Ampere 消費級；10 GB 版本較適合 smoke test、小模型、低 batch。':'Consumer Ampere; the 10 GB variant is best for smoke tests, small models, and low batch sizes.', source:'https://www.nvidia.com/zh-tw/geforce/graphics-cards/30-series/rtx-3080-3080ti/'},
+  {id:'3080-12', name:'RTX 3080 12 GB', vram:12, precision:'FP16 / BF16*', note:isZh?'3080 也有 12 GB 官方版本；請用 nvidia-smi 確認實驗室實際型號。':'RTX 3080 also has an official 12 GB variant; verify the lab board with nvidia-smi.', source:'https://www.nvidia.com/zh-tw/geforce/graphics-cards/30-series/rtx-3080-3080ti/'},
+  {id:'4090', name:'RTX 4090 24 GB', vram:24, precision:'FP16 / BF16', note:isZh?'單卡研究型 ablation 很實用；24 GB 對 ImageNet-small / robotics subset / latent video 特別有價值。':'Very useful for single-GPU research ablations; 24 GB is practical for ImageNet-small, robotics subsets, and latent video.', source:'https://www.nvidia.com/en-us/geforce/graphics-cards/40-series/rtx-4090/'},
+  {id:'v100-16', name:'V100 16 GB', vram:16, precision:'FP16', note:isZh?'Volta 世代；官方有 16 / 32 GB 兩種。V100 不應當成現代 BF16 GPU 使用，實務上以 FP16 mixed precision 為主。':'Volta generation; official 16/32 GB variants exist. Treat V100 primarily as an FP16 mixed-precision GPU rather than a modern BF16 target.', source:'https://www.nvidia.com/zh-tw/data-center/v100/'},
+  {id:'v100-32', name:'V100 32 GB', vram:32, precision:'FP16', note:isZh?'32 GB HBM2 容量對較大 activation / batch 有幫助，但架構較舊；某些新 kernel / FP8 / BF16 路徑不適用。':'32 GB HBM2 helps larger activations/batches, but the architecture is older and newer BF16/FP8-specific paths do not apply.', source:'https://www.nvidia.com/zh-tw/data-center/v100/'},
+  {id:'l40s', name:'L40S 48 GB', vram:48, precision:'FP16 / BF16 / FP8', note:isZh?'目前這組實驗室資源中單卡 VRAM 最大；48 GB ECC GDDR6，適合較大 DiT、video / multimodal、robotics 與 ImageNet ablation。':'The largest single-GPU VRAM among the listed lab resources; 48 GB ECC GDDR6 is useful for larger DiTs, video/multimodal, robotics, and ImageNet ablations.', source:'https://www.nvidia.com/zh-tw/data-center/l40s/'},
+];
+---
+
+<div class="lab-gpu" data-lab-gpu-enhancer>
+  <div class="lab-gpu-head">
+    <div>
+      <span>LAB GPU RESOURCES</span>
+      <strong>{isZh ? '實驗室現有 GPU 快捷選擇' : 'Lab GPU quick presets'}</strong>
+      <p>{isZh ? '你提供的資源：RTX 3080、RTX 4090、V100、L40S。3080 與 V100 都存在不同 VRAM 版本，因此先把官方常見變體都列出；正式排程前請用 nvidia-smi 確認實際卡型與數量。' : 'Lab resources provided: RTX 3080, RTX 4090, V100, and L40S. RTX 3080 and V100 have multiple official memory variants, so common variants are listed; verify the installed boards and counts with nvidia-smi before scheduling.'}</p>
+    </div>
+    <div class="lab-best"><small>{isZh ? '單卡容量最高' : 'Largest single-card memory'}</small><b>L40S · 48 GB</b></div>
+  </div>
+  <div class="lab-gpu-chips">
+    {labGpus.map(g => <button type="button" data-lab-chip={g.id} data-name={g.name} data-vram={g.vram}>{g.name}</button>)}
+  </div>
+  <div class="lab-gpu-detail" data-lab-detail>
+    <div><small>{isZh ? '選取 GPU' : 'Selected GPU'}</small><strong data-detail-name>RTX 4090 24 GB</strong></div>
+    <div><small>{isZh ? '建議 precision' : 'Preferred precision'}</small><strong data-detail-precision>FP16 / BF16</strong></div>
+    <div class="wide"><small>{isZh ? '研究用途提示' : 'Research-use note'}</small><span data-detail-note>{labGpus.find(g=>g.id==='4090')?.note}</span></div>
+    <a data-detail-source href={labGpus.find(g=>g.id==='4090')?.source} target="_blank" rel="noreferrer">{isZh ? '官方規格 ↗' : 'Official specs ↗'}</a>
+  </div>
+</div>
+
+<style>
+.lab-gpu{border:1px solid var(--rh-border);border-radius:1rem;padding:1rem;background:linear-gradient(180deg,var(--rh-surface-2),var(--rh-surface));margin:1rem 0 .75rem}.lab-gpu-head{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:1rem;align-items:center}.lab-gpu-head>div:first-child>span{display:block;color:var(--rh-caramel);font-size:.67rem;letter-spacing:.12em;font-weight:800}.lab-gpu-head strong{display:block;margin-top:.2rem}.lab-gpu-head p{margin:.25rem 0 0!important;color:var(--rh-muted);font-size:.76rem;line-height:1.55}.lab-best{border:1px solid var(--rh-border);border-radius:.7rem;background:var(--rh-surface);padding:.65rem .8rem;min-width:9.5rem}.lab-best small{display:block;color:var(--rh-muted);font-size:.63rem}.lab-best b{display:block;margin-top:.2rem;color:var(--rh-coffee)}.lab-gpu-chips{display:flex;flex-wrap:wrap;gap:.4rem;margin-top:.75rem}.lab-gpu-chips button{height:2.15rem;margin:0;padding:0 .65rem;border:1px solid var(--rh-border);border-radius:999px;background:var(--rh-surface);color:var(--rh-text);font:inherit;font-size:.72rem;cursor:pointer}.lab-gpu-chips button:hover,.lab-gpu-chips button.active{border-color:var(--rh-caramel);background:var(--rh-surface-3);color:var(--rh-coffee-deep)}.lab-gpu-detail{display:grid;grid-template-columns:1fr 1fr 2fr auto;gap:.55rem;margin-top:.65rem;align-items:stretch}.lab-gpu-detail>div,.lab-gpu-detail>a{border:1px solid var(--rh-border);border-radius:.65rem;background:var(--rh-surface);padding:.6rem;min-width:0}.lab-gpu-detail small{display:block;color:var(--rh-caramel);font-size:.6rem;text-transform:uppercase;letter-spacing:.05em}.lab-gpu-detail strong{display:block;margin-top:.2rem;font-size:.78rem}.lab-gpu-detail span{display:block;margin-top:.2rem;color:var(--rh-muted);font-size:.7rem;line-height:1.45}.lab-gpu-detail>a{display:flex;align-items:center;justify-content:center;color:var(--rh-coffee)!important;text-decoration:none!important;font-size:.7rem;font-weight:700}.lab-gpu-detail>a:hover{border-color:var(--rh-caramel)}
+:global(.sl-markdown-content .lab-gpu :is(.lab-gpu-head,.lab-gpu-chips,.lab-gpu-detail) > *){margin-top:0!important}
+@media(max-width:850px){.lab-gpu-head{grid-template-columns:1fr}.lab-best{max-width:13rem}.lab-gpu-detail{grid-template-columns:1fr 1fr}.lab-gpu-detail .wide{grid-column:1/-1}.lab-gpu-detail>a{grid-column:1/-1}}@media(max-width:520px){.lab-gpu-detail{grid-template-columns:1fr}.lab-gpu-detail .wide,.lab-gpu-detail>a{grid-column:auto}}
+</style>
+
+<script define:vars={{ labGpus }}>
+for(const root of document.querySelectorAll('[data-lab-gpu-enhancer]')){
+  if(root.dataset.ready) continue;root.dataset.ready='1';
+  const planner=root.parentElement?.querySelector('[data-compute-planner]') || document.querySelector('[data-compute-planner]');
+  const chips=[...root.querySelectorAll('[data-lab-chip]')], nameEl=root.querySelector('[data-detail-name]'), precisionEl=root.querySelector('[data-detail-precision]'), noteEl=root.querySelector('[data-detail-note]'), sourceEl=root.querySelector('[data-detail-source]');
+  function setDetail(g){chips.forEach(b=>b.classList.toggle('active',b.dataset.labChip===g.id));nameEl.textContent=g.name;precisionEl.textContent=g.precision;noteEl.textContent=g.note;sourceEl.href=g.source;if(!planner)return;const gpu=planner.querySelector('[data-gpu]'),custom=planner.querySelector('[data-custom-vram]'),count=planner.querySelector('[data-gpu-count]'),label=planner.querySelector('[data-config-label]');if(!gpu||!custom)return;gpu.value=g.id==='4090'?'rtx4090':'custom';custom.value=String(g.vram);gpu.dispatchEvent(new Event('change',{bubbles:true}));custom.dispatchEvent(new Event('input',{bubbles:true}));queueMicrotask(()=>{if(label)label.textContent=`${g.name} × ${count?.value||1}`});if(count&&!count.dataset.labHook){count.dataset.labHook='1';count.addEventListener('change',()=>{const active=labGpus.find(x=>x.id===root.dataset.activeLab);if(active&&label)queueMicrotask(()=>label.textContent=`${active.name} × ${count.value}`)})}root.dataset.activeLab=g.id;}
+  chips.forEach(b=>b.addEventListener('click',()=>{const g=labGpus.find(x=>x.id===b.dataset.labChip);if(g)setDetail(g)}));
+  const initial=labGpus.find(g=>g.id==='4090');if(initial)setDetail(initial);
+}
+</script>
