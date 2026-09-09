@@ -49,4 +49,22 @@ html,body{background:var(--rh-bg)} body{color:var(--rh-text)} a{text-underline-o
   display: none !important;
 }
 
+/* Compute planner cards use nested grids. Starlight's prose sibling margin was still
+   shifting the 2nd cell in each dl row downward, creating the repeated left-high /
+   right-low pattern visible in Planning VRAM vs Storage/RAM. Let the grid own spacing. */
+.sl-markdown-content .compute-planner .workload-card dl > * {
+  margin-top: 0 !important;
+  align-self: stretch;
+  height: 100%;
+}
+.sl-markdown-content .compute-planner .workload-card dl {
+  align-items: stretch;
+}
+
+/* Starlight already renders the frontmatter title. The datasets MDX also contains a
+   markdown H1, so hide that duplicate only on pages containing the compute planner. */
+.sl-markdown-content:has(.compute-planner) > h1:first-child {
+  display: none;
+}
+
 @media(max-width:760px){.rh-section-grid,.rh-section-grid-3{grid-template-columns:1fr}}
