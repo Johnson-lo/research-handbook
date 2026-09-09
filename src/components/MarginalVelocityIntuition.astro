@@ -1,0 +1,94 @@
+---
+const { lang = 'zh' } = Astro.props;
+const isZh = lang !== 'en';
+---
+
+<div class="marginal-lab" data-marginal-lab data-lang={isZh ? 'zh' : 'en'}>
+  <div class="marginal-head">
+    <div>
+      <span>MARGINAL VELOCITY INTUITION</span>
+      <strong>{isZh ? 'Marginal velocity 不是「另一個神秘 target」：它是同一個 state 附近很多 sample target 的 regression 平均' : 'Marginal velocity is not another mysterious target: it is the regression average of many sample targets near the same state'}</strong>
+      <p>{isZh ? '下面刻意用一個小 neighborhood 來畫，避免「四條箭頭硬塞在完全同一個點」造成誤解。' : 'We deliberately visualize a small neighborhood instead of forcing several arrows onto one exact point.'}</p>
+    </div>
+    <div class="formula-box">
+      <small>{isZh ? '理論定義' : 'Theory'}</small>
+      <code>v(z,t)=E[ε−x | z_t=z,t]</code>
+      <span>{isZh ? '圖上 neighborhood 只是有限樣本近似。' : 'The neighborhood below is only a finite-sample approximation.'}</span>
+    </div>
+  </div>
+
+  <div class="marginal-steps" role="group">
+    <button type="button" class="active" data-view="targets">1 · {isZh ? '看 sample targets' : 'See sample targets'}</button>
+    <button type="button" data-view="average">2 · {isZh ? '看平均方向' : 'See the average'}</button>
+    <button type="button" data-view="mse">3 · {isZh ? '驗證 MSE 最小點' : 'Verify the MSE optimum'}</button>
+  </div>
+
+  <div class="marginal-layout">
+    <div class="marginal-plot-wrap">
+      <svg data-plot viewBox="0 0 760 430" role="img" aria-label="Marginal velocity neighborhood visualization"></svg>
+      <div class="plot-caption" data-caption></div>
+    </div>
+    <aside>
+      <div class="state-card">
+        <small>{isZh ? '我們關心的 query state' : 'Query state of interest'}</small>
+        <strong>t = 0.50, z ≈ (0,0)</strong>
+        <p>{isZh ? '實際 continuous distribution 幾乎不會出現「資料表裡剛好重複完全一樣的 z」。條件期望是理論上的 conditional distribution；視覺化時用附近 samples 近似最容易理解。' : 'In a continuous distribution, exact duplicate z values are unlikely. The conditional expectation is defined through the conditional distribution; a local neighborhood is the clearest finite-sample visualization.'}</p>
+      </div>
+      <div class="pair-select">
+        <small>{isZh ? '點 sample 看它從哪一組 pair 來' : 'Inspect which pair produced a sample'}</small>
+        <div class="pair-buttons">
+          <button type="button" class="active" data-pair="0">A</button><button type="button" data-pair="1">B</button><button type="button" data-pair="2">C</button><button type="button" data-pair="3">D</button><button type="button" data-pair="4">E</button>
+        </div>
+        <div class="pair-readout"><span data-pair-z></span><span data-pair-x></span><span data-pair-e></span><strong data-pair-v></strong></div>
+      </div>
+      <div class="average-readout">
+        <small>{isZh ? '這 5 個 target 的有限樣本平均' : 'Finite-sample mean of the 5 targets'}</small>
+        <strong>v̂ = (−0.20, 2.00)</strong>
+        <code>(1/5) Σ(εᵢ−xᵢ)</code>
+      </div>
+      <div class="mse-panel" data-mse-panel hidden>
+        <small>{isZh ? '假設模型在這個 state 只能輸出一個向量' : 'Suppose the model must output one vector here'}</small>
+        <label><span>vθ,x</span><input data-px type="range" min="-3" max="3" step="0.05" value="1.20"><output data-pxo>1.20</output></label>
+        <label><span>vθ,y</span><input data-py type="range" min="-1" max="4" step="0.05" value="0.80"><output data-pyo>0.80</output></label>
+        <div class="mse-value"><span>mean squared error</span><strong data-mse></strong></div>
+        <button type="button" data-optimum>{isZh ? '跳到 MSE optimum' : 'Jump to MSE optimum'}</button>
+      </div>
+    </aside>
+  </div>
+
+  <div class="why-average">
+    <div><b>①</b><span>{isZh ? '每次 training sample 仍然只給一個橘色 target：ε−x。' : 'Each training sample still gives one orange target: ε−x.'}</span></div>
+    <div><b>②</b><span>{isZh ? '但 neural network 對相同 / 相近的 (z,t) 只能學一個穩定 output。' : 'But the neural network must learn one stable output for the same/nearby (z,t).'}</span></div>
+    <div><b>③</b><span>{isZh ? 'MSE 對很多 target 的最佳單一答案就是 conditional mean，所以最後形成 marginal velocity field。' : 'For many targets, the MSE-optimal single answer is the conditional mean, producing the marginal velocity field.'}</span></div>
+  </div>
+</div>
+
+<style>
+.marginal-lab{box-sizing:border-box;width:100%;border:1px solid var(--rh-border);border-radius:1rem;padding:1rem;background:var(--rh-surface);margin:1rem 0 1.4rem;overflow:hidden}.marginal-head{display:grid;grid-template-columns:minmax(0,1fr) minmax(13rem,.45fr);gap:1rem;align-items:center}.marginal-head>div:first-child>span{display:block;color:var(--rh-caramel);font-size:.67rem;font-weight:800;letter-spacing:.12em}.marginal-head strong{display:block;margin-top:.2rem}.marginal-head p{margin:.25rem 0 0!important;color:var(--rh-muted);line-height:1.5}.formula-box{border:1px solid var(--rh-border);border-radius:.65rem;background:var(--rh-surface-2);padding:.65rem}.formula-box small,.state-card small,.pair-select small,.average-readout small,.mse-panel>small{display:block;color:var(--rh-caramel);font-size:.61rem;text-transform:uppercase}.formula-box code{display:block;margin-top:.2rem;white-space:normal;font-size:.72rem}.formula-box span{display:block;margin-top:.2rem;color:var(--rh-muted);font-size:.67rem;line-height:1.4}.marginal-steps{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:.4rem;margin-top:.75rem}.marginal-steps button{box-sizing:border-box;min-height:2.5rem;margin:0;border:1px solid var(--rh-border);border-radius:.55rem;background:var(--rh-surface-2);color:var(--rh-text);font:inherit;font-size:.72rem;cursor:pointer}.marginal-steps button.active{border-color:var(--rh-caramel);background:var(--rh-surface-3);color:var(--rh-coffee-deep);font-weight:700}.marginal-layout{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(16rem,.72fr);gap:.65rem;margin-top:.65rem;align-items:stretch}.marginal-plot-wrap{display:grid;grid-template-rows:minmax(0,1fr) auto;border:1px solid var(--rh-border);border-radius:.7rem;overflow:hidden;background:#f8f3ec;min-width:0}.marginal-plot-wrap svg{display:block;width:100%;height:auto;min-height:24rem}.plot-caption{border-top:1px solid var(--rh-border);padding:.5rem .65rem;background:var(--rh-surface-2);color:var(--rh-muted);font-size:.69rem;line-height:1.45}.marginal-layout aside{display:grid;gap:.5rem;align-content:start}.state-card,.pair-select,.average-readout,.mse-panel{border:1px solid var(--rh-border);border-radius:.65rem;background:var(--rh-surface-2);padding:.65rem}.state-card strong,.average-readout strong{display:block;margin-top:.18rem}.state-card p{margin:.3rem 0 0!important;color:var(--rh-muted);font-size:.69rem;line-height:1.45}.average-readout{border-left:3px solid #7d678f}.average-readout code{display:block;margin-top:.25rem;font-size:.69rem}.pair-buttons{display:grid;grid-template-columns:repeat(5,1fr);gap:.25rem;margin-top:.4rem}.pair-buttons button{height:2rem;border:1px solid var(--rh-border);border-radius:.45rem;background:var(--rh-surface);color:var(--rh-text);font:inherit;font-size:.68rem;cursor:pointer}.pair-buttons button.active{border-color:var(--rh-caramel);background:var(--rh-surface-3);font-weight:800}.pair-readout{display:grid;gap:.12rem;margin-top:.45rem}.pair-readout span{font-size:.68rem;color:var(--rh-muted)}.pair-readout strong{font-size:.73rem;margin-top:.15rem;color:var(--rh-coffee)}.mse-panel label{display:grid;grid-template-columns:3.6rem 1fr 3rem;gap:.4rem;align-items:center;margin-top:.45rem!important}.mse-panel label span{font-size:.66rem;color:var(--rh-muted)}.mse-panel input{width:100%;min-width:0}.mse-panel output{font-size:.66rem;text-align:right;color:var(--rh-coffee);font-variant-numeric:tabular-nums}.mse-value{display:flex;justify-content:space-between;gap:.5rem;align-items:center;border-top:1px solid var(--rh-border);margin-top:.5rem;padding-top:.45rem}.mse-value span{font-size:.65rem;color:var(--rh-muted)}.mse-panel button{width:100%;height:2.2rem;margin-top:.45rem;border:1px solid var(--rh-caramel);border-radius:.5rem;background:var(--rh-surface);color:var(--rh-coffee);font:inherit;font-size:.68rem;font-weight:700;cursor:pointer}.why-average{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:.45rem;margin-top:.65rem}.why-average>div{display:grid;grid-template-columns:1.5rem 1fr;gap:.4rem;border:1px solid var(--rh-border);border-radius:.6rem;background:var(--rh-surface-2);padding:.55rem}.why-average b{color:var(--rh-coffee)}.why-average span{font-size:.69rem;color:var(--rh-muted);line-height:1.45}.marginal-lab [hidden]{display:none!important}:global(.sl-markdown-content .marginal-lab :is(.marginal-head,.marginal-steps,.marginal-layout,.pair-buttons,.why-average) > *){margin-top:0!important}
+@media(max-width:850px){.marginal-head{grid-template-columns:1fr}.formula-box{max-width:22rem}.marginal-layout{grid-template-columns:1fr}.why-average{grid-template-columns:1fr}}@media(max-width:560px){.marginal-steps{grid-template-columns:1fr}.pair-buttons{grid-template-columns:repeat(5,1fr)}}
+</style>
+
+<script>
+for(const root of document.querySelectorAll('[data-marginal-lab]')){
+  if(root.dataset.ready) continue; root.dataset.ready='1';
+  const zh=root.dataset.lang==='zh',svg=root.querySelector('[data-plot]'),views=[...root.querySelectorAll('[data-view]')],pairBtns=[...root.querySelectorAll('[data-pair]')],pairZ=root.querySelector('[data-pair-z]'),pairX=root.querySelector('[data-pair-x]'),pairE=root.querySelector('[data-pair-e]'),pairV=root.querySelector('[data-pair-v]'),cap=root.querySelector('[data-caption]'),msePanel=root.querySelector('[data-mse-panel]'),px=root.querySelector('[data-px]'),py=root.querySelector('[data-py]'),pxo=root.querySelector('[data-pxo]'),pyo=root.querySelector('[data-pyo]'),mseOut=root.querySelector('[data-mse]'),opt=root.querySelector('[data-optimum]');
+  const samples=[
+    {z:[-.20,.10],v:[-3,2]},
+    {z:[.15,.05],v:[-1,3]},
+    {z:[.05,-.18],v:[2,1]},
+    {z:[-.12,-.06],v:[1,2]},
+    {z:[.18,-.02],v:[0,2]}
+  ].map(s=>({z:s.z,v:s.v,x:[s.z[0]-.5*s.v[0],s.z[1]-.5*s.v[1]],e:[s.z[0]+.5*s.v[0],s.z[1]+.5*s.v[1]]}));
+  const mean=[-.2,2],ns='http://www.w3.org/2000/svg',sx=x=>380+x*72,sy=y=>220-y*62;let mode='targets',selected=0;
+  function E(name,a){const n=document.createElementNS(ns,name);for(const[k,v]of Object.entries(a))n.setAttribute(k,String(v));svg.appendChild(n);return n}
+  function arrow(x,y,vx,vy,col,w=3,scale=.42){const x1=sx(x),y1=sy(y),x2=sx(x+vx*scale),y2=sy(y+vy*scale);E('line',{x1,y1,x2,y2,stroke:col,'stroke-width':w,'stroke-linecap':'round'});const ang=Math.atan2(y2-y1,x2-x1),L=9;E('line',{x1:x2,y1:y2,x2:x2-L*Math.cos(ang-.55),y2:y2-L*Math.sin(ang-.55),stroke:col,'stroke-width':w});E('line',{x1:x2,y1:y2,x2:x2-L*Math.cos(ang+.55),y2:y2-L*Math.sin(ang+.55),stroke:col,'stroke-width':w})}
+  function label(x,y,s,col='#74665a'){const n=E('text',{x:sx(x),y:sy(y),fill:col,'font-size':12,'font-weight':650});n.textContent=s}
+  function draw(){svg.innerHTML='';E('rect',{x:0,y:0,width:760,height:430,fill:'#f8f3ec'});E('line',{x1:65,y1:220,x2:695,y2:220,stroke:'#d8c6b2','stroke-width':1});E('line',{x1:380,y1:45,x2:380,y2:390,stroke:'#d8c6b2','stroke-width':1});E('circle',{cx:sx(0),cy:sy(0),r:56,fill:'none',stroke:'#d8c6b2','stroke-width':1.5,'stroke-dasharray':'5 5'});label(-.75,.95,zh?'local neighborhood':'local neighborhood');samples.forEach((s,i)=>{const active=i===selected;E('circle',{cx:sx(s.z[0]),cy:sy(s.z[1]),r:active?7:5,fill:'#fffdf8',stroke:active?'#30251d':'#6b4f3a','stroke-width':active?2:1.2});label(s.z[0]+.08,s.z[1]+.14,String.fromCharCode(65+i),active?'#30251d':'#74665a');if(mode!=='mse')arrow(s.z[0],s.z[1],s.v[0],s.v[1],'#c47a3d',2.4,.27)});if(mode==='average'||mode==='mse'){E('circle',{cx:sx(0),cy:sy(0),r:8,fill:'#fffdf8',stroke:'#7d678f','stroke-width':2});arrow(0,0,mean[0],mean[1],'#7d678f',4,.45);label(.1,1.05,'mean v̂ = (−0.20, 2.00)','#655879')}if(mode==='mse'){const p=[+px.value,+py.value];arrow(0,0,p[0],p[1],'#30251d',3,.45);label(p[0]*.48+.08,p[1]*.48-.12,'vθ','#30251d')}
+    cap.textContent=mode==='targets'?(zh?'每個白點代表一個相近的 z_t sample；橘色箭頭是該 sample 自己的 ε−x。它們不必指同一方向。':'Each white point is a nearby z_t sample; the orange arrow is that sample’s own ε−x. The directions need not agree.'):(mode==='average'?(zh?'紫色箭頭是這 5 個橘色 target 的有限樣本平均。真正理論量是 conditional expectation，而不是固定取 k-nearest-neighbor。':'The purple arrow is the finite-sample mean of the five orange targets. The theoretical object is a conditional expectation, not literally a fixed k-nearest-neighbor rule.'):(zh?'黑色是模型現在輸出的單一 vθ；把它移向紫色 mean，平均 MSE 會下降到最小。':'Black is the model’s single output vθ. Move it toward the purple mean and the average MSE decreases to its minimum.'));
+  }
+  function updatePair(){const s=samples[selected],fmt=a=>`(${a[0].toFixed(2)}, ${a[1].toFixed(2)})`;pairBtns.forEach((b,i)=>b.classList.toggle('active',i===selected));pairZ.textContent=`z_t = ${fmt(s.z)}`;pairX.textContent=`x = ${fmt(s.x)}`;pairE.textContent=`ε = ${fmt(s.e)}`;pairV.textContent=`ε−x = ${fmt(s.v)}`}
+  function updateMSE(){const p=[+px.value,+py.value];pxo.textContent=p[0].toFixed(2);pyo.textContent=p[1].toFixed(2);const m=samples.reduce((acc,s)=>acc+(p[0]-s.v[0])**2+(p[1]-s.v[1])**2,0)/samples.length;mseOut.textContent=m.toFixed(3);draw()}
+  function setMode(m){mode=m;views.forEach(b=>b.classList.toggle('active',b.dataset.view===m));msePanel.hidden=m!=='mse';draw()}
+  views.forEach(b=>b.addEventListener('click',()=>setMode(b.dataset.view)));pairBtns.forEach((b,i)=>b.addEventListener('click',()=>{selected=i;updatePair();draw()}));px.addEventListener('input',updateMSE);py.addEventListener('input',updateMSE);opt.addEventListener('click',()=>{px.value='-0.20';py.value='2.00';updateMSE()});updatePair();updateMSE();setMode('targets');
+}
+</script>
