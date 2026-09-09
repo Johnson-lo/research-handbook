@@ -1,0 +1,75 @@
+---
+const { lang = 'zh' } = Astro.props;
+const isZh = lang !== 'en';
+---
+
+<div class="jvp3d" data-jvp3d data-lang={isZh ? 'zh' : 'en'}>
+  <div class="jvp3d-head">
+    <div>
+      <span>JVP IN 3D INPUT SPACE</span>
+      <strong>{isZh ? '把 q=(z_t,r,t) 畫成三維空間：偏微分是在看三個座標軸，JVP 則是在看一條實際移動方向' : 'Draw q=(z_t,r,t) as a 3D input space: partial derivatives look along coordinate axes, while the JVP follows the actual motion direction'}</strong>
+      <p>{isZh ? '這裡先把 z_t 當成 1D scalar，讓 input space 可以畫成 3D。真實模型裡 z_t 通常是高維向量，所以實際上是更高維空間。' : 'We temporarily treat z_t as a 1D scalar so the input space can be visualized in 3D. In real models z_t is high-dimensional, so the true input space is much larger.'}</p>
+    </div>
+    <div class="formula-chip"><code>u = u(z_t, r, t)</code><code>q'(t) = [v, 0, 1]</code></div>
+  </div>
+
+  <div class="control-grid">
+    <label><span>z_t</span><input data-z type="range" min="-2" max="2" step="0.05" value="0.7"><output data-zo>0.70</output></label>
+    <label><span>r</span><input data-r type="range" min="0" max="0.9" step="0.01" value="0.20"><output data-ro>0.20</output></label>
+    <label><span>t</span><input data-t type="range" min="0.05" max="1" step="0.01" value="0.75"><output data-to>0.75</output></label>
+    <label><span>v = dz_t/dt</span><input data-v type="range" min="-2" max="2" step="0.05" value="0.9"><output data-vo>0.90</output></label>
+  </div>
+
+  <div class="geometry-layout">
+    <div class="scene-wrap">
+      <svg data-scene viewBox="0 0 820 500" role="img" aria-label="3D JVP geometry"></svg>
+      <div class="scene-caption" data-scene-caption></div>
+    </div>
+    <aside>
+      <div class="deriv-card"><small>∂u/∂z_t</small><strong data-dz></strong><p>{isZh ? '只改 z_t，r 與 t 固定。物理上是：同一個 interval 設定下，當前 state 微小改變時，u 會怎麼變。' : 'Change only z_t while r and t stay fixed. Physically: how u responds to a small state change under the same interval.'}</p></div>
+      <div class="deriv-card"><small>∂u/∂r</small><strong data-dr></strong><p>{isZh ? '只改 interval 起點 r。它描述「往前或往後改動 averaging interval 左端」時，u 的敏感度。' : 'Change only the interval start r. This measures sensitivity to moving the left endpoint of the averaging interval.'}</p></div>
+      <div class="deriv-card"><small>∂u/∂t</small><strong data-dt></strong><p>{isZh ? '只改目前時間 t，state z_t 先假裝不動。它是 explicit-time sensitivity。' : 'Change only current time t while pretending z_t is fixed. This is the explicit-time sensitivity.'}</p></div>
+      <div class="jvp-card"><small>{isZh ? '沿真實時間方向的 JVP' : 'JVP along actual time motion'}</small><strong data-jvp></strong><code data-jvp-eq></code><p>{isZh ? '因為 r 在對 t 做 total derivative 時固定，所以 dr/dt=0。這就是為什麼 ∂u/∂r 可以存在，但不出現在 q′(t)=[v,0,1] 的 JVP contribution。' : 'When taking the total derivative with respect to t, r is held fixed, so dr/dt=0. That is why ∂u/∂r exists but contributes nothing along q′(t)=[v,0,1].'}</p></div>
+    </aside>
+  </div>
+
+  <div class="direction-compare">
+    <div><span>Axis direction</span><code>[1,0,0]</code><b>{isZh ? '只看 state sensitivity' : 'state sensitivity only'}</b></div>
+    <div><span>Axis direction</span><code>[0,1,0]</code><b>{isZh ? '只看 interval-start sensitivity' : 'interval-start sensitivity only'}</b></div>
+    <div><span>Axis direction</span><code>[0,0,1]</code><b>{isZh ? '只看 explicit-time sensitivity' : 'explicit-time sensitivity only'}</b></div>
+    <div class="active-dir"><span>Actual motion</span><code>[v,0,1]</code><b>{isZh ? 'MeanFlow 的 total derivative / JVP' : 'MeanFlow total derivative / JVP'}</b></div>
+  </div>
+
+  <div class="toy-note">
+    <b>{isZh ? '圖中的 u 是 toy scalar field，不是實際 neural network。' : 'The u shown here is a toy scalar field, not the actual neural network.'}</b>
+    <span>{isZh ? '為了能直接算偏微分，這裡用 u(z,r,t)=0.6z²+0.8zt+0.5r²−0.7rt+1.2t。它只用來展示「三個 input 軸」和「沿 q′(t) 的 directional derivative」的差別。' : 'To make the derivatives explicit we use u(z,r,t)=0.6z²+0.8zt+0.5r²−0.7rt+1.2t. It only illustrates the difference between three coordinate-axis derivatives and the directional derivative along q′(t).'}</span>
+  </div>
+</div>
+
+<style>
+.jvp3d{box-sizing:border-box;width:100%;border:1px solid var(--rh-border);border-radius:1rem;padding:1rem;background:var(--rh-surface);margin:1rem 0 1.4rem;overflow:hidden}.jvp3d-head{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:1rem;align-items:center}.jvp3d-head>div:first-child>span{display:block;color:var(--rh-caramel);font-size:.67rem;font-weight:800;letter-spacing:.12em}.jvp3d-head strong{display:block;margin-top:.2rem}.jvp3d-head p{margin:.25rem 0 0!important;color:var(--rh-muted);line-height:1.55}.formula-chip{display:grid;gap:.35rem}.formula-chip code{display:block;border:1px solid var(--rh-border);border-radius:.55rem;background:var(--rh-surface-2);padding:.45rem .6rem;font-size:.72rem}.control-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:.45rem;margin-top:.75rem}.control-grid label{display:grid;grid-template-columns:auto 1fr 3rem;gap:.4rem;align-items:center;border:1px solid var(--rh-border);border-radius:.6rem;background:var(--rh-surface-2);padding:.5rem .6rem}.control-grid span{font-size:.67rem;color:var(--rh-muted)}.control-grid input{width:100%;min-width:0}.control-grid output{font-size:.68rem;text-align:right;color:var(--rh-coffee);font-variant-numeric:tabular-nums}.geometry-layout{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(18rem,.78fr);gap:.65rem;margin-top:.65rem;align-items:stretch}.scene-wrap{display:grid;grid-template-rows:minmax(0,1fr) auto;border:1px solid var(--rh-border);border-radius:.7rem;overflow:hidden;background:#f8f3ec;min-width:0}.scene-wrap svg{display:block;width:100%;height:auto;min-height:28rem}.scene-caption{border-top:1px solid var(--rh-border);padding:.5rem .65rem;background:var(--rh-surface-2);color:var(--rh-muted);font-size:.7rem;line-height:1.45}.geometry-layout aside{display:grid;grid-template-columns:1fr 1fr;gap:.45rem;align-content:start}.deriv-card,.jvp-card{border:1px solid var(--rh-border);border-radius:.65rem;background:var(--rh-surface-2);padding:.6rem}.deriv-card small,.jvp-card small{display:block;color:var(--rh-caramel);font-size:.61rem;text-transform:uppercase}.deriv-card strong,.jvp-card strong{display:block;margin-top:.18rem}.deriv-card p,.jvp-card p{margin:.3rem 0 0!important;color:var(--rh-muted);font-size:.69rem;line-height:1.45}.jvp-card{grid-column:1/-1;border-left:3px solid #7d678f}.jvp-card code{display:block;margin-top:.3rem;font-size:.69rem;white-space:normal;overflow-wrap:anywhere}.direction-compare{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:.45rem;margin-top:.65rem}.direction-compare>div{border:1px solid var(--rh-border);border-radius:.6rem;background:var(--rh-surface-2);padding:.55rem}.direction-compare span{display:block;color:var(--rh-caramel);font-size:.6rem;text-transform:uppercase}.direction-compare code{display:block;margin-top:.2rem;font-size:.7rem}.direction-compare b{display:block;margin-top:.25rem;font-size:.68rem;line-height:1.35}.active-dir{border-color:#7d678f!important;background:color-mix(in srgb,#7d678f 8%,var(--rh-surface-2))!important}.toy-note{display:grid;grid-template-columns:auto minmax(0,1fr);gap:.65rem;align-items:start;border-top:1px solid var(--rh-border);margin-top:.65rem;padding-top:.65rem}.toy-note b{font-size:.71rem}.toy-note span{font-size:.69rem;color:var(--rh-muted);line-height:1.5}.jvp3d :global(*){box-sizing:border-box}:global(.sl-markdown-content .jvp3d :is(.jvp3d-head,.control-grid,.geometry-layout,.direction-compare,.toy-note) > *){margin-top:0!important}
+@media(max-width:900px){.jvp3d-head{grid-template-columns:1fr}.formula-chip{max-width:20rem}.control-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.geometry-layout{grid-template-columns:1fr}.direction-compare{grid-template-columns:repeat(2,minmax(0,1fr))}}@media(max-width:560px){.control-grid,.direction-compare,.geometry-layout aside{grid-template-columns:1fr}.jvp-card{grid-column:auto}.toy-note{grid-template-columns:1fr}}
+</style>
+
+<script>
+for(const root of document.querySelectorAll('[data-jvp3d]')){
+  if(root.dataset.ready) continue; root.dataset.ready='1';
+  const zh=root.dataset.lang==='zh',svg=root.querySelector('[data-scene]'),zEl=root.querySelector('[data-z]'),rEl=root.querySelector('[data-r]'),tEl=root.querySelector('[data-t]'),vEl=root.querySelector('[data-v]'),zo=root.querySelector('[data-zo]'),ro=root.querySelector('[data-ro]'),to=root.querySelector('[data-to]'),vo=root.querySelector('[data-vo]'),dzEl=root.querySelector('[data-dz]'),drEl=root.querySelector('[data-dr]'),dtEl=root.querySelector('[data-dt]'),jvpEl=root.querySelector('[data-jvp]'),eqEl=root.querySelector('[data-jvp-eq]'),cap=root.querySelector('[data-scene-caption]');
+  const ns='http://www.w3.org/2000/svg';
+  function E(name,a){const n=document.createElementNS(ns,name);for(const[k,v]of Object.entries(a))n.setAttribute(k,String(v));svg.appendChild(n);return n}
+  function P(z,r,t){return{x:410+z*95+r*85,y:350-r*55-t*210+z*22}}
+  function line(a,b,col,w=2,dash=''){const n=E('line',{x1:a.x,y1:a.y,x2:b.x,y2:b.y,stroke:col,'stroke-width':w,'stroke-linecap':'round'});if(dash)n.setAttribute('stroke-dasharray',dash);return n}
+  function arrow(a,b,col,w=3){line(a,b,col,w);const ang=Math.atan2(b.y-a.y,b.x-a.x),L=10;line(b,{x:b.x-L*Math.cos(ang-.55),y:b.y-L*Math.sin(ang-.55)},col,w);line(b,{x:b.x-L*Math.cos(ang+.55),y:b.y-L*Math.sin(ang+.55)},col,w)}
+  function label(p,s,col='#74665a'){const n=E('text',{x:p.x,y:p.y,fill:col,'font-size':13,'font-weight':650});n.textContent=s;return n}
+  function update(){let z=+zEl.value,r=+rEl.value,t=+tEl.value,v=+vEl.value;if(r>=t){r=Math.max(0,t-.01);rEl.value=r.toFixed(2)}rEl.max=Math.max(0,t-.01).toFixed(2);const dz=1.2*z+.8*t,dr=r-.7*t,dt=.8*z-.7*r+1.2,jvp=dz*v+dt;zo.textContent=z.toFixed(2);ro.textContent=r.toFixed(2);to.textContent=t.toFixed(2);vo.textContent=v.toFixed(2);dzEl.textContent=dz.toFixed(3);drEl.textContent=dr.toFixed(3);dtEl.textContent=dt.toFixed(3);jvpEl.textContent=jvp.toFixed(3);eqEl.textContent=`du/dt = (∂u/∂z_t)v + (∂u/∂r)·0 + ∂u/∂t = (${dz.toFixed(3)})(${v.toFixed(2)}) + (${dr.toFixed(3)})·0 + ${dt.toFixed(3)} = ${jvp.toFixed(3)}`;
+    svg.innerHTML='';E('rect',{x:0,y:0,width:820,height:500,fill:'#f8f3ec'});const o=P(0,0,0),zAx=P(2.3,0,0),rAx=P(0,1.1,0),tAx=P(0,0,1.08);arrow(o,zAx,'#7c91a6',2.5);arrow(o,rAx,'#6f8b69',2.5);arrow(o,tAx,'#c47a3d',2.5);label({x:zAx.x+8,y:zAx.y+4},'z_t','#65798d');label({x:rAx.x+6,y:rAx.y-4},'r','#587354');label({x:tAx.x+6,y:tAx.y-3},'t','#a05f2f');
+    for(let rr=0;rr<=1;rr+=.2){line(P(-2,rr,0),P(2,rr,0),'#e2d6c9',1)}for(let zz=-2;zz<=2;zz+=.5){line(P(zz,0,0),P(zz,1,0),'#e2d6c9',1)}
+    const q=P(z,r,t);E('circle',{cx:q.x,cy:q.y,r:8,fill:'#fffdf8',stroke:'#30251d','stroke-width':2});label({x:q.x+12,y:q.y-10},`q=(${z.toFixed(2)}, ${r.toFixed(2)}, ${t.toFixed(2)})`,'#30251d');
+    const dzP=P(z+.55,r,t),drP=P(z,r+.28,t),dtP=P(z,r,t+.22);arrow(q,dzP,'#7c91a6',3);arrow(q,drP,'#6f8b69',3);arrow(q,dtP,'#c47a3d',3);label({x:dzP.x+5,y:dzP.y},'∂/∂z_t','#65798d');label({x:drP.x+5,y:drP.y},'∂/∂r','#587354');label({x:dtP.x+5,y:dtP.y},'∂/∂t','#a05f2f');
+    const scale=.32,next=P(z+v*scale,r,t+scale);arrow(q,next,'#7d678f',4);label({x:next.x+8,y:next.y-7},`q′=[${v.toFixed(2)},0,1]`,'#655879');
+    const floor=P(z,r,0);line(floor,q,'#b8aa9d',1.5,'5 5');const rproj=P(z,0,t);line(rproj,q,'#b8aa9d',1.5,'5 5');
+    cap.textContent=zh?'藍、綠、橘三支箭頭是三個 coordinate-axis partial derivatives；紫色箭頭不是另一個 axis，而是時間演化時 q 真正走的方向 [v,0,1]。':'Blue, green, and orange arrows show the three coordinate-axis partial directions; the purple arrow is not another axis, but the actual time-evolution direction [v,0,1].';
+  }
+  [zEl,rEl,tEl,vEl].forEach(el=>el.addEventListener('input',update));update();
+}
+</script>
