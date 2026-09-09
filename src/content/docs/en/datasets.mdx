@@ -5,6 +5,7 @@ description: A practical catalog of training data sources across image, multimod
 
 import DatasetCatalog from '../../../components/DatasetCatalog.astro';
 import ComputeFeasibilityPlanner from '../../../components/ComputeFeasibilityPlanner.astro';
+import LabGPUEnhancer from '../../../components/LabGPUEnhancer.astro';
 
 # Datasets | Training Data & Task Map
 
@@ -15,6 +16,10 @@ Dataset licenses, download mechanisms, URL survival, and versions can change. Re
 :::
 
 ## Start from available GPU / storage
+
+The lab resources you provided are **RTX 3080, RTX 4090, V100, and L40S**. RTX 3080 has official 10 GB and 12 GB variants, while V100 exists in 16 GB and 32 GB configurations, so the planner exposes the common variants until the installed boards and counts are verified with `nvidia-smi`.
+
+<LabGPUEnhancer lang="en" />
 
 The planner below does not assign one fixed VRAM requirement to a dataset. It estimates a **dataset + model / experiment profile** and classifies each candidate as comfortable, tight-but-feasible, sharding-required, or a collaboration / cluster candidate.
 
