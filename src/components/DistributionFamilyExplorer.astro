@@ -1,0 +1,132 @@
+---
+const { lang = 'zh' } = Astro.props;
+const isZh = lang !== 'en';
+---
+
+<div class="family-explorer" data-family-explorer data-lang={isZh ? 'zh' : 'en'}>
+  <div class="family-head">
+    <div>
+      <span>DISTRIBUTION FAMILY EXPLORER</span>
+      <strong>{isZh ? '同一條 probability path，換不同 data distribution 會發生什麼？' : 'What changes when the data distribution changes but the probability path stays the same?'}</strong>
+      <p>{isZh ? '選 Gaussian、雙峰、Ring、Checkerboard、Two Moons 或 Spiral，再拖動 t。所有例子都使用同一個 Gaussian prior 與 linear interpolation。' : 'Choose Gaussian, bimodal, ring, checkerboard, two moons, or spiral, then drag t. Every example uses the same Gaussian prior and linear interpolation.'}</p>
+    </div>
+    <div class="direction-card">
+      <small>{isZh ? '時間軸 convention' : 'Time-axis convention'}</small>
+      <b>data · t=0 → prior · t=1</b>
+      <span>{isZh ? 'Generation / inference 讀這條軸的反方向。' : 'Generation / inference reads this axis in reverse.'}</span>
+    </div>
+  </div>
+
+  <div class="family-toolbar">
+    <div class="family-buttons" role="group" aria-label="distribution family">
+      <button type="button" class="active" data-family="gaussian">Gaussian</button>
+      <button type="button" data-family="bimodal">Bimodal</button>
+      <button type="button" data-family="ring">Ring</button>
+      <button type="button" data-family="checker">Checkerboard</button>
+      <button type="button" data-family="moons">Two Moons</button>
+      <button type="button" data-family="spiral">Spiral</button>
+    </div>
+    <div class="view-buttons" role="group" aria-label="distribution view">
+      <button type="button" class="active" data-view-mode="focus">{isZh ? '單一分布 + 時間切片' : 'One family + time slices'}</button>
+      <button type="button" data-view-mode="compare">{isZh ? '全部分布比較' : 'Compare all families'}</button>
+    </div>
+  </div>
+
+  <div class="time-control">
+    <div class="time-label"><b>t</b><output data-time-output>0.45</output></div>
+    <input data-time type="range" min="0" max="1" step="0.01" value="0.45" />
+    <button type="button" data-play>{isZh ? '播放變化' : 'Play'}</button>
+  </div>
+
+  <div class="focus-view" data-focus-view>
+    <div class="main-grid">
+      <div class="main-plot-wrap">
+        <svg class="main-plot" data-main-plot viewBox="0 0 900 470" role="img" aria-label="distribution morph visualization"></svg>
+        <div class="plot-hint" data-plot-hint>{isZh ? '提示：點任一白色 z_t sample，可追蹤同一 paired sample 的 x → z_t → ε。' : 'Tip: click any white z_t sample to track the same paired sample x → z_t → ε.'}</div>
+      </div>
+      <aside class="family-info">
+        <div><small>{isZh ? '目前分布' : 'Current family'}</small><strong data-family-name></strong></div>
+        <div><small>{isZh ? '結構特性' : 'Structure'}</small><strong data-family-structure></strong></div>
+        <div class="wide"><small>{isZh ? '拖 t 時應該看什麼' : 'What to watch while dragging t'}</small><p data-family-watch></p></div>
+        <div class="wide equation"><small>linear path</small><code data-equation></code></div>
+        <div class="wide tracker" data-tracker hidden><small>{isZh ? '追蹤 sample' : 'Tracked sample'}</small><p data-tracker-text></p></div>
+      </aside>
+    </div>
+
+    <div class="snapshots-head">
+      <div><strong>{isZh ? '五個時間切片' : 'Five time slices'}</strong><span>{isZh ? '不用拖 slider，也能一次看完整結構如何消失 / 形成。' : 'See the whole structural transition without dragging the slider.'}</span></div>
+      <div class="snapshot-legend"><span><i class="data-dot"></i>data</span><span><i class="prior-dot"></i>prior</span><span><i class="current-dot"></i>z_t</span></div>
+    </div>
+    <div class="snapshot-grid" data-snapshot-grid></div>
+  </div>
+
+  <div class="compare-view" data-compare-view hidden>
+    <div class="compare-note"><b>{isZh ? '固定同一個 t，比較不同 data geometry' : 'Hold t fixed and compare different data geometries'}</b><span>{isZh ? '這能看出：difficulty 不只來自「noise 多不多」，也來自 data distribution 本身有幾個 mode、是否斷裂、是否沿低維 manifold 排列。' : 'This shows that difficulty is not only about noise level; it also depends on modes, disconnected support, and low-dimensional manifold structure.'}</span></div>
+    <div class="compare-grid" data-compare-grid></div>
+  </div>
+
+  <div class="interpretation-strip">
+    <div><span>1</span><p>{isZh ? 'Unimodal Gaussian 最容易建立直覺：整體形狀主要是 scale / correlation 的改變。' : 'A unimodal Gaussian gives the cleanest intuition: the main change is scale/correlation.'}</p></div>
+    <div><span>2</span><p>{isZh ? '多峰或 disconnected distribution 會讓中間 z_t 出現「mode 逐漸模糊 / 填平空隙」的現象。' : 'Multimodal or disconnected distributions show modes blurring and gaps filling at intermediate t.'}</p></div>
+    <div><span>3</span><p>{isZh ? 'Ring、Moons、Spiral 特別適合看 manifold geometry：中間 distribution 不必保持原本的洞、弧線或細長結構。' : 'Ring, moons, and spiral expose manifold geometry: intermediate distributions need not preserve holes, arcs, or thin structures.'}</p></div>
+  </div>
+
+  <div class="toy-warning">
+    <b>{isZh ? '這裡展示的是 path geometry，不是 trained model output。' : 'This visualizes path geometry, not trained-model output.'}</b>
+    <span>{isZh ? '每個 x 都和一個獨立 Gaussian ε 配對，再用 z_t=(1−t)x+tε 直接建構。它用來理解 training distribution 隨 t 的變化；不代表 inference 時 model 會沿著畫面上的直線逐點走。' : 'Each x is paired with an independent Gaussian ε and z_t=(1−t)x+tε is constructed directly. This explains the training distribution across t; it does not mean inference follows these straight paired lines point by point.'}</span>
+  </div>
+</div>
+
+<style>
+.family-explorer{box-sizing:border-box;width:100%;border:1px solid var(--rh-border);border-radius:1rem;padding:1rem;background:var(--rh-surface);margin:1rem 0 1.5rem;overflow:hidden}.family-head{display:grid;grid-template-columns:minmax(0,1fr) minmax(12rem,.42fr);gap:1rem;align-items:center}.family-head>div:first-child>span{display:block;color:var(--rh-caramel);font-size:.67rem;font-weight:800;letter-spacing:.12em}.family-head strong{display:block;margin-top:.2rem}.family-head p{margin:.25rem 0 0!important;color:var(--rh-muted);line-height:1.55}.direction-card{border:1px solid var(--rh-border);border-radius:.7rem;background:var(--rh-surface-2);padding:.65rem .75rem}.direction-card small{display:block;color:var(--rh-caramel);font-size:.62rem;text-transform:uppercase}.direction-card b{display:block;margin-top:.2rem;font-size:.8rem}.direction-card span{display:block;margin-top:.2rem;color:var(--rh-muted);font-size:.69rem;line-height:1.4}.family-toolbar{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:.6rem;align-items:center;margin-top:.8rem}.family-buttons{display:flex;flex-wrap:wrap;gap:.35rem}.family-buttons button,.view-buttons button,.time-control button{box-sizing:border-box;height:2.35rem;margin:0;border:1px solid var(--rh-border);border-radius:.55rem;background:var(--rh-surface-2);color:var(--rh-text);font:inherit;font-size:.72rem;cursor:pointer;padding:0 .65rem}.family-buttons button.active,.view-buttons button.active{border-color:var(--rh-caramel);background:var(--rh-surface-3);color:var(--rh-coffee-deep);font-weight:700}.view-buttons{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.35rem}.time-control{display:grid;grid-template-columns:4rem minmax(0,1fr) 6.8rem;gap:.6rem;align-items:center;margin-top:.65rem;border:1px solid var(--rh-border);border-radius:.65rem;background:var(--rh-surface-2);padding:.55rem .65rem}.time-label{display:flex;gap:.4rem;align-items:baseline}.time-label output{color:var(--rh-coffee);font-weight:750;font-variant-numeric:tabular-nums}.time-control input{width:100%;min-width:0}.time-control button{background:var(--rh-surface);border-color:var(--rh-caramel);color:var(--rh-coffee);font-weight:700}.main-grid{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(15rem,.72fr);gap:.7rem;margin-top:.75rem;align-items:stretch}.main-plot-wrap{display:grid;grid-template-rows:minmax(0,1fr) auto;border:1px solid var(--rh-border);border-radius:.75rem;overflow:hidden;background:#f8f3ec;min-width:0}.main-plot{display:block;width:100%;height:auto;min-height:27rem}.plot-hint{border-top:1px solid var(--rh-border);background:var(--rh-surface-2);padding:.48rem .65rem;color:var(--rh-muted);font-size:.68rem;line-height:1.4}.family-info{display:grid;grid-template-columns:1fr 1fr;gap:.55rem;align-content:start}.family-info>div{border:1px solid var(--rh-border);border-radius:.65rem;background:var(--rh-surface-2);padding:.65rem;min-width:0}.family-info .wide{grid-column:1/-1}.family-info small{display:block;color:var(--rh-caramel);font-size:.61rem;text-transform:uppercase;letter-spacing:.05em}.family-info strong{display:block;margin-top:.2rem;font-size:.8rem;line-height:1.4}.family-info p{margin:.2rem 0 0!important;color:var(--rh-muted);font-size:.73rem;line-height:1.5}.family-info code{display:block;margin-top:.25rem;white-space:normal;overflow-wrap:anywhere;font-size:.72rem}.tracker{border-left:3px solid var(--rh-caramel)!important}.snapshots-head{display:flex;justify-content:space-between;gap:1rem;align-items:end;margin-top:.8rem}.snapshots-head strong,.snapshots-head span{display:block}.snapshots-head>div:first-child>span{color:var(--rh-muted);font-size:.7rem;margin-top:.12rem}.snapshot-legend{display:flex;gap:.5rem;flex-wrap:wrap;font-size:.65rem;color:var(--rh-muted)}.snapshot-legend span{display:flex;align-items:center;gap:.22rem}.snapshot-legend i{width:.58rem;height:.58rem;border-radius:50%}.data-dot{background:#638a69}.prior-dot{background:#6f85a8}.current-dot{background:#fffdf8;border:1px solid #6b4f3a}.snapshot-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:.4rem;margin-top:.45rem}.snapshot-card{border:1px solid var(--rh-border);border-radius:.6rem;background:var(--rh-surface-2);overflow:hidden;min-width:0}.snapshot-card svg{display:block;width:100%;height:auto;background:#f8f3ec}.snapshot-card span{display:block;text-align:center;padding:.3rem;color:var(--rh-muted);font-size:.64rem;border-top:1px solid var(--rh-border)}.compare-note{display:grid;grid-template-columns:auto minmax(0,1fr);gap:.65rem;align-items:center;margin-top:.75rem;border:1px solid var(--rh-border);border-radius:.65rem;background:var(--rh-surface-2);padding:.6rem .7rem}.compare-note b{font-size:.76rem}.compare-note span{color:var(--rh-muted);font-size:.72rem;line-height:1.45}.compare-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:.55rem;margin-top:.6rem}.compare-card{border:1px solid var(--rh-border);border-radius:.65rem;background:var(--rh-surface-2);overflow:hidden;min-width:0}.compare-card svg{display:block;width:100%;height:auto;background:#f8f3ec}.compare-card>div{padding:.45rem .55rem;border-top:1px solid var(--rh-border)}.compare-card strong{display:block;font-size:.74rem}.compare-card span{display:block;color:var(--rh-muted);font-size:.63rem;margin-top:.1rem}.interpretation-strip{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:.5rem;margin-top:.75rem}.interpretation-strip>div{display:grid;grid-template-columns:1.55rem 1fr;gap:.4rem;border:1px solid var(--rh-border);border-radius:.65rem;background:var(--rh-surface-2);padding:.55rem}.interpretation-strip>div>span{width:1.4rem;height:1.4rem;border-radius:50%;display:grid;place-items:center;background:var(--rh-surface-3);color:var(--rh-coffee);font-size:.65rem;font-weight:800}.interpretation-strip p{margin:0!important;color:var(--rh-muted);font-size:.69rem;line-height:1.45}.toy-warning{display:grid;grid-template-columns:auto minmax(0,1fr);gap:.65rem;align-items:start;border-top:1px solid var(--rh-border);margin-top:.75rem;padding-top:.7rem}.toy-warning b{font-size:.73rem}.toy-warning span{color:var(--rh-muted);font-size:.69rem;line-height:1.5}
+.family-explorer [hidden]{display:none!important}:global(.sl-markdown-content .family-explorer :is(.family-head,.family-toolbar,.family-buttons,.view-buttons,.time-control,.main-grid,.family-info,.snapshots-head,.snapshot-grid,.compare-note,.compare-grid,.interpretation-strip,.toy-warning) > *){margin-top:0!important}
+@media(max-width:900px){.family-head{grid-template-columns:1fr}.direction-card{max-width:24rem}.family-toolbar{grid-template-columns:1fr}.view-buttons{max-width:28rem}.main-grid{grid-template-columns:1fr}.main-plot{min-height:23rem}.snapshot-grid{grid-template-columns:repeat(3,minmax(0,1fr))}.compare-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.interpretation-strip{grid-template-columns:1fr}}
+@media(max-width:600px){.view-buttons{grid-template-columns:1fr}.time-control{grid-template-columns:3.3rem 1fr}.time-control button{grid-column:1/-1}.snapshot-grid,.compare-grid{grid-template-columns:1fr 1fr}.snapshots-head{display:grid}.family-info{grid-template-columns:1fr}.family-info .wide{grid-column:auto}.compare-note,.toy-warning{grid-template-columns:1fr}}
+</style>
+
+<script>
+for (const root of document.querySelectorAll('[data-family-explorer]')) {
+  if (root.dataset.ready) continue;
+  root.dataset.ready = '1';
+  const zh = root.dataset.lang === 'zh';
+  const families = {
+    gaussian:{name:'Gaussian',structure:zh?'單峰、連通、橢圓形密度':'Unimodal, connected, elliptical density',watch:zh?'先看最簡單情況：中間 distribution 主要改變 spread、correlation 與中心附近密度，不需要處理 mode 分裂。':'Start with the simplest case: the intermediate distribution mainly changes spread, correlation, and central density without mode splitting.'},
+    bimodal:{name:'Bimodal',structure:zh?'兩個分離 mode':'Two separated modes',watch:zh?'觀察兩群資料如何逐漸失去分離性。t 接近中間時，兩個 mode 之間會開始被填入更多 probability mass。':'Watch the two clusters lose separation. Around intermediate t, more probability mass appears between modes.'},
+    ring:{name:'Ring',structure:zh?'有洞的環狀 manifold':'Ring-shaped manifold with a hole',watch:zh?'最重要的是中間的「洞」不一定被保留：和獨立 Gaussian noise 配對後，中間 z_t 會逐漸填進 ring 內部。':'The key is that the hole need not be preserved: independent Gaussian pairings make intermediate z_t increasingly fill the ring interior.'},
+    checker:{name:'Checkerboard',structure:zh?'多峰、規則網格、斷裂 support':'Multimodal grid with disconnected support',watch:zh?'看多個離散 mode 如何一起 blur。這種分布很適合檢查 mode coverage、probability-path correctness 與 divergence 類方法。':'Watch many disconnected modes blur together. This geometry is useful for thinking about mode coverage, probability-path correctness, and divergence-based methods.'},
+    moons:{name:'Two Moons',structure:zh?'兩條彎曲、彼此分離的低維 manifold':'Two curved, separated low-dimensional manifolds',watch:zh?'觀察弧線結構如何在中間時間被厚化與模糊；它比 Gaussian 更能提醒你「distribution geometry」不等於單純均值與 variance。':'Watch the arcs thicken and blur at intermediate time; this shows why distribution geometry is more than mean and variance.'},
+    spiral:{name:'Spiral',structure:zh?'細長、彎曲、非線性 manifold':'Thin, curved nonlinear manifold',watch:zh?'Spiral 對 local direction 很敏感。拖 t 看細長結構如何快速被噪音展寬，這能幫助理解為什麼 local velocity field 可能很複雜。':'A spiral is sensitive to local direction. Drag t to see the thin structure widen quickly, illustrating why the local velocity field can be complicated.'}
+  };
+  const familyButtons=[...root.querySelectorAll('[data-family]')],viewButtons=[...root.querySelectorAll('[data-view-mode]')],time=root.querySelector('[data-time]'),timeOut=root.querySelector('[data-time-output]'),play=root.querySelector('[data-play]'),focusView=root.querySelector('[data-focus-view]'),compareView=root.querySelector('[data-compare-view]'),mainSvg=root.querySelector('[data-main-plot]'),snapshotGrid=root.querySelector('[data-snapshot-grid]'),compareGrid=root.querySelector('[data-compare-grid]'),nameEl=root.querySelector('[data-family-name]'),structureEl=root.querySelector('[data-family-structure]'),watchEl=root.querySelector('[data-family-watch]'),equationEl=root.querySelector('[data-equation]'),tracker=root.querySelector('[data-tracker]'),trackerText=root.querySelector('[data-tracker-text]');
+  let family='gaussian',view='focus',timer=null,tracked=-1;
+  const N=180;
+  function rngFactory(seed){let s=seed>>>0;return()=>{s=(1664525*s+1013904223)>>>0;return s/4294967296}}
+  function gaussian(r){const u=Math.max(r(),1e-9),v=r();return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v)}
+  function generate(type){const ids={gaussian:101,bimodal:203,ring:307,checker:409,moons:503,spiral:607};const r=rngFactory(ids[type]);const pts=[];for(let i=0;i<N;i++){
+    let x=0,y=0;
+    if(type==='gaussian'){const g1=gaussian(r),g2=gaussian(r);x=1.45*g1;y=.32*g1+.68*g2;}
+    else if(type==='bimodal'){const side=i%2===0?-1:1;x=side*1.55+.36*gaussian(r);y=side*.25+.48*gaussian(r);}
+    else if(type==='ring'){const a=2*Math.PI*r(),rad=1.65+.13*gaussian(r);x=rad*Math.cos(a);y=rad*Math.sin(a);}
+    else if(type==='checker'){const cells=[[-1.5,-1.5],[-.5,-.5],[.5,-1.5],[1.5,-.5],[-1.5,.5],[-.5,1.5],[.5,.5],[1.5,1.5]];const c=cells[i%cells.length];x=c[0]+.15*gaussian(r);y=c[1]+.15*gaussian(r);}
+    else if(type==='moons'){const half=i<N/2,th=Math.PI*r();if(half){x=-.65+1.25*Math.cos(th);y=.35+1.0*Math.sin(th);}else{x=.65-1.25*Math.cos(th);y=-.35-1.0*Math.sin(th);}x+=.06*gaussian(r);y+=.06*gaussian(r);}
+    else {const th=.7+4.6*Math.PI*r(),rad=.13+.105*th;x=rad*Math.cos(th)+.055*gaussian(r);y=rad*Math.sin(th)+.055*gaussian(r);}
+    pts.push({x,y});
+  }return pts}
+  const prior=(()=>{const r=rngFactory(9901),p=[];for(let i=0;i<N;i++)p.push({x:1.05*gaussian(r),y:1.05*gaussian(r)});return p})();
+  const data={};Object.keys(families).forEach(k=>data[k]=generate(k));
+  const sx=x=>450+x*112, sy=y=>235-y*92;
+  function clearSvg(svg,w=900,h=470){svg.innerHTML='';const ns='http://www.w3.org/2000/svg';const bg=document.createElementNS(ns,'rect');Object.entries({x:0,y:0,width:w,height:h,fill:'#f8f3ec'}).forEach(([k,v])=>bg.setAttribute(k,v));svg.appendChild(bg)}
+  function el(svg,name,attrs){const n=document.createElementNS('http://www.w3.org/2000/svg',name);Object.entries(attrs).forEach(([k,v])=>n.setAttribute(k,String(v)));svg.appendChild(n);return n}
+  function pointAt(type,i,t){return{x:(1-t)*data[type][i].x+t*prior[i].x,y:(1-t)*data[type][i].y+t*prior[i].y}}
+  function drawMain(){const tv=+time.value;clearSvg(mainSvg);el(mainSvg,'line',{x1:58,y1:235,x2:842,y2:235,stroke:'#d8c6b2','stroke-width':1,opacity:.45});el(mainSvg,'line',{x1:450,y1:34,x2:450,y2:436,stroke:'#d8c6b2','stroke-width':1,opacity:.45});for(const p of data[family])el(mainSvg,'circle',{cx:sx(p.x),cy:sy(p.y),r:2.7,fill:'#638a69',opacity:.18});for(const p of prior)el(mainSvg,'circle',{cx:sx(p.x),cy:sy(p.y),r:2.7,fill:'#6f85a8',opacity:.16});for(let i=0;i<N;i++){const p=pointAt(family,i,tv);el(mainSvg,'circle',{cx:sx(p.x),cy:sy(p.y),r:3.15,fill:'#fffdf8',stroke:'#6b4f3a','stroke-width':.85,opacity:.94,'data-point':i});}
+    if(tracked>=0){const x=data[family][tracked],z=pointAt(family,tracked,tv),e=prior[tracked];el(mainSvg,'line',{x1:sx(x.x),y1:sy(x.y),x2:sx(e.x),y2:sy(e.y),stroke:'#c49a72','stroke-width':2,'stroke-dasharray':'5 5',opacity:.9});el(mainSvg,'circle',{cx:sx(x.x),cy:sy(x.y),r:6,fill:'#638a69',stroke:'#fff','stroke-width':1.4});el(mainSvg,'circle',{cx:sx(e.x),cy:sy(e.y),r:6,fill:'#6f85a8',stroke:'#fff','stroke-width':1.4});el(mainSvg,'circle',{cx:sx(z.x),cy:sy(z.y),r:7,fill:'#fffdf8',stroke:'#c47a3d','stroke-width':2});tracker.hidden=false;trackerText.textContent=zh?`sample #${tracked}: 綠色 x 與藍色 ε 是固定 pair；橘框白點是目前 z_t。拖 t 時它只沿這條 paired interpolation 移動。`:`sample #${tracked}: green x and blue ε form a fixed pair; the orange-outlined white point is z_t. Drag t to move it along this paired interpolation.`;} else tracker.hidden=true;
+  }
+  function miniSvg(type,tv,w,h,showEndpoints=false){const ns='http://www.w3.org/2000/svg',svg=document.createElementNS(ns,'svg');svg.setAttribute('viewBox',`0 0 ${w} ${h}`);const bx=x=>w/2+x*(w/8.2),by=y=>h/2-y*(h/6.4);const bg=document.createElementNS(ns,'rect');bg.setAttribute('width',w);bg.setAttribute('height',h);bg.setAttribute('fill','#f8f3ec');svg.appendChild(bg);if(showEndpoints){for(let i=0;i<N;i+=3){const x=data[type][i],e=prior[i];const a=document.createElementNS(ns,'circle');Object.entries({cx:bx(x.x),cy:by(x.y),r:1.3,fill:'#638a69',opacity:.16}).forEach(([k,v])=>a.setAttribute(k,v));svg.appendChild(a);const b=document.createElementNS(ns,'circle');Object.entries({cx:bx(e.x),cy:by(e.y),r:1.3,fill:'#6f85a8',opacity:.14}).forEach(([k,v])=>b.setAttribute(k,v));svg.appendChild(b)}}for(let i=0;i<N;i++){const p=pointAt(type,i,tv),c=document.createElementNS(ns,'circle');Object.entries({cx:bx(p.x),cy:by(p.y),r:1.7,fill:'#fffdf8',stroke:'#6b4f3a','stroke-width':.45,opacity:.92}).forEach(([k,v])=>c.setAttribute(k,v));svg.appendChild(c)}return svg}
+  function renderSnapshots(){snapshotGrid.innerHTML='';[0,.25,.5,.75,1].forEach(tv=>{const card=document.createElement('div');card.className='snapshot-card';card.appendChild(miniSvg(family,tv,210,155,true));const lab=document.createElement('span');lab.textContent=`t = ${tv.toFixed(2)}`;card.appendChild(lab);snapshotGrid.appendChild(card)})}
+  function renderCompare(){compareGrid.innerHTML='';Object.keys(families).forEach(type=>{const card=document.createElement('div');card.className='compare-card';card.appendChild(miniSvg(type,+time.value,280,190,false));const info=document.createElement('div');const b=document.createElement('strong');b.textContent=families[type].name;const s=document.createElement('span');s.textContent=families[type].structure;info.append(b,s);card.appendChild(info);compareGrid.appendChild(card)})}
+  function render(){const tv=+time.value;timeOut.textContent=tv.toFixed(2);nameEl.textContent=families[family].name;structureEl.textContent=families[family].structure;watchEl.textContent=families[family].watch;equationEl.textContent=`z_t = (1−${tv.toFixed(2)})x + ${tv.toFixed(2)}ε`;familyButtons.forEach(b=>b.classList.toggle('active',b.dataset.family===family));viewButtons.forEach(b=>b.classList.toggle('active',b.dataset.viewMode===view));focusView.hidden=view!=='focus';compareView.hidden=view!=='compare';if(view==='focus'){drawMain();renderSnapshots()}else renderCompare()}
+  familyButtons.forEach(b=>b.addEventListener('click',()=>{family=b.dataset.family;tracked=-1;render()}));viewButtons.forEach(b=>b.addEventListener('click',()=>{view=b.dataset.viewMode;render()}));time.addEventListener('input',render);mainSvg.addEventListener('click',ev=>{const rect=mainSvg.getBoundingClientRect(),mx=(ev.clientX-rect.left)*900/rect.width,my=(ev.clientY-rect.top)*470/rect.height,tv=+time.value;let best=-1,bd=Infinity;for(let i=0;i<N;i++){const p=pointAt(family,i,tv),dx=sx(p.x)-mx,dy=sy(p.y)-my,d=dx*dx+dy*dy;if(d<bd){bd=d;best=i}}if(best>=0&&bd<1200){tracked=best;render()}});
+  play.addEventListener('click',()=>{if(timer){clearInterval(timer);timer=null;play.textContent=zh?'播放變化':'Play';return}let dir=1;play.textContent=zh?'暫停':'Pause';timer=setInterval(()=>{let v=+time.value+.015*dir;if(v>=1){v=1;dir=-1}else if(v<=0){v=0;dir=1}time.value=v.toFixed(2);render()},55)});
+  render();
+}
+</script>
