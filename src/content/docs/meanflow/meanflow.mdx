@@ -10,7 +10,7 @@ import DistributionFamilyExplorer from '../../../components/DistributionFamilyEx
 import CalculusJVPPrimer from '../../../components/CalculusJVPPrimer.astro';
 import DerivationStepper from '../../../components/DerivationStepper.astro';
 import JVPExplorer from '../../../components/JVPExplorer.astro';
-import JVP3DGeometry from '../../../components/JVP3DGeometry.astro';
+import JVPSurfaceExplorer from '../../../components/JVPSurfaceExplorer.astro';
 
 ## 0. 先回答核心問題：MeanFlow 到底想解什麼？
 
@@ -139,16 +139,30 @@ $$
 \operatorname{JVP}(u;v)\equiv J_{u(z,r,t)}[v,0,1].
 $$
 
-### 把 $(z_t,r,t)$ 畫成 3D input space
+### 先把 u 畫成真正的 3D 函數表面
 
-<JVP3DGeometry lang="zh" />
+前一版只把 $(z_t,r,t)$ 畫成一個點加幾支方向箭頭，確實很難直觀看出「偏微分其實是在看函數的坡度」。新的互動改成固定 $r$，直接畫出
 
-這張圖要分清兩件事：
+$$
+u(z_t,t\mid r)
+$$
 
-- $\partial u/\partial z_t$、$\partial u/\partial r$、$\partial u/\partial t$ 是沿三個 coordinate axes 分別看 sensitivity；
-- JVP 看的是實際時間演化方向 $q'(t)=[v,0,1]$。
+這張 3D surface：水平兩軸是 $z_t$ 與 $t$，高度就是 $u$。
 
-所以 $\partial u/\partial r$ 當然可以不是 0；只是當我們「對 $t$ 做 total derivative」時把 $r$ 固定，因此 $dr/dt=0$，這一項對目前這個 directional derivative 的 contribution 才是 0。
+<JVPSurfaceExplorer lang="zh" />
+
+這樣可以直接看到：
+
+- $\partial u/\partial z_t$：沿 surface 的 $z_t$ 方向看坡度；
+- $\partial u/\partial t$：沿 surface 的 $t$ 方向看坡度；
+- JVP：不是沿任何單一座標軸，而是沿實際 motion $[v,1]$ 在這張 surface 上走時的 directional slope；
+- $r$：因為完整 $u(z_t,r,t)$ 有三個 input，如果再把 output $u$ 也畫出來，理論上需要 4D。互動用 slider 改 $r$，等價於切換不同的 $u(z_t,t\mid r)$ surface slice。
+
+而 MeanFlow 的 total derivative 對 $t$ 做微分時固定 $r$，所以 $dr/dt=0$。因此 $\partial u/\partial r$ 本身可以非零，但這次 JVP 中它的 contribution 是
+
+$$
+\frac{\partial u}{\partial r}\frac{dr}{dt}=\frac{\partial u}{\partial r}\cdot0=0.
+$$
 
 <JVPExplorer lang="zh" />
 
