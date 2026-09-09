@@ -6,6 +6,7 @@ description: A practical catalog of training data sources across image, multimod
 import DatasetCatalog from '../../../components/DatasetCatalog.astro';
 import ComputeFeasibilityPlanner from '../../../components/ComputeFeasibilityPlanner.astro';
 import LabGPUEnhancer from '../../../components/LabGPUEnhancer.astro';
+import LabFeasibilityRange from '../../../components/LabFeasibilityRange.astro';
 
 This page is not a claim to list every dataset in existence. It is an **expandable experiment-planning reference** for choosing data and experiment scale from the research question, modality, conditioning, scale, access constraints, storage, and compute budget.
 
@@ -22,6 +23,13 @@ Ordinary DDP keeps a model replica on each GPU, so `4 × 24 GB` is **not** equiv
 :::
 
 <LabGPUEnhancer lang="en" />
+
+### Lab capability boundary
+
+Before reading every workload card, use this overview to place RTX 3080, V100, RTX 4090, and L40S on the same planning scale. Click a GPU to see the practical experiment range it is best suited for.
+
+<LabFeasibilityRange lang="en" />
+
 <ComputeFeasibilityPlanner lang="en" />
 
 ## Data directly connected to the current MeanFlow track
