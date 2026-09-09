@@ -6,6 +6,7 @@ description: 依影像、圖文、影片、機器人、自駕、音訊、文字�
 import DatasetCatalog from '../../components/DatasetCatalog.astro';
 import ComputeFeasibilityPlanner from '../../components/ComputeFeasibilityPlanner.astro';
 import LabGPUEnhancer from '../../components/LabGPUEnhancer.astro';
+import LabFeasibilityRange from '../../components/LabFeasibilityRange.astro';
 
 這一頁不是要宣稱「列完世界上所有資料集」，而是建立一個**可以持續擴充的 experiment-planning reference**：當一個研究想法出現時，可以從任務、modality、資料量、conditioning、license、storage 與 compute budget 反推適合的 dataset 與實驗尺度。
 
@@ -27,6 +28,13 @@ import LabGPUEnhancer from '../../components/LabGPUEnhancer.astro';
 :::
 
 <LabGPUEnhancer lang="zh" />
+
+### 實驗室能力邊界
+
+先不要看一大串卡片；下面這張圖先把 RTX 3080、V100、RTX 4090、L40S 放在同一條「研究規劃尺度」上。點任一 GPU 可以直接看它目前比較適合的實驗範圍。
+
+<LabFeasibilityRange lang="zh" />
+
 <ComputeFeasibilityPlanner lang="zh" />
 
 ## MeanFlow 系列目前最直接相關的資料
