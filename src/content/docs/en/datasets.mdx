@@ -7,8 +7,6 @@ import DatasetCatalog from '../../../components/DatasetCatalog.astro';
 import ComputeFeasibilityPlanner from '../../../components/ComputeFeasibilityPlanner.astro';
 import LabGPUEnhancer from '../../../components/LabGPUEnhancer.astro';
 
-# Datasets | Training Data & Task Map
-
 This page is not a claim to list every dataset in existence. It is an **expandable experiment-planning reference** for choosing data and experiment scale from the research question, modality, conditioning, scale, access constraints, storage, and compute budget.
 
 :::caution[Licenses and availability change]
@@ -17,16 +15,13 @@ Dataset licenses, download mechanisms, URL survival, and versions can change. Re
 
 ## Start from available GPU / storage
 
-The lab resources you provided are **RTX 3080, RTX 4090, V100, and L40S**. RTX 3080 has official 10 GB and 12 GB variants, while V100 exists in 16 GB and 32 GB configurations, so the planner exposes the common variants until the installed boards and counts are verified with `nvidia-smi`.
-
-<LabGPUEnhancer lang="en" />
-
 The planner below does not assign one fixed VRAM requirement to a dataset. It estimates a **dataset + model / experiment profile** and classifies each candidate as comfortable, tight-but-feasible, sharding-required, or a collaboration / cluster candidate.
 
 :::note[GPU count does not simply add VRAM]
 Ordinary DDP keeps a model replica on each GPU, so `4 × 24 GB` is **not** equivalent to one 96 GB GPU. FSDP, ZeRO, tensor/model parallelism, or other sharding methods are needed to distribute model / optimizer state.
 :::
 
+<LabGPUEnhancer lang="en" />
 <ComputeFeasibilityPlanner lang="en" />
 
 ## Data directly connected to the current MeanFlow track
