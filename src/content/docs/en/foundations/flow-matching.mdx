@@ -7,6 +7,7 @@ sidebar:
 
 import VelocityGTExplorer from '../../../../components/VelocityGTExplorer.astro';
 import FlowMatchingNumericExample from '../../../../components/FlowMatchingNumericExample.astro';
+import MarginalVelocityIntuition from '../../../../components/MarginalVelocityIntuition.astro';
 
 ## Start with numbers instead of symbols
 
@@ -14,11 +15,32 @@ Flow Matching is hard to read when $x$, $e$, $z_t$, $v$, and the MSE all appear 
 
 <FlowMatchingNumericExample lang="en" />
 
-Keep three points in mind:
+Keep two points in mind first:
 
 1. training samples $x,e,t$ and constructs $z_t$ directly;
-2. for one sampled pair, the supervision target is $e-x$;
-3. if the same $(z_t,t)$ is compatible with many pairs, MSE learns the conditional mean of those conditional targets.
+2. for one sampled pair, the supervision target is $e-x$.
+
+## What is marginal velocity actually averaging?
+
+One sampled pair is not enough to explain marginal velocity. The real idea is that **the same or very similar $(z_t,t)$ can be compatible with many sampled pairs under the data-generating process, so the model sees many different conditional targets $e-x$.**
+
+The interactive below uses a small neighborhood rather than forcing several perfectly symmetric arrows onto one exact point. Each white point is a nearby $z_t$ sample, each orange arrow is that sample's own $e-x$, and the purple arrow is their finite-sample average.
+
+<MarginalVelocityIntuition lang="en" />
+
+The key distinction is:
+
+- the training label is still one sample-level $e-x$ at a time;
+- marginal velocity is not an extra label supplied by the dataset;
+- it is the MSE-optimal single prediction formed from many sample-specific targets under the same conditional state.
+
+The theoretical quantity is
+
+$$
+v(z_t,t)=\mathbb E[e-x\mid z_t,t].
+$$
+
+For a continuous distribution, exact duplicate $z_t$ values are not something you usually observe repeatedly in a finite table. The conditional expectation is a distribution-level concept. The local neighborhood in the visualization is only an intuitive finite-sample approximation, not the definition itself.
 
 ## General formula
 
@@ -36,7 +58,7 @@ $$
 
 For a particular sampled pair $(x,e)$, $e-x$ is the **conditional instantaneous velocity**.
 
-However, the same $(z_t,t)$ can be compatible with many different pairs $(x,e)$. Therefore the unique MSE regression optimum is
+But the marginal model $v_\theta(z_t,t)$ sees only the current state and time, not which sampled pair produced that state. Therefore the unique MSE regression optimum is the conditional mean:
 
 $$
 v(z_t,t)=\mathbb E[e-x\mid z_t,t].
