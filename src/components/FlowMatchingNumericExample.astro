@@ -1,0 +1,113 @@
+---
+const { lang = 'zh' } = Astro.props;
+const isZh = lang !== 'en';
+---
+
+<div class="fm-num" data-fm-num data-lang={isZh ? 'zh' : 'en'}>
+  <div class="fm-head">
+    <div>
+      <span>FLOW MATCHING WITH NUMBERS</span>
+      <strong>{isZh ? '不要先背公式：先真的算一組 x、ε、z_t、velocity 與 loss' : 'Do not memorize the formula first: calculate one x, ε, z_t, velocity, and loss'}</strong>
+      <p>{isZh ? '這個例子只用 2D 數字，讓每一個符號都能對到一個實際座標。' : 'This 2D toy example gives every symbol a concrete coordinate.'}</p>
+    </div>
+    <div class="fixed-pair">
+      <small>{isZh ? '固定 sampled pair' : 'Fixed sampled pair'}</small>
+      <b>x = (2, −1)</b>
+      <b>ε = (−1, 3)</b>
+    </div>
+  </div>
+
+  <div class="step-tabs" role="group">
+    <button type="button" class="active" data-step="construct">1 · {isZh ? '建構 z_t' : 'Construct z_t'}</button>
+    <button type="button" data-step="velocity">2 · {isZh ? '算 target velocity' : 'Target velocity'}</button>
+    <button type="button" data-step="loss">3 · {isZh ? '看 MSE 怎麼訓練' : 'See the MSE'}</button>
+    <button type="button" data-step="marginal">4 · {isZh ? '為什麼還要 marginal v' : 'Why marginal v exists'}</button>
+  </div>
+
+  <div class="control-row" data-pair-controls>
+    <label><span>t</span><input data-t type="range" min="0" max="1" step="0.01" value="0.25" /><output data-to>0.25</output></label>
+    <button type="button" data-play>{isZh ? '播放 x → ε' : 'Play x → ε'}</button>
+  </div>
+
+  <div class="main-layout" data-pair-view>
+    <div class="plot-wrap">
+      <svg data-plot viewBox="0 0 760 430" role="img" aria-label="Flow Matching numeric example"></svg>
+      <div class="plot-caption" data-caption></div>
+    </div>
+    <aside>
+      <div class="calc-card">
+        <small>{isZh ? '目前 z_t' : 'Current z_t'}</small>
+        <strong data-z></strong>
+        <code data-zcalc></code>
+      </div>
+      <div class="calc-card">
+        <small>{isZh ? 'conditional velocity target' : 'conditional velocity target'}</small>
+        <strong>ε − x = (−3, 4)</strong>
+        <code>dz_t/dt = ε − x</code>
+      </div>
+      <div class="calc-card" data-loss-card>
+        <small>{isZh ? 'model prediction' : 'model prediction'}</small>
+        <strong data-pred></strong>
+        <label class="learn"><span>{isZh ? '學習進度' : 'learning progress'}</span><input data-learn type="range" min="0" max="1" step="0.01" value="0.35" /><output data-lo>35%</output></label>
+        <code data-loss></code>
+      </div>
+      <div class="meaning-card" data-meaning></div>
+    </aside>
+  </div>
+
+  <div class="marginal-view" data-marginal-view hidden>
+    <div class="marginal-intro">
+      <div><small>{isZh ? '固定' : 'Fix'}</small><strong>t = 0.5, z_t = (0, 0)</strong></div>
+      <p>{isZh ? '下面四組不同的 (x, ε) 都會在 t=0.5 經過同一個 z_t=(0,0)，但它們的 conditional velocity 完全不同。' : 'The four different (x, ε) pairs below all pass through the same z_t=(0,0) at t=0.5, but their conditional velocities are different.'}</p>
+    </div>
+    <div class="pair-grid">
+      <div><span>A</span><b>x=(2,0)</b><b>ε=(−2,0)</b><code>ε−x=(−4,0)</code></div>
+      <div><span>B</span><b>x=(0,2)</b><b>ε=(0,−2)</b><code>ε−x=(0,−4)</code></div>
+      <div><span>C</span><b>x=(−2,0)</b><b>ε=(2,0)</b><code>ε−x=(4,0)</code></div>
+      <div><span>D</span><b>x=(0,−2)</b><b>ε=(0,2)</b><code>ε−x=(0,4)</code></div>
+    </div>
+    <div class="marginal-bottom">
+      <svg data-marginal-plot viewBox="0 0 620 330" role="img" aria-label="conditional velocities averaging to marginal velocity"></svg>
+      <div class="average-card">
+        <small>{isZh ? 'MSE 最佳預測' : 'MSE-optimal prediction'}</small>
+        <strong>average = (0, 0)</strong>
+        <code>v(z_t,t) = E[ε−x | z_t,t]</code>
+        <p>{isZh ? '重點不是說真實 Flow Matching 的中心速度一定是 0；這只是故意做成對稱數字，讓你直接看到「同一 state 的多個 conditional target，MSE 會學它們的 conditional mean」。' : 'This does not claim the real Flow Matching velocity at the center is always zero. The numbers are deliberately symmetric so you can see that MSE learns the conditional mean of multiple targets at the same state.'}</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="mental-model">
+    <div><b>①</b><span>{isZh ? 'Training 先抽 x、ε、t，再直接算 z_t。' : 'Training samples x, ε, t and constructs z_t directly.'}</span></div>
+    <div><b>②</b><span>{isZh ? '對單一 pair，supervision 是 ε−x。' : 'For one pair, supervision is ε−x.'}</span></div>
+    <div><b>③</b><span>{isZh ? '對同一 state 的很多可能 pair，MSE 最後學到 conditional mean，也就是 marginal velocity field。' : 'Across many possible pairs at the same state, MSE learns the conditional mean: the marginal velocity field.'}</span></div>
+  </div>
+</div>
+
+<style>
+.fm-num{box-sizing:border-box;width:100%;border:1px solid var(--rh-border);border-radius:1rem;padding:1rem;background:var(--rh-surface);margin:1rem 0 1.4rem;overflow:hidden}.fm-head{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:1rem;align-items:center}.fm-head>div:first-child>span{display:block;color:var(--rh-caramel);font-size:.67rem;font-weight:800;letter-spacing:.12em}.fm-head strong{display:block;margin-top:.2rem}.fm-head p{margin:.25rem 0 0!important;color:var(--rh-muted);line-height:1.5}.fixed-pair{border:1px solid var(--rh-border);border-radius:.65rem;background:var(--rh-surface-2);padding:.6rem .75rem;min-width:10rem}.fixed-pair small{display:block;color:var(--rh-caramel);font-size:.61rem;text-transform:uppercase}.fixed-pair b{display:block;margin-top:.15rem;font-size:.76rem}.step-tabs{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:.4rem;margin-top:.8rem}.step-tabs button{box-sizing:border-box;min-height:2.55rem;margin:0;border:1px solid var(--rh-border);border-radius:.55rem;background:var(--rh-surface-2);color:var(--rh-text);font:inherit;font-size:.72rem;cursor:pointer;padding:.45rem}.step-tabs button.active{border-color:var(--rh-caramel);background:var(--rh-surface-3);color:var(--rh-coffee-deep);font-weight:700}.control-row{display:grid;grid-template-columns:minmax(0,1fr) 8rem;gap:.55rem;margin-top:.65rem}.control-row label{display:grid;grid-template-columns:2rem 1fr 3.2rem;gap:.5rem;align-items:center;border:1px solid var(--rh-border);border-radius:.6rem;background:var(--rh-surface-2);padding:.5rem .65rem}.control-row input{width:100%;min-width:0}.control-row output{font-variant-numeric:tabular-nums;color:var(--rh-coffee);font-weight:700;text-align:right}.control-row button{border:1px solid var(--rh-caramel);border-radius:.6rem;background:var(--rh-surface);color:var(--rh-coffee);font:inherit;font-size:.72rem;font-weight:700;cursor:pointer}.main-layout{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(16rem,.72fr);gap:.7rem;margin-top:.7rem;align-items:stretch}.plot-wrap{display:grid;grid-template-rows:minmax(0,1fr) auto;border:1px solid var(--rh-border);border-radius:.7rem;background:#f8f3ec;overflow:hidden;min-width:0}.plot-wrap svg{display:block;width:100%;height:auto;min-height:24rem}.plot-caption{border-top:1px solid var(--rh-border);padding:.5rem .65rem;background:var(--rh-surface-2);color:var(--rh-muted);font-size:.69rem;line-height:1.45}.main-layout aside{display:grid;gap:.5rem;align-content:start}.calc-card,.meaning-card{border:1px solid var(--rh-border);border-radius:.65rem;background:var(--rh-surface-2);padding:.65rem}.calc-card small{display:block;color:var(--rh-caramel);font-size:.61rem;text-transform:uppercase}.calc-card strong{display:block;margin-top:.18rem;font-size:.82rem}.calc-card code{display:block;margin-top:.3rem;white-space:normal;overflow-wrap:anywhere;font-size:.7rem}.learn{display:grid;grid-template-columns:5rem 1fr 3rem;gap:.4rem;align-items:center;margin-top:.5rem!important}.learn span{font-size:.66rem;color:var(--rh-muted)}.learn output{font-size:.66rem;text-align:right;color:var(--rh-coffee)}.meaning-card{border-left:3px solid var(--rh-caramel);font-size:.72rem;line-height:1.5;color:var(--rh-muted)}.marginal-view{margin-top:.7rem}.marginal-intro{display:grid;grid-template-columns:auto 1fr;gap:.7rem;align-items:center;border:1px solid var(--rh-border);border-radius:.65rem;background:var(--rh-surface-2);padding:.65rem}.marginal-intro small{display:block;color:var(--rh-caramel);font-size:.61rem;text-transform:uppercase}.marginal-intro strong{display:block;margin-top:.15rem;font-size:.8rem}.marginal-intro p{margin:0!important;color:var(--rh-muted);font-size:.73rem;line-height:1.5}.pair-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:.45rem;margin-top:.55rem}.pair-grid>div{position:relative;border:1px solid var(--rh-border);border-radius:.6rem;background:var(--rh-surface-2);padding:.6rem;text-align:center}.pair-grid span{position:absolute;top:.35rem;left:.4rem;width:1.25rem;height:1.25rem;border-radius:50%;display:grid;place-items:center;background:var(--rh-surface-3);color:var(--rh-coffee);font-size:.62rem;font-weight:800}.pair-grid b,.pair-grid code{display:block}.pair-grid b{font-size:.68rem;margin-top:.12rem}.pair-grid code{margin-top:.3rem;font-size:.68rem}.marginal-bottom{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(14rem,.7fr);gap:.55rem;margin-top:.55rem}.marginal-bottom svg{display:block;width:100%;height:auto;border:1px solid var(--rh-border);border-radius:.65rem;background:#f8f3ec}.average-card{border:1px solid var(--rh-border);border-radius:.65rem;background:var(--rh-surface-2);padding:.7rem}.average-card small{display:block;color:var(--rh-caramel);font-size:.61rem;text-transform:uppercase}.average-card strong{display:block;margin-top:.2rem}.average-card code{display:block;margin-top:.35rem;white-space:normal}.average-card p{margin:.45rem 0 0!important;color:var(--rh-muted);font-size:.7rem;line-height:1.5}.mental-model{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:.45rem;margin-top:.7rem}.mental-model>div{display:grid;grid-template-columns:1.5rem 1fr;gap:.4rem;align-items:start;border:1px solid var(--rh-border);border-radius:.6rem;background:var(--rh-surface-2);padding:.55rem}.mental-model b{color:var(--rh-coffee)}.mental-model span{font-size:.69rem;color:var(--rh-muted);line-height:1.45}.fm-num [hidden]{display:none!important}:global(.sl-markdown-content .fm-num :is(.fm-head,.step-tabs,.control-row,.main-layout,.marginal-intro,.pair-grid,.marginal-bottom,.mental-model) > *){margin-top:0!important}
+@media(max-width:850px){.fm-head{grid-template-columns:1fr}.fixed-pair{max-width:14rem}.step-tabs{grid-template-columns:repeat(2,minmax(0,1fr))}.main-layout,.marginal-bottom{grid-template-columns:1fr}.pair-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.mental-model{grid-template-columns:1fr}}@media(max-width:520px){.step-tabs,.pair-grid{grid-template-columns:1fr}.control-row{grid-template-columns:1fr}.control-row button{height:2.4rem}.marginal-intro{grid-template-columns:1fr}}
+</style>
+
+<script>
+for(const root of document.querySelectorAll('[data-fm-num]')){
+  if(root.dataset.ready) continue; root.dataset.ready='1';
+  const zh=root.dataset.lang==='zh',plot=root.querySelector('[data-plot]'),mplot=root.querySelector('[data-marginal-plot]'),tabs=[...root.querySelectorAll('[data-step]')],tEl=root.querySelector('[data-t]'),to=root.querySelector('[data-to]'),play=root.querySelector('[data-play]'),learn=root.querySelector('[data-learn]'),lo=root.querySelector('[data-lo]'),zOut=root.querySelector('[data-z]'),zCalc=root.querySelector('[data-zcalc]'),pred=root.querySelector('[data-pred]'),loss=root.querySelector('[data-loss]'),meaning=root.querySelector('[data-meaning]'),pairView=root.querySelector('[data-pair-view]'),pairControls=root.querySelector('[data-pair-controls]'),marginal=root.querySelector('[data-marginal-view]');
+  let step='construct',timer=null;
+  const x={x:2,y:-1},e={x:-1,y:3},target={x:-3,y:4};
+  const ns='http://www.w3.org/2000/svg',sx=v=>380+v*82,sy=v=>215-v*67;
+  function E(svg,name,a){const n=document.createElementNS(ns,name);for(const[k,v]of Object.entries(a))n.setAttribute(k,String(v));svg.appendChild(n);return n}
+  function line(svg,a,b,col,w=2,dash=''){const n=E(svg,'line',{x1:sx(a.x),y1:sy(a.y),x2:sx(b.x),y2:sy(b.y),stroke:col,'stroke-width':w,'stroke-linecap':'round'});if(dash)n.setAttribute('stroke-dasharray',dash);return n}
+  function arrow(svg,a,v,col,scale=.35,w=3){const b={x:a.x+v.x*scale,y:a.y+v.y*scale};line(svg,a,b,col,w);const ang=Math.atan2(sy(b.y)-sy(a.y),sx(b.x)-sx(a.x)),L=10;E(svg,'line',{x1:sx(b.x),y1:sy(b.y),x2:sx(b.x)-L*Math.cos(ang-.55),y2:sy(b.y)-L*Math.sin(ang-.55),stroke:col,'stroke-width':w});E(svg,'line',{x1:sx(b.x),y1:sy(b.y),x2:sx(b.x)-L*Math.cos(ang+.55),y2:sy(b.y)-L*Math.sin(ang+.55),stroke:col,'stroke-width':w})}
+  function dot(svg,p,r,fill,stroke='#fff',sw=1.5){E(svg,'circle',{cx:sx(p.x),cy:sy(p.y),r,fill,stroke,'stroke-width':sw})}
+  function text(svg,p,s,fill='#74665a'){E(svg,'text',{x:sx(p.x),y:sy(p.y),fill,'font-size':13,'font-weight':650}).textContent=s}
+  function zAt(t){return{x:(1-t)*x.x+t*e.x,y:(1-t)*x.y+t*e.y}}
+  function draw(){const t=+tEl.value,z=zAt(t),a=+learn.value,p={x:a*target.x,y:a*target.y},err={x:p.x-target.x,y:p.y-target.y},L=err.x*err.x+err.y*err.y;plot.innerHTML='';E(plot,'rect',{x:0,y:0,width:760,height:430,fill:'#f8f3ec'});E(plot,'line',{x1:55,y1:215,x2:705,y2:215,stroke:'#d8c6b2','stroke-width':1});E(plot,'line',{x1:380,y1:35,x2:380,y2:395,stroke:'#d8c6b2','stroke-width':1});line(plot,x,e,'#c49a72',2,'6 6');dot(plot,x,7,'#638a69');dot(plot,e,7,'#6f85a8');dot(plot,z,8,'#fffdf8','#6b4f3a',2);text(plot,{x:x.x+.12,y:x.y+.18},'x=(2,−1)','#4f684b');text(plot,{x:e.x+.12,y:e.y+.18},'ε=(−1,3)','#5f7092');text(plot,{x:z.x+.12,y:z.y-.18},`z_t=(${z.x.toFixed(2)}, ${z.y.toFixed(2)})`,'#30251d');if(step==='velocity'||step==='loss'){arrow(plot,z,target,'#c47a3d',.28,3);text(plot,{x:z.x+target.x*.17,y:z.y+target.y*.17},'ε−x = (−3,4)','#a05f2f')}if(step==='loss'){arrow(plot,z,p,'#7d678f',.28,3);text(plot,{x:z.x+p.x*.16,y:z.y+p.y*.16},'vθ','#655879')}
+    to.textContent=t.toFixed(2);zOut.textContent=`z_t = (${z.x.toFixed(2)}, ${z.y.toFixed(2)})`;zCalc.textContent=`= (1−${t.toFixed(2)})(2,−1) + ${t.toFixed(2)}(−1,3)`;pred.textContent=`vθ = (${p.x.toFixed(2)}, ${p.y.toFixed(2)})`;lo.textContent=`${Math.round(a*100)}%`;loss.textContent=`MSE sample loss = (${p.x.toFixed(2)}+3)² + (${p.y.toFixed(2)}−4)² = ${L.toFixed(2)}`;
+    const msgs={construct:zh?'現在只做一件事：抽到 x、ε、t 後，直接用加權平均建構 z_t。不是從 t=0 一路模擬過來。':'Only one thing happens here: after sampling x, ε, t, construct z_t directly by interpolation. There is no rollout from t=0.',velocity:zh?'這一組 pair 的 path 是直線，所以沿 t 的速度固定是 ε−x=(−3,4)。':'For this sampled pair the path is linear, so its velocity along t is the constant ε−x=(−3,4).',loss:zh?'紫色是模型目前猜的 vθ。把「學習進度」往右拖，prediction 靠近橘色 target，sample MSE 就下降。':'Purple is the current model prediction vθ. Move learning progress right: the prediction approaches the orange target and sample MSE falls.'};meaning.textContent=msgs[step]||'';
+  }
+  function drawMarginal(){mplot.innerHTML='';E(mplot,'rect',{x:0,y:0,width:620,height:330,fill:'#f8f3ec'});const cx=310,cy=165;E(mplot,'line',{x1:55,y1:cy,x2:565,y2:cy,stroke:'#d8c6b2','stroke-width':1});E(mplot,'line',{x1:cx,y1:35,x2:cx,y2:295,stroke:'#d8c6b2','stroke-width':1});E(mplot,'circle',{cx,cy,r:8,fill:'#fffdf8',stroke:'#30251d','stroke-width':2});const vecs=[[-4,0],[0,-4],[4,0],[0,4]],cols=['#c47a3d','#c47a3d','#c47a3d','#c47a3d'];vecs.forEach((v,i)=>{const ex=cx+v[0]*38,ey=cy-v[1]*28;E(mplot,'line',{x1:cx,y1:cy,x2:ex,y2:ey,stroke:cols[i],'stroke-width':3,'stroke-linecap':'round'});E(mplot,'circle',{cx:ex,cy:ey,r:4,fill:cols[i]})});E(mplot,'circle',{cx,cy,r:15,fill:'none',stroke:'#7d678f','stroke-width':3});E(mplot,'text',{x:cx+18,y:cy-14,fill:'#655879','font-size':13,'font-weight':700}).textContent='average = marginal-like v̂ = (0,0)'}
+  function setStep(s){step=s;tabs.forEach(b=>b.classList.toggle('active',b.dataset.step===s));const isM=s==='marginal';pairView.hidden=isM;pairControls.hidden=isM;marginal.hidden=!isM;if(isM)drawMarginal();else draw()}
+  tabs.forEach(b=>b.addEventListener('click',()=>setStep(b.dataset.step)));tEl.addEventListener('input',draw);learn.addEventListener('input',draw);play.addEventListener('click',()=>{if(timer){clearInterval(timer);timer=null;play.textContent=zh?'播放 x → ε':'Play x → ε';return}let d=1;play.textContent=zh?'暫停':'Pause';timer=setInterval(()=>{let v=+tEl.value+.015*d;if(v>=1){v=1;d=-1}else if(v<=0){v=0;d=1}tEl.value=v.toFixed(2);draw()},55)});setStep('construct');
+}
+</script>
