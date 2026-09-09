@@ -29,14 +29,24 @@ html,body{background:var(--rh-bg)} body{color:var(--rh-text)} a{text-underline-o
   .notation-layout,.notation-tabs,.notation-warning,
   .track-nodes,.detail-grid,
   .loss-tabs,.loss-flow,
-  .kg-head,.kg-actions,.kg-inspector
+  .kg-head,.kg-actions,.kg-inspector,
+  .toolbar,.task-strip,.dataset-grid,.card-top,.tags
 ) > * {
   margin-top: 0;
 }
 
 /* Equal-height card rows should be governed by the grid row, never by prose margins. */
-.sl-markdown-content :is(.equal-grid,.concept-row,.shared,.compare,.detail-grid,.readouts,.scope-grid,.rh-section-grid,.paper-library-grid) > * {
+.sl-markdown-content :is(.equal-grid,.concept-row,.shared,.compare,.detail-grid,.readouts,.scope-grid,.rh-section-grid,.paper-library-grid,.dataset-grid) > * {
   align-self: stretch;
+}
+
+/* Dataset filtering sets the HTML hidden attribute in JavaScript. The component card
+   declares display:flex, which can otherwise override the browser's default [hidden]
+   rule in author styles. Make hidden state authoritative so the count and visible
+   cards always agree. */
+.dataset-catalog [data-card][hidden],
+.dataset-catalog [data-empty][hidden] {
+  display: none !important;
 }
 
 @media(max-width:760px){.rh-section-grid,.rh-section-grid-3{grid-template-columns:1fr}}
