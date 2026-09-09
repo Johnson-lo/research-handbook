@@ -10,6 +10,7 @@ import DistributionFamilyExplorer from '../../../components/DistributionFamilyEx
 import CalculusJVPPrimer from '../../../components/CalculusJVPPrimer.astro';
 import DerivationStepper from '../../../components/DerivationStepper.astro';
 import JVPExplorer from '../../../components/JVPExplorer.astro';
+import JVP3DGeometry from '../../../components/JVP3DGeometry.astro';
 
 ## 0. 先回答核心問題：MeanFlow 到底想解什麼？
 
@@ -23,27 +24,18 @@ Flow Matching 學的是 local / instantaneous velocity。Inference 時 state 每
 
 <DistributionFlowLab lang="zh" />
 
-這個 toy lab 分成三種 view：
+### 不同 data geometry 下，同一條 probability path 會長什麼樣？
+
+<DistributionFamilyExplorer lang="zh" />
+
+這些 toy lab 分別回答不同問題：
 
 - **Probability path**：直接看 data point cloud、prior point cloud 與中間 $z_t$。
 - **Conditional → Marginal**：在某個 state 附近看多個 sample-specific $e-x$，再做有限樣本平均近似 marginal direction。
 - **Average velocity**：用 curved trajectory 明確看出 instantaneous tangent $v$ 與 finite-interval average $u$ 的差異。
+- **Distribution family**：固定同一個 Gaussian prior 與 linear path，換 Gaussian、Bimodal、Ring、Checkerboard、Two Moons、Spiral，看 geometry 如何改變中間 $p_t$。
 
 這些圖是幾何 toy example，不是 trained MeanFlow 的生成結果；用途是先建立正確 mental model。
-
-### 1.1 換不同 data distribution，看同一條 linear path
-
-單看雙群 Gaussian 還不夠直觀，所以這裡再把 $p_{data}$ 換成幾種不同 geometry。你可以直接切換 **Gaussian、Bimodal、Ring、Checkerboard、Two Moons、Spiral**，並拖動 $t$ 看整個 $p_t$ 如何變化。
-
-<DistributionFamilyExplorer lang="zh" />
-
-特別注意：每個 sample 的 interpolation 仍然只是
-
-$$
-z_t=(1-t)x+te,
-$$
-
-但整群 samples 組成的 distribution geometry 可以差非常多。這也是之後理解 marginal velocity field、mode coverage 與 probability-path correctness 很重要的直覺。
 
 ## 2. Average velocity 是什麼？
 
@@ -146,6 +138,17 @@ MeanFlow 用簡寫
 $$
 \operatorname{JVP}(u;v)\equiv J_{u(z,r,t)}[v,0,1].
 $$
+
+### 把 $(z_t,r,t)$ 畫成 3D input space
+
+<JVP3DGeometry lang="zh" />
+
+這張圖要分清兩件事：
+
+- $\partial u/\partial z_t$、$\partial u/\partial r$、$\partial u/\partial t$ 是沿三個 coordinate axes 分別看 sensitivity；
+- JVP 看的是實際時間演化方向 $q'(t)=[v,0,1]$。
+
+所以 $\partial u/\partial r$ 當然可以不是 0；只是當我們「對 $t$ 做 total derivative」時把 $r$ 固定，因此 $dr/dt=0$，這一項對目前這個 directional derivative 的 contribution 才是 0。
 
 <JVPExplorer lang="zh" />
 
