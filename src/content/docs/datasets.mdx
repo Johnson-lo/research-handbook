@@ -5,6 +5,7 @@ description: 依影像、圖文、影片、機器人、自駕、音訊、文字�
 
 import DatasetCatalog from '../../components/DatasetCatalog.astro';
 import ComputeFeasibilityPlanner from '../../components/ComputeFeasibilityPlanner.astro';
+import LabGPUEnhancer from '../../components/LabGPUEnhancer.astro';
 
 # Datasets｜訓練資料集與任務地圖
 
@@ -15,6 +16,10 @@ import ComputeFeasibilityPlanner from '../../components/ComputeFeasibilityPlanne
 :::
 
 ## 先用 GPU / Storage 反推可行實驗
+
+你目前提供的實驗室 GPU 資源是 **RTX 3080、RTX 4090、V100、L40S**。其中 RTX 3080 有 10 GB / 12 GB 官方版本，V100 有 16 GB / 32 GB 版本，因此 planner 先把這些常見變體都列出，正式排程前再用 `nvidia-smi` 確認實驗室每台機器的實際型號與數量。
+
+<LabGPUEnhancer lang="zh" />
 
 下面的 planner 不是把「dataset」硬綁一個 VRAM，而是把 **dataset + model / experiment profile** 一起估算。選擇目前可用 GPU、每張 VRAM、GPU 數量、任務與 storage 後，會把候選實驗分成：
 
