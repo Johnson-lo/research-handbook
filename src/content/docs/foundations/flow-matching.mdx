@@ -7,6 +7,7 @@ sidebar:
 
 import VelocityGTExplorer from '../../../components/VelocityGTExplorer.astro';
 import FlowMatchingNumericExample from '../../../components/FlowMatchingNumericExample.astro';
+import MarginalVelocityIntuition from '../../../components/MarginalVelocityIntuition.astro';
 
 ## 先不要背公式：用一組數字把 Flow Matching 算完
 
@@ -14,11 +15,32 @@ Flow Matching 最容易卡住的地方，是一開始就看到 $x$、$e$、$z_t$
 
 <FlowMatchingNumericExample lang="zh" />
 
-從這個例子先保留三件事：
+從這個例子先保留兩件事：
 
 1. training 直接抽 $x,e,t$ 後建構 $z_t$；
-2. 對單一 sampled pair，target velocity 是 $e-x$；
-3. 同一個 $(z_t,t)$ 若可能來自很多不同 pair，MSE 最後學到的是這些 conditional targets 的 conditional mean。
+2. 對單一 sampled pair，target velocity 是 $e-x$。
+
+## Marginal velocity 到底在平均什麼？
+
+前面的單一 pair 還不足以解釋 marginal velocity。真正要理解的是：**同一個或非常接近的 $(z_t,t)$，在資料生成機制下可能對應很多不同 sampled pairs，因此會看到很多不同的 conditional targets $e-x$。**
+
+下面不再把四支對稱箭頭硬疊在同一點，而是畫一個小 neighborhood。每個白點是相近的 $z_t$ sample，橘色箭頭是它自己的 $e-x$；紫色才是這些 targets 的有限樣本平均。
+
+<MarginalVelocityIntuition lang="zh" />
+
+這裡最重要的區分是：
+
+- **training label** 仍然是一筆一筆的 $e-x$；
+- **marginal velocity** 不是額外提供的 label；
+- 它是 MSE regression 在同一 conditional state 下，對很多 noisy / sample-specific targets 所形成的最佳單一預測。
+
+理論上寫成
+
+$$
+v(z_t,t)=\mathbb E[e-x\mid z_t,t].
+$$
+
+在 continuous distribution 裡，「剛好完全相同的 $z_t$ 重複很多次」通常不是你在有限資料表裡真的會看到的情況；conditional expectation 是分布層級的概念。互動裡用 local neighborhood 是為了把這個 regression intuition 視覺化，而不是定義本身。
 
 ## 再回到一般公式
 
@@ -36,7 +58,7 @@ $$
 
 對某一組已抽樣的 $(x,e)$ 而言，$e-x$ 是這組 sample-specific path 的 **conditional instantaneous velocity**。
 
-但同一個 $(z_t,t)$ 可能對應到很多不同的 $(x,e)$。因此，在 MSE regression 下唯一的最優 field 是
+但 marginal model $v_\theta(z_t,t)$ 只看到目前 state 與 time，不知道這個 $z_t$ 背後是哪一組 sampled pair。因此，在 MSE regression 下唯一的最優 field 是 conditional mean：
 
 $$
 v(z_t,t)=\mathbb E[e-x\mid z_t,t].
