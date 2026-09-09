@@ -2,47 +2,118 @@
 const { lang = 'zh' } = Astro.props;
 const isZh = lang !== 'en';
 ---
-<div class="bridge" data-bridge>
+
+<div class="bridge" data-bridge data-lang={isZh ? 'zh' : 'en'}>
   <div class="bridge-head">
-    <div><strong>{isZh ? 'Original MeanFlow → Improved MeanFlow｜objective-level 差異' : 'Original MeanFlow → Improved MeanFlow | objective-level difference'}</strong><p>{isZh ? '先固定不變項，再只看真正改動的 JVP tangent。' : 'Hold the invariants fixed, then isolate the actual JVP-tangent change.'}</p></div>
-    <div class="bridge-tabs" role="group"><button class="active" data-view="diff">{isZh ? '核心差異' : 'Core difference'}</button><button data-view="full">{isZh ? '完整流程' : 'Full flow'}</button></div>
+    <div>
+      <span class="eyebrow">OBJECTIVE SIGNAL FLOW</span>
+      <strong>{isZh ? 'Original MeanFlow → iMF：只追蹤真正改變的那條訊號' : 'Original MeanFlow → iMF: follow only the signal that actually changes'}</strong>
+      <p>{isZh ? '切換 Original / iMF 時，supervision 的 e−x 會固定不動；只有進入 JVP 的 tangent 來源改變。' : 'When switching Original / iMF, supervision e−x stays fixed. Only the tangent entering the JVP changes.'}</p>
+    </div>
+    <div class="mode-tabs" role="group" aria-label="MeanFlow objective mode">
+      <button type="button" class="active" data-mode="original">Original MF</button>
+      <button type="button" data-mode="improved">iMF</button>
+      <button type="button" data-mode="compare">{isZh ? '並排比較' : 'Compare'}</button>
+    </div>
   </div>
 
-  <div class="shared" data-shared>
-    <div><b>{isZh ? '共同 training sample' : 'Shared training sample'}</b><code>x, e, t, r → z_t</code></div>
-    <div><b>{isZh ? '共同 supervision' : 'Shared supervision'}</b><code>e−x</code></div>
-    <div><b>{isZh ? '共同 inference object' : 'Shared inference object'}</b><code>uθ(z,r,t)</code></div>
+  <div class="focus-note" data-focus-note></div>
+
+  <div class="signal-stage" data-single-stage>
+    <div class="lane lane-model">
+      <div class="lane-label">MODEL PATH</div>
+      <div class="node sample"><small>{isZh ? 'sample pair' : 'sample pair'}</small><b>x, e, t, r</b></div>
+      <div class="wire"><span>→</span></div>
+      <div class="node state"><small>{isZh ? 'construct state' : 'construct state'}</small><b>z_t</b></div>
+      <div class="wire"><span>→</span></div>
+      <div class="node avg"><small>{isZh ? 'average velocity model' : 'average velocity model'}</small><b>uθ(z,r,t)</b></div>
+    </div>
+
+    <div class="lane lane-jvp">
+      <div class="lane-label">JVP TANGENT</div>
+      <div class="node tangent" data-tangent-node><small data-tangent-type></small><b data-tangent-value></b></div>
+      <div class="wire animated-wire"><span>→</span><i></i></div>
+      <div class="node jvp"><small>{isZh ? 'differentiate uθ along tangent' : 'differentiate uθ along tangent'}</small><b data-jvp-label></b></div>
+      <div class="wire animated-wire"><span>→</span><i></i></div>
+      <div class="node predictor"><small>{isZh ? 'compound predictor' : 'compound predictor'}</small><b data-predictor></b></div>
+    </div>
+
+    <div class="lane lane-loss">
+      <div class="lane-label">SUPERVISION</div>
+      <div class="node target fixed"><small>{isZh ? 'fixed target in both methods' : 'fixed target in both methods'}</small><b>e−x</b></div>
+      <div class="wire supervision-wire"><span>→</span></div>
+      <div class="node loss"><small>loss</small><b>‖Vθ − (e−x)‖²</b></div>
+      <div class="unchanged"><span>{isZh ? '不變' : 'unchanged'}</span></div>
+    </div>
   </div>
 
-  <div class="change-banner"><span>{isZh ? '唯一核心替換' : 'Single core replacement'}</span><strong><code>e−x</code><b>→</b><code>vθ(z_t)</code></strong><small>{isZh ? 'e−x 沒有從 loss 消失；它只是離開 JVP tangent。' : 'e−x does not disappear from the loss; it leaves only the JVP tangent.'}</small></div>
-
-  <div class="compare">
+  <div class="compare-stage" data-compare-stage hidden>
     <article>
-      <div class="article-title"><span>Original</span><h3>MeanFlow</h3></div>
-      <div class="flowline"><span class="state">z_t</span><span>→</span><span class="avg">uθ</span></div>
-      <div class="critical dashed"><span class="label">JVP tangent</span><code>e−x</code><small>sample-specific conditional velocity</small></div>
-      <div class="arrow">↓</div>
-      <div class="result"><span>{isZh ? 'compound predictor' : 'compound predictor'}</span><code>Vθ(z_t, e−x)</code></div>
-      <p>{isZh ? 'JVP pathway 看到了 sampled pair 的 conditional tangent，因此 predictor 額外依賴 sample-specific information。' : 'The JVP pathway sees the sampled pair-specific conditional tangent, so the predictor additionally depends on sample-specific information.'}</p>
+      <div class="compare-title"><span>Original</span><strong>MeanFlow</strong></div>
+      <div class="mini-flow"><div class="mini-node">z_t</div><span>→</span><div class="mini-node">uθ</div></div>
+      <div class="mini-critical dashed"><small>JVP tangent</small><b>e−x</b><span>{isZh ? 'sample-specific conditional velocity' : 'sample-specific conditional velocity'}</span></div>
+      <div class="mini-arrow">↓</div>
+      <div class="mini-result"><small>compound predictor</small><b>Vθ(z_t, e−x)</b></div>
+      <div class="mini-target"><span>{isZh ? 'supervision' : 'supervision'}</span><b>e−x</b></div>
     </article>
     <article>
-      <div class="article-title"><span>Improved</span><h3>MeanFlow</h3></div>
-      <div class="flowline"><span class="state">z_t</span><span>→</span><span class="avg">uθ</span></div>
-      <div class="critical"><span class="label">JVP tangent</span><code>vθ(z_t)</code><small>model-estimated marginal-like velocity</small></div>
-      <div class="arrow">↓</div>
-      <div class="result"><span>{isZh ? 'compound predictor' : 'compound predictor'}</span><code>Vθ(z_t)</code></div>
-      <p>{isZh ? 'JVP direction 改成只由目前 state 得到的 velocity estimate；supervision 端仍然使用 e−x。' : 'The JVP direction is replaced by a velocity estimate derived from the current state; e−x remains on the supervision side.'}</p>
+      <div class="compare-title"><span>Improved</span><strong>MeanFlow</strong></div>
+      <div class="mini-flow"><div class="mini-node">z_t</div><span>→</span><div class="mini-node">uθ</div></div>
+      <div class="mini-critical"><small>JVP tangent</small><b>vθ(z_t)</b><span>{isZh ? 'state-derived marginal-like estimate' : 'state-derived marginal-like estimate'}</span></div>
+      <div class="mini-arrow">↓</div>
+      <div class="mini-result"><small>compound predictor</small><b>Vθ(z_t)</b></div>
+      <div class="mini-target"><span>{isZh ? 'supervision' : 'supervision'}</span><b>e−x</b></div>
     </article>
   </div>
 
-  <div class="supervision-row" data-full><span>{isZh ? '兩者最後都與同一個 sample target 比較' : 'Both are finally compared with the same sample target'}</span><code>Vθ − (e−x)</code></div>
-  <div class="paper-scope" data-full><b>{isZh ? '不要把 objective-only 改動和 final system 混在一起' : 'Separate the objective-only change from the final system'}</b><div class="scope-grid"><div><strong>{isZh ? 'Objective' : 'Objective'}</strong><span>JVP tangent: e−x → vθ(z_t)</span></div><div><strong>{isZh ? 'System additions' : 'System additions'}</strong><span>{isZh ? 'flexible CFG、Ω-conditioning、in-context conditioning、block changes、longer training' : 'flexible CFG, Ω-conditioning, in-context conditioning, block changes, longer training'}</span></div></div></div>
+  <div class="why-panel">
+    <div><span>1</span><p>{isZh ? 'uθ 一直是被微分的 function。' : 'uθ is always the function being differentiated.'}</p></div>
+    <div><span>2</span><p>{isZh ? 'Original：e−x 同時出現在 supervision 與 JVP tangent。' : 'Original: e−x appears in both supervision and the JVP tangent.'}</p></div>
+    <div><span>3</span><p>{isZh ? 'iMF：e−x 留在 supervision；JVP tangent 改成 vθ(z_t)。' : 'iMF: e−x stays in supervision; the JVP tangent becomes vθ(z_t).'}</p></div>
+  </div>
 </div>
 
 <style>
-.bridge{box-sizing:border-box;width:100%;border:1px solid var(--rh-border);border-radius:1rem;padding:1rem;margin:1.2rem 0;background:var(--rh-surface);overflow:hidden}.bridge-head{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:1rem;align-items:center}.bridge-head p{margin:.25rem 0 0;color:var(--rh-muted)}.bridge-tabs{display:grid;grid-template-columns:repeat(2,7.2rem);gap:.5rem}.bridge-tabs button{box-sizing:border-box;width:100%;height:2.55rem;margin:0;border:1px solid var(--rh-border);border-radius:.55rem;background:var(--rh-surface-2);color:var(--rh-text);font:inherit;white-space:nowrap}.bridge-tabs button.active{border-color:var(--rh-caramel);background:var(--rh-surface-3)}.shared{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:.6rem;margin:1rem 0}.shared>div{box-sizing:border-box;min-width:0;min-height:6.2rem;border:1px solid var(--rh-border);border-radius:.7rem;padding:.75rem;background:var(--rh-surface-2);display:flex;flex-direction:column;justify-content:space-between;gap:.5rem}.shared code{width:max-content;max-width:100%;overflow-wrap:anywhere}.change-banner{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:.8rem;align-items:center;border:1px solid var(--rh-caramel);border-radius:.75rem;padding:.7rem .85rem;margin:.85rem 0;background:color-mix(in srgb,var(--rh-caramel) 7%,var(--rh-surface-2))}.change-banner>span,.change-banner small{color:var(--rh-muted);font-size:.78rem}.change-banner strong{display:flex;justify-content:center;gap:.55rem;align-items:center;font-size:1rem}.change-banner strong b{color:var(--rh-caramel)}.compare{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.8rem;align-items:stretch}.compare article{box-sizing:border-box;min-width:0;height:100%;border:1px solid var(--rh-border);border-radius:.8rem;padding:.9rem;background:var(--rh-surface-2);display:flex;flex-direction:column}.article-title span{display:block;color:var(--rh-caramel);font-size:.7rem;text-transform:uppercase;letter-spacing:.08em}.article-title h3{margin:.1rem 0 .65rem}.flowline{display:flex;justify-content:center;gap:.55rem;align-items:center;margin:.4rem 0 .8rem}.state,.avg{border:1px solid var(--rh-border);border-radius:.55rem;padding:.55rem .7rem;background:var(--rh-surface)}.avg{border-color:#7d678f}.critical{display:grid;gap:.28rem;text-align:center;border:2px solid var(--rh-caramel);border-radius:.65rem;padding:.7rem;background:color-mix(in srgb,var(--rh-caramel) 6%,var(--rh-surface))}.critical.dashed{border-style:dashed}.critical .label{font-size:.72rem;text-transform:uppercase;color:var(--rh-muted)}.critical code{font-size:1rem}.critical small{color:var(--rh-muted)}.arrow{text-align:center;font-size:1.25rem;margin:.3rem 0}.result{display:grid;gap:.25rem;text-align:center;border:1px solid var(--rh-border);border-radius:.6rem;padding:.6rem;background:var(--rh-surface)}.result span{font-size:.7rem;color:var(--rh-muted);text-transform:uppercase}.compare article p{color:var(--rh-muted);line-height:1.6;margin:.8rem 0 0}.supervision-row,.paper-scope{border:1px solid var(--rh-border);border-radius:.7rem;padding:.75rem;margin-top:.8rem;background:var(--rh-surface-2)}.supervision-row{display:flex;justify-content:center;gap:.8rem;align-items:center;flex-wrap:wrap}.scope-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.6rem;margin-top:.6rem}.scope-grid>div{min-width:0;border-left:3px solid var(--rh-caramel);padding-left:.7rem}.scope-grid strong,.scope-grid span{display:block}.scope-grid span{color:var(--rh-muted);margin-top:.2rem;overflow-wrap:anywhere}.bridge[data-view='diff'] [data-shared],.bridge[data-view='diff'] [data-full]{display:none}
-@media(max-width:760px){.bridge-head{grid-template-columns:1fr}.bridge-tabs{grid-template-columns:repeat(2,minmax(0,1fr));width:100%}.shared,.compare,.scope-grid{grid-template-columns:1fr}.change-banner{grid-template-columns:1fr;text-align:center}.change-banner strong{justify-content:center}}
+.bridge{box-sizing:border-box;width:100%;border:1px solid var(--rh-border);border-radius:1rem;padding:1rem;margin:1.2rem 0;background:var(--rh-surface);overflow:hidden}.bridge-head{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:1rem;align-items:end}.eyebrow{display:block;color:var(--rh-caramel);font-size:.67rem;letter-spacing:.12em;font-weight:800}.bridge-head strong{display:block;margin-top:.2rem}.bridge-head p{margin:.25rem 0 0!important;color:var(--rh-muted);line-height:1.55}.mode-tabs{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:.4rem;min-width:23rem}.mode-tabs button{box-sizing:border-box;height:2.55rem;margin:0;border:1px solid var(--rh-border);border-radius:.55rem;background:var(--rh-surface-2);color:var(--rh-text);font:inherit;cursor:pointer;white-space:nowrap}.mode-tabs button.active{border-color:var(--rh-caramel);background:var(--rh-surface-3);color:var(--rh-coffee-deep);font-weight:700}.focus-note{margin-top:.8rem;border-left:3px solid var(--rh-caramel);background:var(--rh-surface-2);padding:.65rem .75rem;font-size:.78rem;line-height:1.5}.signal-stage{display:grid;gap:.65rem;margin-top:.75rem}.lane{display:grid;grid-template-columns:7rem minmax(7rem,1fr) 2.2rem minmax(7rem,1fr) 2.2rem minmax(9rem,1.15fr);gap:.45rem;align-items:stretch;border:1px solid var(--rh-border);border-radius:.8rem;padding:.65rem;background:var(--rh-surface-2);min-width:0}.lane-label{display:flex;align-items:center;color:var(--rh-caramel);font-size:.61rem;font-weight:800;letter-spacing:.08em}.node{min-width:0;border:1px solid var(--rh-border);border-radius:.65rem;background:var(--rh-surface);padding:.58rem .65rem;display:flex;flex-direction:column;justify-content:center;text-align:center;transition:border-color .2s,background .2s,transform .2s}.node small{font-size:.61rem;color:var(--rh-muted);line-height:1.3}.node b{display:block;margin-top:.15rem;overflow-wrap:anywhere}.state{border-color:#7c91a6}.avg{border-color:#7d678f}.tangent{border:2px solid var(--rh-caramel)}.tangent.improved{border-color:#6f7899;background:color-mix(in srgb,#756b97 8%,var(--rh-surface))}.target.fixed{border-color:#6f8b69;background:color-mix(in srgb,#6f8b69 7%,var(--rh-surface))}.wire{display:flex;align-items:center;justify-content:center;position:relative;color:var(--rh-caramel);font-size:1.1rem;overflow:hidden}.animated-wire i{position:absolute;width:.42rem;height:.42rem;border-radius:50%;background:var(--rh-caramel);left:-.45rem;animation:travel 1.45s linear infinite}.bridge[data-mode='improved'] .animated-wire i{background:#756b97}.supervision-wire{color:#6f8b69}.unchanged{grid-column:6/7;display:flex;justify-content:center;align-items:center;pointer-events:none}.unchanged span{position:absolute;transform:translateY(-2.7rem);font-size:.58rem;color:#5f795a;border:1px solid #91aa8b;border-radius:999px;padding:.13rem .35rem;background:var(--rh-surface)}@keyframes travel{0%{left:-.45rem;opacity:0}15%{opacity:1}85%{opacity:1}100%{left:100%;opacity:0}}.compare-stage{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.7rem;margin-top:.75rem}.compare-stage article{border:1px solid var(--rh-border);border-radius:.8rem;background:var(--rh-surface-2);padding:.8rem;min-width:0}.compare-title span{display:block;color:var(--rh-caramel);font-size:.65rem;text-transform:uppercase;letter-spacing:.08em}.compare-title strong{display:block;font-size:1rem;margin-top:.12rem}.mini-flow{display:flex;gap:.45rem;align-items:center;justify-content:center;margin:.7rem 0}.mini-node{border:1px solid var(--rh-border);border-radius:.5rem;background:var(--rh-surface);padding:.45rem .65rem}.mini-critical{display:grid;gap:.18rem;text-align:center;border:2px solid var(--rh-caramel);border-radius:.65rem;background:var(--rh-surface);padding:.6rem}.mini-critical.dashed{border-style:dashed}.mini-critical small,.mini-result small{color:var(--rh-muted);font-size:.65rem;text-transform:uppercase}.mini-critical span{font-size:.68rem;color:var(--rh-muted)}.mini-arrow{text-align:center;margin:.25rem}.mini-result,.mini-target{border:1px solid var(--rh-border);border-radius:.55rem;background:var(--rh-surface);padding:.5rem;text-align:center}.mini-target{margin-top:.5rem;border-color:#91aa8b}.mini-target span{display:block;font-size:.62rem;color:#5f795a;text-transform:uppercase}.why-panel{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:.55rem;margin-top:.75rem}.why-panel>div{display:grid;grid-template-columns:1.7rem 1fr;gap:.45rem;align-items:start;border:1px solid var(--rh-border);border-radius:.65rem;background:var(--rh-surface-2);padding:.6rem}.why-panel span{width:1.55rem;height:1.55rem;border-radius:50%;display:grid;place-items:center;background:var(--rh-surface-3);color:var(--rh-coffee);font-weight:800;font-size:.7rem}.why-panel p{margin:0!important;color:var(--rh-muted);font-size:.74rem;line-height:1.45}
+:global(.sl-markdown-content .bridge :is(.bridge-head,.mode-tabs,.signal-stage,.lane,.compare-stage,.why-panel) > *){margin-top:0!important}
+@media(max-width:900px){.bridge-head{grid-template-columns:1fr}.mode-tabs{min-width:0;width:100%}.lane{grid-template-columns:1fr 2rem 1fr 2rem 1fr}.lane-label{grid-column:1/-1}.lane-loss .unchanged{grid-column:5}.why-panel{grid-template-columns:1fr}}@media(max-width:680px){.mode-tabs{grid-template-columns:1fr}.compare-stage{grid-template-columns:1fr}.lane{grid-template-columns:1fr}.wire{min-height:1.3rem;transform:rotate(90deg)}.lane-label{grid-column:auto}.lane-loss .unchanged{grid-column:auto;position:relative;min-height:1rem}.unchanged span{position:static;transform:none}}
 </style>
+
 <script>
-for(const root of document.querySelectorAll('[data-bridge]')){if(root.dataset.ready)continue;root.dataset.ready='1';const buttons=[...root.querySelectorAll('[data-view]')];function set(v){root.dataset.view=v;buttons.forEach(b=>b.classList.toggle('active',b.dataset.view===v))}buttons.forEach(b=>b.addEventListener('click',()=>set(b.dataset.view)));set('diff')}
+for(const root of document.querySelectorAll('[data-bridge]')){
+  if(root.dataset.ready) continue;
+  root.dataset.ready='1';
+  const zh=root.dataset.lang==='zh';
+  const buttons=[...root.querySelectorAll('[data-mode]')];
+  const single=root.querySelector('[data-single-stage]');
+  const compare=root.querySelector('[data-compare-stage]');
+  const tangent=root.querySelector('[data-tangent-node]');
+  const tangentType=root.querySelector('[data-tangent-type]');
+  const tangentValue=root.querySelector('[data-tangent-value]');
+  const jvp=root.querySelector('[data-jvp-label]');
+  const predictor=root.querySelector('[data-predictor]');
+  const note=root.querySelector('[data-focus-note]');
+  function setMode(mode){
+    root.dataset.mode=mode;
+    buttons.forEach(b=>b.classList.toggle('active',b.dataset.mode===mode));
+    const isCompare=mode==='compare';
+    single.hidden=isCompare;
+    compare.hidden=!isCompare;
+    if(isCompare){
+      note.innerHTML=zh?'<b>並排看：</b> supervision 都是 e−x；真正不同的是「送進 JVP 的 tangent」。':'<b>Side by side:</b> supervision is e−x in both; the actual difference is the tangent sent into the JVP.';
+      return;
+    }
+    const improved=mode==='improved';
+    tangent.classList.toggle('improved',improved);
+    tangentType.textContent=improved?(zh?'state-derived tangent':'state-derived tangent'):(zh?'sample-specific tangent':'sample-specific tangent');
+    tangentValue.textContent=improved?'vθ(z_t)':'e−x';
+    jvp.textContent=improved?'JVP(uθ ; vθ)':'JVP(uθ ; e−x)';
+    predictor.textContent=improved?'Vθ(z_t)':'Vθ(z_t, e−x)';
+    note.innerHTML=improved
+      ? (zh?'<b>iMF：</b> e−x 仍留在 loss target；只有 JVP direction 改成模型從目前 state 得到的 vθ(z_t)。':'<b>iMF:</b> e−x remains the loss target; only the JVP direction becomes the state-derived vθ(z_t).')
+      : (zh?'<b>Original MF：</b> sample pair 產生的 e−x 同時當 supervision，也進入 JVP tangent。':'<b>Original MF:</b> pair-specific e−x is used both as supervision and as the JVP tangent.');
+  }
+  buttons.forEach(b=>b.addEventListener('click',()=>setMode(b.dataset.mode)));
+  setMode('original');
+}
 </script>
