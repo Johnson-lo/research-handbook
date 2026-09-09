@@ -6,6 +6,7 @@ sidebar:
 ---
 
 import ProbabilityPath from '../../../components/ProbabilityPath.astro';
+import DistributionFamilyExplorer from '../../../components/DistributionFamilyExplorer.astro';
 
 ## Distribution 不是一個 sample
 
@@ -35,3 +36,19 @@ $$
 :::note[Training 不是 rollout]
 Training 時會直接抽樣 $x$、$e$ 與 $t$，再利用上式直接建構 $z_t$。模型並不是先從 Gaussian noise 出發，再把前面所有時間點一步步模擬到這個 training point。
 :::
+
+## 不同 data distribution 走同一條 linear path，會長得一樣嗎？
+
+不會。即使 prior 一樣都是 Gaussian、公式也一樣都是 $z_t=(1-t)x+te$，**中間 distribution 的幾何仍強烈依賴 $p_{data}$ 本身**。
+
+下面可以直接切換 Gaussian、Bimodal、Ring、Checkerboard、Two Moons 與 Spiral，拖動 $t$ 看：
+
+- mode 何時開始模糊或互相連在一起；
+- ring 中間的洞是否被填滿；
+- curved manifold 如何被 noise 厚化；
+- 多個 disconnected mode 在中間時間如何混合；
+- 同一個 paired sample 的 $x\rightarrow z_t\rightarrow e$ 如何移動。
+
+<DistributionFamilyExplorer lang="zh" />
+
+這個互動特別適合建立一個重要直覺：**probability path 不是只有一條「線」；它其實是一整族隨時間變化的 distributions $p_t$。** 單一 sample 的 interpolation 很簡單，但整體 density / geometry 可以非常複雜。
