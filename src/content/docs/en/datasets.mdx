@@ -1,0 +1,67 @@
+---
+title: Datasets | Training Data & Task Map
+description: A practical catalog of training data sources across image, multimodal, video, robotics, driving, audio, text, molecules, time series, 3D, and medical tasks.
+---
+
+import DatasetCatalog from '../../components/DatasetCatalog.astro';
+
+# Datasets | Training Data & Task Map
+
+This page is not a claim to list every dataset in existence. It is an **expandable training-data reference** for choosing data from the research question, modality, conditioning, scale, access constraints, and compute budget.
+
+:::caution[Licenses and availability change]
+Dataset licenses, download mechanisms, URL survival, and versions can change. Re-check the official source before training or redistributing data, especially for web-scraped image/video corpora, medical datasets, and autonomous-driving data. “Public download” does not mean unrestricted commercial use or redistribution.
+:::
+
+## Data directly connected to the current MeanFlow track
+
+| Paper / track | Task | Data / benchmark | Experimental role |
+|---|---|---|---|
+| [MeanFlow](/research-handbook/en/papers/meanflow/) | class-conditional image generation | **ImageNet-1K 256×256** | primary from-scratch 1-NFE / few-NFE benchmark |
+| [Improved MeanFlow](/research-handbook/en/papers/improved-meanflow/) | class-conditional image generation | **ImageNet-1K 256×256** | objective ablations, guidance/conditioning, full-system benchmark |
+| [AlphaFlow](/research-handbook/en/papers/alphaflow/) | training curriculum | **ImageNet-1K 256×256** | trajectory-FM → MeanFlow curriculum and 1/2-NFE FID |
+| [Understanding & Improving MeanFlow Training](/research-handbook/en/papers/meanflow-training/) | temporal-gap curriculum | **ImageNet-1K 256×256** | instantaneous / small-gap / large-gap learning-order analysis |
+| [RMFlow](/research-handbook/en/papers/rmflow/) | context-to-molecule | **QM9** | 1-NFE molecule generation / stability |
+| RMFlow | time-series generation | **Lorenz / FitzHugh–Nagumo synthetic trajectories** | conditional dynamical-system trajectory generation |
+| RMFlow | text-to-image evaluation | **COCO 2017, 5k split** | additional image-text evaluation; keep this distinct from training-data claims |
+| [Flow Divergence Matching](/research-handbook/en/papers/flow-divergence/) | density / dynamics / DNA / video | **2D checkerboard, DNA benchmark, Lorenz / FitzHugh–Nagumo, KTH** | tests probability-path/divergence objectives across modalities |
+
+> A dataset name alone is not enough for reproduction. Pin the split, resolution, preprocessing, augmentation, class filtering, VAE/tokenizer, cached features, and evaluation subset.
+
+## How to choose a dataset
+
+1. Match the **output modality**: image, video, action trajectory, waveform, molecular graph, time series, or 3D pose.
+2. Match the **conditioning**: unconditional, class, text, image context, robot state, language instruction, map/sensor input, or physical property.
+3. Use **small data for smoke tests, then scale**: CIFAR-10, AFHQ, KTH, QM9, UCR/UEA, or MedMNIST can expose implementation bugs cheaply; ImageNet, DROID, LAION, and Waymo are better after the method is stable.
+4. Ensure the data actually supports the **research question**. Long-horizon action research needs trajectories; probability-path research can benefit from synthetic systems with known dynamics.
+5. Preserve **benchmark continuity**. For direct comparison with MeanFlow-family papers, ImageNet-1K 256×256 is often more valuable than a larger but incomparable dataset.
+6. Budget for **storage and preprocessing**, not only GPU training. Web-scale image-text, video, RGB-D, and lidar data can be dominated by download, decoding, caching, tokenization, and I/O costs.
+7. Pin **versions and governance**. Dynamic databases and URL-based corpora require release/crawl dates; medical data may require credentialing and DUAs.
+8. Watch **train/eval leakage**, especially when web-scale pretraining may overlap COCO, ImageNet, captions, or downstream benchmarks.
+
+## Task families
+
+| Task family | Typical research question | Good starting points |
+|---|---|---|
+| Image generation | one/few-step quality, FID, mode coverage | CIFAR-10 → AFHQ / FFHQ → ImageNet-1K |
+| Text-to-image / multimodal | alignment, conditioning, large-scale pretraining | COCO, CC3M / CC12M, LAION-5B, DataComp |
+| Segmentation / structure | masks, layout conditioning, dense prediction | SA-1B, ADE20K, Cityscapes, Open Images |
+| Video | temporal consistency, prediction, dynamics | KTH, UCF101, Kinetics, Something-Something, Ego4D |
+| Robot action | BC, multitask, long horizon, cross embodiment | RoboMimic, BridgeData V2, DROID, LIBERO, Open X-Embodiment |
+| Autonomous driving | motion forecasting, scene generation, sensor fusion | Argoverse 2, Waymo, nuScenes, KITTI, BDD100K |
+| Speech / audio / music | waveform generation, TTS, events, music | LJSpeech, LibriTTS, LibriSpeech, AudioSet, FSD50K, MAESTRO |
+| Text / LLM | pretraining, filtering, long context | WikiText-103, OpenWebText, C4, The Pile, FineWeb |
+| Molecule / protein / material | validity, conformations, protein/crystal generation | QM9, MOSES, GEOM, PDB, UniRef50, Materials Project |
+| Time series / dynamics | forecasting, trajectory generation, known dynamics | UCR/UEA, ETT, M4, Electricity, Lorenz / FitzHugh–Nagumo |
+| 3D / motion | text-to-motion, shapes, novel views | HumanML3D, AMASS, ShapeNet, Objaverse, CO3D, ScanNet |
+| Medical / biosignal | conditional synthesis, multimodal, clinical representation | MedMNIST → CheXpert / MIMIC-CXR / MIMIC-IV-ECG / BraTS |
+
+## Searchable Dataset Catalog
+
+<DatasetCatalog lang="en" />
+
+## Dataset metadata to record for every experiment
+
+At minimum record: **dataset version / release date, train-val-test split, actual sample count used, resolution / sampling rate, preprocessing, augmentation, conditioning fields, whether latents/embeddings are precomputed, filtering/deduplication, license/access date, evaluation subset, and metric implementation**.
+
+For robotics also record **embodiment, camera placement, action representation, control frequency, trajectory horizon, and whether failure episodes are retained**. For time series record **sampling interval, forecast horizon, normalization, and missing-value policy**. For molecule/3D tasks record **graph/coordinate representation, canonicalization, and conformer/structure filtering**.

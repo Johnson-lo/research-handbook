@@ -1,0 +1,67 @@
+---
+title: Datasets｜訓練資料集與任務地圖
+description: 依影像、圖文、影片、機器人、自駕、音訊、文字、分子、時間序列、3D 與醫療任務整理訓練資料來源、用途、規模與存取條件。
+---
+
+import DatasetCatalog from '../../components/DatasetCatalog.astro';
+
+# Datasets｜訓練資料集與任務地圖
+
+這一頁不是要宣稱「列完世界上所有資料集」，而是建立一個**可以持續擴充的 training-data reference**：當一個研究想法出現時，可以先從任務、modality、資料量、conditioning、license 與 compute budget 反推適合的 dataset。
+
+:::caution[資料授權與可取得性]
+資料集的 license、下載方式、URL 存活率與版本可能改變。尤其是 web-scraped image-text / video-text、醫療資料與自駕資料，**實際下載或重新散布前一定要重新確認官方條款**。下方的「公開下載」也不等於可任意商用或重新散布。
+:::
+
+## MeanFlow 系列目前最直接相關的資料
+
+| 論文 / 研究線 | 任務 | Data / benchmark | 在實驗中的角色 |
+|---|---|---|---|
+| [MeanFlow](/research-handbook/papers/meanflow/) | class-conditional image generation | **ImageNet-1K 256×256** | from-scratch 1-NFE / few-NFE generation 主 benchmark |
+| [Improved MeanFlow](/research-handbook/papers/improved-meanflow/) | class-conditional image generation | **ImageNet-1K 256×256** | objective ablation、CFG / conditioning 與完整 system benchmark |
+| [AlphaFlow](/research-handbook/papers/alphaflow/) | training curriculum | **ImageNet-1K 256×256** | 比較 trajectory-FM → MeanFlow curriculum 與 1/2-NFE FID |
+| [Understanding & Improving MeanFlow Training](/research-handbook/papers/meanflow-training/) | temporal-gap curriculum | **ImageNet-1K 256×256** | 分析 instantaneous / small-gap / large-gap learning order |
+| [RMFlow](/research-handbook/papers/rmflow/) | context-to-molecule | **QM9** | 1-NFE molecule generation / stability |
+| RMFlow | time-series generation | **Lorenz / FitzHugh–Nagumo synthetic trajectories** | conditional dynamical-system trajectory generation |
+| RMFlow | text-to-image evaluation | **COCO 2017, 5k split** | 額外 CLIP / image-text evaluation；需和訓練資料角色分開看 |
+| [Flow Divergence Matching](/research-handbook/papers/flow-divergence/) | density / dynamics / DNA / video | **2D checkerboard、DNA benchmark、Lorenz / FitzHugh–Nagumo、KTH** | 檢驗 probability-path / divergence objective 跨 modality 是否成立 |
+
+> **重現論文時，dataset 名稱還不夠。** 還要固定 split、resolution、preprocessing、augmentation、class filtering、VAE / tokenizer、cached features 與 evaluation subset。這些細節會直接影響 FID、CLIP、stability 或 trajectory metrics。
+
+## 怎麼選 dataset？
+
+1. **先確認 output modality**：image、video、action trajectory、audio waveform、molecule graph、time-series、3D pose，資料 representation 會直接決定 backbone 與 loss。
+2. **再確認 conditioning**：unconditional、class、text、image context、robot state、language instruction、map / sensor、physical property。
+3. **先用小資料做 smoke test，再放大**：CIFAR-10、AFHQ、KTH、QM9、UCR/UEA、MedMNIST 這類資料很適合先找 implementation bug；ImageNet、DROID、LAION、Waymo 則適合方法成熟後驗證 scaling。
+4. **看資料是否真的支援你的 research question**：要研究 long-horizon action，就不能只靠 single-step imitation；要研究 probability-path correctness，synthetic dynamics 反而可能比真實大資料更容易檢驗。
+5. **比較 benchmark continuity**：若目標是和 MeanFlow / iMF 直接比較，ImageNet-1K 256×256 的價值遠高於換一個「看起來更大」但無法對表的 dataset。
+6. **計算 storage / preprocessing cost**：web-scale image-text、video、RGB-D、lidar 往往不是 GPU 訓練本身最麻煩，而是下載、解碼、cache、tokenize 與 I/O。
+7. **固定版本與資料治理**：動態 database（PDB、ChEMBL、Materials Project）與 URL 型 dataset 一定要記 release / crawl date；醫療資料還要遵守 DUA 與 credentialing。
+8. **避免 train/eval leakage**：text-to-image、VLM、web-scale pretraining 特別容易和 COCO / ImageNet / benchmark captions 重疊，實驗應記錄 dedup / filtering 策略。
+
+## 各種任務可以用什麼資料？
+
+| Task family | 常見問題 | 適合先看 |
+|---|---|---|
+| Unconditional / class-conditional image generation | one-step / few-step quality、FID、mode coverage | CIFAR-10 → AFHQ / FFHQ → ImageNet-1K |
+| Text-to-image / multimodal | text alignment、large-scale pretraining、conditioning | COCO、CC3M / CC12M、LAION-5B、DataComp |
+| Segmentation / structured conditioning | mask / layout condition、dense prediction | SA-1B、ADE20K、Cityscapes、Open Images |
+| Video generation / prediction | temporal consistency、future prediction、action dynamics | KTH、UCF101、Kinetics、Something-Something、Ego4D |
+| Robot action generation | behavior cloning、multitask、long horizon、cross embodiment | RoboMimic、BridgeData V2、DROID、LIBERO、Open X-Embodiment |
+| Autonomous driving | motion forecasting、scene generation、sensor fusion | Argoverse 2、Waymo、nuScenes、KITTI、BDD100K |
+| Speech / audio / music | waveform generation、TTS、audio event、music | LJSpeech、LibriTTS、LibriSpeech、AudioSet、FSD50K、MAESTRO |
+| Text / LLM | language-model pretraining、data filtering、long context | WikiText-103、OpenWebText、C4、The Pile、FineWeb |
+| Molecule / protein / material | molecule validity、3D conformation、protein / crystal generation | QM9、MOSES、GEOM、PDB、UniRef50、Materials Project |
+| Time-series / dynamics | forecasting、trajectory generation、known-dynamics validation | UCR/UEA、ETT、M4、Electricity、Lorenz / FitzHugh–Nagumo |
+| 3D / motion | text-to-motion、3D shape、novel view | HumanML3D、AMASS、ShapeNet、Objaverse、CO3D、ScanNet |
+| Medical / biosignal | conditional synthesis、representation、clinical multimodal | MedMNIST → CheXpert / MIMIC-CXR / MIMIC-IV-ECG / BraTS |
+
+## 可搜尋 Dataset Catalog
+
+<DatasetCatalog lang="zh" />
+
+## 每次實驗建議記錄的 dataset metadata
+
+為了讓未來的 reproduction 不只剩下一句「用 ImageNet 訓練」，每個 experiment 至少記錄：**dataset version / release date、train-val-test split、實際使用樣本數、resolution / sampling rate、preprocessing、augmentation、conditioning 欄位、是否 precompute latent / embedding、filter / dedup 規則、license / access date、evaluation subset 與 metric implementation**。
+
+如果是 robotics，另外記 **robot embodiment、camera placement、action representation、control frequency、trajectory horizon、success / failure episode 是否保留**；如果是 time-series，記 **sampling interval、forecast horizon、normalization、missing-value policy**；如果是 molecule / 3D，記 **graph / coordinate representation、canonicalization、conformer / structure filter**。

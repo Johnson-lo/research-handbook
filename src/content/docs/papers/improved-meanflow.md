@@ -8,9 +8,12 @@ sidebar:
 ## Metadata
 
 - **Authors**：Zhengyang Geng, Yiyang Lu, Zongze Wu, Eli Shechtman, J. Zico Kolter, Kaiming He
-- **Publication**：arXiv 2512.02012, revised 2026
-- **Topic**：MeanFlow, objective reformulation, classifier-free guidance
-- **Source**：[arXiv](https://arxiv.org/abs/2512.02012)
+- **Venue**：CVPR 2026 · pp. 30467–30476
+- **Year**：2026
+- **Primary task**：ImageNet-1K 256×256 class-conditional one-step / few-step image generation
+- **Core topics**：MeanFlow objective reformulation、state-conditioned v-loss、classifier-free guidance、in-context conditioning
+- **Data / benchmark**：ImageNet-1K 256×256
+- **Sources**：[CVF Open Access](https://openaccess.thecvf.com/content/CVPR2026/html/Geng_Improved_Mean_Flows_On_the_Challenges_of_Fastforward_Generative_Models_CVPR_2026_paper.html) · [arXiv](https://arxiv.org/abs/2512.02012)
 
 ## Core question
 
@@ -97,3 +100,7 @@ Paper 另外加入 flexible CFG、$\Omega$-conditioning、in-context conditionin
 ## Interpretation
 
 iMF 的價值是把「MeanFlow 的 target construction 問題」重新表述成 regression-function design：prediction path 應該由 state 決定，而不是額外依賴 sampled conditional tangent。這也把 future work 從單純 target patch 推向 interval difficulty、endpoint error、gradient geometry 與 refinement 等更廣的問題。
+
+## Related data
+
+- [Datasets｜訓練資料集與任務地圖](/research-handbook/datasets/)

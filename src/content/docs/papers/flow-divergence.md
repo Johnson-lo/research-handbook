@@ -2,8 +2,18 @@
 title: Improving Flow Matching by Aligning Flow Divergence
 description: 以 divergence alignment 補強 conditional flow matching 對 probability path accuracy 的控制。
 sidebar:
-  order: 4
+  order: 6
 ---
+
+## Metadata
+
+- **Authors**：Yuhao Huang, Taos Transue, Shih-Hsin Wang, William M. Feldman, Hong Zhang, Bao Wang
+- **Venue**：ICML 2025 · PMLR 267:25813–25834
+- **Year**：2025
+- **Primary tasks**：2D density estimation、DNA sequence generation、dynamical-system trajectory sampling、video prediction
+- **Core topics**：Conditional Flow Matching、probability-path error、flow divergence、PDE characterization、Hutchinson trace estimator
+- **Data / benchmarks**：2D checkerboard synthetic data；DNA benchmark following the discrete / Dirichlet-flow setup；Lorenz and FitzHugh–Nagumo systems；KTH Actions video
+- **Sources**：[PMLR](https://proceedings.mlr.press/v267/huang25ag.html) · [ICML](https://icml.cc/virtual/2025/poster/45878) · [Code](https://github.com/Utah-Math-Data-Science/Flow_Div_Matching)
 
 ## Core question
 
@@ -15,13 +25,7 @@ Conditional Flow Matching 可以讓 vector-field regression loss 變小，但這
 
 ## Theoretical bridge
 
-Paper 建立 learned path $\hat p_t$ 與 exact path $p_t$ 的 error dynamics，並得到 total-variation bound。核心結果之一是
-
-$$
-\operatorname{TV}(p_t,\hat p_t)\le \frac12\mathcal L_{CDM}.
-$$
-
-這把 distribution-path error 和 divergence-related training quantity 直接連起來。
+Paper 建立 learned path $\hat p_t$ 與 exact path $p_t$ 的 error dynamics，並得到 total-variation control。這把 distribution-path error 和 divergence-related training quantity 直接連起來。
 
 ## Objective
 
@@ -43,6 +47,14 @@ Velocity field 告訴每個 point 往哪裡走；divergence 則描述附近 flow
 
 高維 divergence 需要 Jacobian trace，paper 使用 Hutchinson trace estimator 降低成本，避免顯式建立完整 Jacobian。
 
+## Benchmarks across modalities
+
+Code / paper 將同一 objective 放到多種資料型態：2D checkerboard density estimation、DNA discrete sequence generation、Lorenz / FitzHugh–Nagumo trajectory sampling，以及 KTH video prediction。這個設計很適合拿來判斷一個 flow objective 是否只是「對某個 image benchmark 有效」，還是真的具有跨 modality 的 dynamics 意義。
+
 ## Interpretation
 
 這條研究線與 MeanFlow 非常互補：MeanFlow 問「模型該預測 local 還是 finite-time quantity」；Flow Divergence Matching 問「不管你怎麼 parameterize，learned field 對 distribution path 的控制是否足夠」。對 future fast generators，這提供一個比單純 sample FID 更接近 dynamics correctness 的 training lens。
+
+## Related data
+
+- [Datasets｜訓練資料集與任務地圖](/research-handbook/datasets/)

@@ -8,9 +8,12 @@ sidebar:
 ## Metadata
 
 - **Authors**: Zhengyang Geng, Yiyang Lu, Zongze Wu, Eli Shechtman, J. Zico Kolter, Kaiming He
-- **Publication**: arXiv 2512.02012, revised 2026
-- **Topic**: MeanFlow, objective reformulation, classifier-free guidance
-- **Source**: [arXiv](https://arxiv.org/abs/2512.02012)
+- **Venue**: CVPR 2026 · pp. 30467–30476
+- **Year**: 2026
+- **Primary task**: ImageNet-1K 256×256 class-conditional one-step / few-step image generation
+- **Core topics**: MeanFlow objective reformulation, state-conditioned v-loss, classifier-free guidance, in-context conditioning
+- **Data / benchmark**: ImageNet-1K 256×256
+- **Sources**: [CVF Open Access](https://openaccess.thecvf.com/content/CVPR2026/html/Geng_Improved_Mean_Flows_On_the_Challenges_of_Fastforward_Generative_Models_CVPR_2026_paper.html) · [arXiv](https://arxiv.org/abs/2512.02012)
 
 ## Core question
 
@@ -73,3 +76,7 @@ Conditional $e-x$ can vary across sampled pairs consistent with the same state. 
 ## System-level changes
 
 The complete method also adds flexible CFG, $\Omega$-conditioning, in-context conditioning, Transformer block changes, and longer training. The final iMF-XL/2 system reports **FID 1.72**, which is therefore a system-level result rather than an objective-only result.
+
+## Related data
+
+- [Datasets | Training Data & Task Map](/research-handbook/en/datasets/)

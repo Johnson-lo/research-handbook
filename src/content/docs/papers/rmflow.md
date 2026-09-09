@@ -2,8 +2,18 @@
 title: "RMFlow: Refined Mean Flow by a Noise-Injection Step for Multimodal Generation"
 description: RMFlow 在 coarse MeanFlow transport 後加入 tailored noise-injection refinement。
 sidebar:
-  order: 3
+  order: 5
 ---
+
+## Metadata
+
+- **Authors**：Yuhao Huang, Shih-Hsin Wang, Andrea L. Bertozzi, Bao Wang
+- **Venue**：ICLR 2026
+- **Year**：2026
+- **Primary tasks**：text-to-image、context-to-molecule、time-series / dynamical-system generation
+- **Core topics**：MeanFlow refinement、noise injection、likelihood / Wasserstein control、1-NFE multimodal generation
+- **Data / benchmarks**：QM9；Lorenz / FitzHugh–Nagumo trajectory benchmark；synthetic 1D mixture / 2D checkerboard；COCO 2017 5k split（additional text-image evaluation）
+- **Sources**：[ICLR Proceedings](https://proceedings.iclr.cc/paper_files/paper/2026/hash/7b8c48c00dd5e3090ba0976e297fae5c-Abstract-Conference.html) · [arXiv](https://arxiv.org/abs/2602.00849)
 
 ## Core question
 
@@ -41,8 +51,12 @@ $$
 
 ## Scope
 
-Paper 展示 text-to-image、context-to-molecule、time-series generation；也報告在有限 GPU 資源下的訓練設定，說明這條 branch 對實驗資源受限的研究環境也具有實作吸引力。
+Paper 展示 text-to-image、context-to-molecule、time-series generation。QM9 是 context-to-molecule 的主要資料；dynamical-system experiments 延續 Lorenz / FitzHugh–Nagumo trajectory setup；論文 appendix 另外用 COCO 2017 的 5k split 比較 text-image CLIP score。這些資料的角色並不完全相同，因此重現時要分清 training data、benchmark 與 additional evaluation split。
 
 ## Interpretation
 
 RMFlow 最大的啟發是：MeanFlow 後續 research 不一定只能繼續改 JVP target。若 one-step endpoint quality 才是 bottleneck，可以把問題拆成「coarse deterministic transport + low-cost stochastic refinement」。
+
+## Related data
+
+- [Datasets｜訓練資料集與任務地圖](/research-handbook/datasets/)

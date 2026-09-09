@@ -3,54 +3,12 @@ const { lang = 'zh' } = Astro.props;
 const isZh = lang !== 'en';
 const prefix = isZh ? '/research-handbook' : '/research-handbook/en';
 const papers = [
-  {
-    title: 'Mean Flows for One-step Generative Modeling',
-    meta: 'NeurIPS 2025 · Oral',
-    href: `${prefix}/papers/meanflow/`,
-    tags: ['MeanFlow', 'One-step Generation', 'Average Velocity'],
-    note: isZh ? '完整研究筆記' : 'Full research note',
-    desc: isZh ? '以 interval-average velocity 建立 one-step generative modeling 的 MeanFlow framework。' : 'Introduces MeanFlow by modeling interval-average velocity for one-step generative modeling.'
-  },
-  {
-    title: 'Improved Mean Flows: On the Challenges of Fastforward Generative Models',
-    meta: 'CVPR 2026',
-    href: `${prefix}/papers/improved-meanflow/`,
-    tags: ['MeanFlow', 'Objective Reformulation', 'CFG'],
-    note: isZh ? '完整研究筆記' : 'Full research note',
-    desc: isZh ? '重構 MeanFlow objective，並處理 JVP tangent、guidance flexibility 與 conditioning。' : 'Reformulates the MeanFlow objective and revisits the JVP tangent, guidance flexibility, and conditioning.'
-  },
-  {
-    title: 'AlphaFlow: Understanding and Improving MeanFlow Models',
-    meta: 'ICLR 2026',
-    href: `${prefix}/papers/alphaflow/`,
-    tags: ['MeanFlow', 'r=t Boundary', 'Curriculum'],
-    note: isZh ? 'Training dynamics' : 'Training dynamics',
-    desc: isZh ? '解釋 MeanFlow 為何大量使用 r=t boundary supervision，並以 trajectory FM → MeanFlow curriculum 解決 gradient conflict。' : 'Explains heavy r=t boundary supervision and anneals from trajectory flow matching toward MeanFlow to reduce gradient conflict.'
-  },
-  {
-    title: 'Understanding, Accelerating, and Improving MeanFlow Training',
-    meta: 'CVPR 2026',
-    href: `${prefix}/papers/meanflow-training/`,
-    tags: ['MeanFlow', 'Temporal Gap', 'Training Curriculum'],
-    note: isZh ? 'Training dynamics' : 'Training dynamics',
-    desc: isZh ? '以 controlled experiments 顯示 instantaneous velocity 要先形成，再由 small-gap average velocity 漸進到 large-gap learning。' : 'Shows that instantaneous velocity should form first, followed by a short-gap to large-gap training progression.'
-  },
-  {
-    title: 'RMFlow: Refined Mean Flow by a Noise-Injection Step for Multimodal Generation',
-    meta: 'arXiv 2026',
-    href: `${prefix}/papers/rmflow/`,
-    tags: ['MeanFlow', 'Refinement', 'Multimodal'],
-    note: isZh ? '方法定位筆記' : 'Method-positioning note',
-    desc: isZh ? '在 coarse 1-NFE MeanFlow transport 後加入 tailored noise-injection refinement。' : 'Adds a tailored noise-injection refinement after coarse 1-NFE MeanFlow transport.'
-  },
-  {
-    title: 'Improving Flow Matching by Aligning Flow Divergence',
-    meta: 'ICML 2025',
-    href: `${prefix}/papers/flow-divergence/`,
-    tags: ['Flow Matching', 'Divergence', 'Probability Path'],
-    note: isZh ? '方法定位筆記' : 'Method-positioning note',
-    desc: isZh ? '從 probability-path error 的角度補強 conditional flow matching，加入 divergence alignment objective。' : 'Strengthens conditional flow matching through probability-path error analysis and divergence alignment.'
-  }
+  {title:'Mean Flows for One-step Generative Modeling',meta:'NeurIPS 2025 · Oral',href:`${prefix}/papers/meanflow/`,tags:['MeanFlow','One-step Generation','Average Velocity'],note:isZh?'完整研究筆記':'Full research note',desc:isZh?'以 interval-average velocity 建立 one-step generative modeling 的 MeanFlow framework。':'Introduces MeanFlow by modeling interval-average velocity for one-step generative modeling.'},
+  {title:'Improved Mean Flows: On the Challenges of Fastforward Generative Models',meta:'CVPR 2026',href:`${prefix}/papers/improved-meanflow/`,tags:['MeanFlow','Objective Reformulation','CFG'],note:isZh?'完整研究筆記':'Full research note',desc:isZh?'重構 MeanFlow objective，並處理 JVP tangent、guidance flexibility 與 conditioning。':'Reformulates the MeanFlow objective and revisits the JVP tangent, guidance flexibility, and conditioning.'},
+  {title:'AlphaFlow: Understanding and Improving MeanFlow Models',meta:'ICLR 2026',href:`${prefix}/papers/alphaflow/`,tags:['MeanFlow','r=t Boundary','Curriculum'],note:'Training dynamics',desc:isZh?'解釋 MeanFlow 為何大量使用 r=t boundary supervision，並以 trajectory FM → MeanFlow curriculum 解決 gradient conflict。':'Explains heavy r=t boundary supervision and anneals from trajectory flow matching toward MeanFlow to reduce gradient conflict.'},
+  {title:'Understanding, Accelerating, and Improving MeanFlow Training',meta:'CVPR 2026',href:`${prefix}/papers/meanflow-training/`,tags:['MeanFlow','Temporal Gap','Training Curriculum'],note:'Training dynamics',desc:isZh?'以 controlled experiments 顯示 instantaneous velocity 要先形成，再由 small-gap average velocity 漸進到 large-gap learning。':'Shows that instantaneous velocity should form first, followed by a short-gap to large-gap training progression.'},
+  {title:'RMFlow: Refined Mean Flow by a Noise-Injection Step for Multimodal Generation',meta:'ICLR 2026',href:`${prefix}/papers/rmflow/`,tags:['MeanFlow','Refinement','Multimodal'],note:isZh?'方法定位筆記':'Method-positioning note',desc:isZh?'在 coarse 1-NFE MeanFlow transport 後加入 tailored noise-injection refinement。':'Adds a tailored noise-injection refinement after coarse 1-NFE MeanFlow transport.'},
+  {title:'Improving Flow Matching by Aligning Flow Divergence',meta:'ICML 2025',href:`${prefix}/papers/flow-divergence/`,tags:['Flow Matching','Divergence','Probability Path'],note:isZh?'方法定位筆記':'Method-positioning note',desc:isZh?'從 probability-path error 的角度補強 conditional flow matching，加入 divergence alignment objective。':'Strengthens conditional flow matching through probability-path error analysis and divergence alignment.'}
 ];
 ---
 <div class="paper-library-grid">
@@ -64,15 +22,6 @@ const papers = [
     </a>
   ))}
 </div>
-
 <style>
-.paper-library-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:1rem;margin:1rem 0 1.5rem}
-.paper-card{display:flex;flex-direction:column;min-height:18rem;padding:1.15rem;border:1px solid var(--rh-border);border-radius:1rem;background:var(--rh-surface-2);color:var(--rh-text)!important;text-decoration:none!important;box-shadow:0 10px 30px rgba(74,49,34,.045);transition:transform .18s ease,border-color .18s ease,box-shadow .18s ease}
-.paper-card:hover{transform:translateY(-2px);border-color:var(--rh-caramel);box-shadow:0 14px 36px rgba(74,49,34,.09)}
-.paper-card-meta{display:flex;justify-content:space-between;gap:.75rem;flex-wrap:wrap;font-size:.78rem;color:var(--rh-muted)}
-.paper-card h3{font-size:1.08rem;line-height:1.35;margin:.8rem 0 .45rem;color:var(--rh-text)}
-.paper-card p{margin:0;color:var(--rh-muted);line-height:1.65}
-.paper-tags{display:flex;gap:.4rem;flex-wrap:wrap;margin-top:auto;padding-top:1rem}.paper-tags span{font-size:.72rem;padding:.22rem .5rem;border:1px solid var(--rh-border);border-radius:999px;background:var(--rh-surface);color:var(--rh-coffee)}
-.paper-open{margin-top:.9rem;font-size:.85rem;font-weight:650;color:var(--rh-coffee)}
-@media(max-width:760px){.paper-library-grid{grid-template-columns:1fr}.paper-card{min-height:auto}}
+.paper-library-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:1rem;margin:1rem 0 1.5rem}.paper-card{display:flex;flex-direction:column;min-height:18rem;padding:1.15rem;border:1px solid var(--rh-border);border-radius:1rem;background:var(--rh-surface-2);color:var(--rh-text)!important;text-decoration:none!important;box-shadow:0 10px 30px rgba(74,49,34,.045);transition:transform .18s ease,border-color .18s ease,box-shadow .18s ease}.paper-card:hover{transform:translateY(-2px);border-color:var(--rh-caramel);box-shadow:0 14px 36px rgba(74,49,34,.09)}.paper-card-meta{display:flex;justify-content:space-between;gap:.75rem;flex-wrap:wrap;font-size:.78rem;color:var(--rh-muted)}.paper-card h3{font-size:1.08rem;line-height:1.35;margin:.8rem 0 .45rem;color:var(--rh-text)}.paper-card p{margin:0;color:var(--rh-muted);line-height:1.65}.paper-tags{display:flex;gap:.4rem;flex-wrap:wrap;margin-top:auto;padding-top:1rem}.paper-tags span{font-size:.72rem;padding:.22rem .5rem;border:1px solid var(--rh-border);border-radius:999px;background:var(--rh-surface);color:var(--rh-coffee)}.paper-open{margin-top:.9rem;font-size:.85rem;font-weight:650;color:var(--rh-coffee)}@media(max-width:760px){.paper-library-grid{grid-template-columns:1fr}.paper-card{min-height:auto}}
 </style>

@@ -63,6 +63,7 @@ export default defineConfig({
             { label: 'Interactive Lab', slug: 'interactive' }
           ]
         },
+        { label: 'Datasets｜訓練資料集', translations: { en: 'Datasets' }, slug: 'datasets' },
         {
           label: 'Experiments｜實驗與證據',
           translations: { en: 'Experiments & Evidence' },
