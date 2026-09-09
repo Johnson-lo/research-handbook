@@ -10,6 +10,7 @@ import DistributionFamilyExplorer from '../../../../components/DistributionFamil
 import CalculusJVPPrimer from '../../../../components/CalculusJVPPrimer.astro';
 import DerivationStepper from '../../../../components/DerivationStepper.astro';
 import JVPExplorer from '../../../../components/JVPExplorer.astro';
+import JVP3DGeometry from '../../../../components/JVP3DGeometry.astro';
 
 ## 0. What problem is MeanFlow solving?
 
@@ -19,21 +20,11 @@ Flow Matching models a local instantaneous velocity. As the state moves, the loc
 
 <DistributionFlowLab lang="en" />
 
-The toy lab has three views: probability-path point clouds, conditional-to-marginal velocity averaging, and instantaneous-vs-average velocity on a curved trajectory. These are geometric toy examples, not outputs from a trained MeanFlow model.
-
-### 1.1 Change the data distribution while keeping the same linear path
-
-A two-cluster Gaussian is only one geometry. Use the explorer below to switch among **Gaussian, Bimodal, Ring, Checkerboard, Two Moons, and Spiral** distributions and drag $t$ to watch the full $p_t$ change.
+### What does the same probability path look like under different data geometries?
 
 <DistributionFamilyExplorer lang="en" />
 
-Each individual sample still follows
-
-$$
-z_t=(1-t)x+te,
-$$
-
-but the geometry of the full distribution can differ dramatically. This is useful later when thinking about marginal velocity fields, mode coverage, and probability-path correctness.
+The toy labs answer distinct questions: probability-path point clouds, conditional-to-marginal velocity averaging, instantaneous-vs-average velocity on a curved trajectory, and distribution-family geometry under the same Gaussian prior and linear interpolation. These are geometric toy examples, not outputs from a trained MeanFlow model.
 
 ## 2. Average velocity
 
@@ -93,6 +84,17 @@ MeanFlow abbreviates this as
 $$
 \operatorname{JVP}(u;v)\equiv J_{u(z,r,t)}[v,0,1].
 $$
+
+### Visualize $(z_t,r,t)$ as a 3D input space
+
+<JVP3DGeometry lang="en" />
+
+The crucial distinction is:
+
+- $\partial u/\partial z_t$, $\partial u/\partial r$, and $\partial u/\partial t$ are sensitivities along the three coordinate axes;
+- the JVP follows the actual time-evolution direction $q'(t)=[v,0,1]$.
+
+So $\partial u/\partial r$ can absolutely be nonzero. It contributes zero to this particular total derivative only because $r$ is held fixed while differentiating with respect to $t$, hence $dr/dt=0$.
 
 <JVPExplorer lang="en" />
 
