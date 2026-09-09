@@ -12,8 +12,8 @@
     "@astrojs/markdown-remark": "latest",
     "@astrojs/starlight": "0.42.0",
     "astro": "7.3.1",
-    "katex": "latest",
-    "rehype-katex": "latest",
+    "katex": "0.16.47",
+    "rehype-katex": "7.0.1",
     "remark-math": "latest"
   }
 }
