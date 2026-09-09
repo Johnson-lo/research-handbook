@@ -1,0 +1,44 @@
+---
+const { lang = 'zh' } = Astro.props;
+const isZh = lang !== 'en';
+const gpus = [
+  {name:'RTX 3080 10 GB', score:34, note:isZh?'適合 smoke test、小型 image/time-series、QM9、KTH、RoboMimic。':'Best for smoke tests, small image/time-series, QM9, KTH, RoboMimic.'},
+  {name:'V100 16 GB', score:46, note:isZh?'可進入中小型 ablation；以 FP16 mixed precision 為主。':'Enters small/medium ablations; primarily FP16 mixed precision.'},
+  {name:'RTX 4090 24 GB', score:66, note:isZh?'單卡研究主力：ImageNet-small、LIBERO、BridgeData subset、latent video。':'Strong single-GPU research card: ImageNet-small, LIBERO, BridgeData subsets, latent video.'},
+  {name:'V100 32 GB', score:74, note:isZh?'容量較大但架構較舊；適合 activation-heavy ablation。':'More memory but older architecture; useful for activation-heavy ablations.'},
+  {name:'L40S 48 GB', score:88, note:isZh?'實驗室目前最強單卡：較大 DiT、DROID subset、video / multimodal。':'Strongest listed single card: larger DiTs, DROID subsets, video/multimodal.'},
+];
+---
+
+<div class="range-map" data-range-map>
+  <div class="range-head">
+    <div><span>LAB CAPABILITY MAP</span><strong>{isZh?'一眼看懂目前實驗室的可行範圍':'See the lab feasibility boundary at a glance'}</strong><p>{isZh?'橫軸不是 benchmark 分數，而是由 VRAM、常見 mixed-precision 訓練與目前 planner 的 workload difficulty 整理出的研究規劃尺度。':'The axis is not a benchmark score; it is a planning scale derived from VRAM, mixed-precision training, and the workload difficulty used in this planner.'}</p></div>
+    <div class="range-axis-labels"><span>{isZh?'Smoke test':'Smoke test'}</span><span>{isZh?'Ablation':'Ablation'}</span><span>{isZh?'Paper-scale':'Paper-scale'}</span><span>{isZh?'合作 / cluster':'Collab / cluster'}</span></div>
+  </div>
+
+  <div class="range-rows">
+    {gpus.map((g,i)=><button type="button" class:list={['range-row',i===2&&'active']} data-range-row={i}>
+      <span class="gpu-name">{g.name}</span>
+      <span class="track"><i style={`width:${g.score}%`}></i><em style={`left:${g.score}%`}></em></span>
+      <span class="range-status">{g.score<45?(isZh?'Smoke 為主':'Mostly smoke'):g.score<70?(isZh?'可做研究型 ablation':'Research ablations'):g.score<85?(isZh?'較大型 ablation':'Larger ablations'):(isZh?'接近大型單卡研究':'Near large single-GPU research')}</span>
+    </button>)}
+  </div>
+
+  <div class="range-detail" data-range-detail>
+    <div><small>{isZh?'目前選取':'Selected'}</small><strong data-range-name>RTX 4090 24 GB</strong></div>
+    <div><small>{isZh?'可行邊界':'Practical boundary'}</small><strong data-range-boundary>{isZh?'研究型 ablation 主力':'Strong research-ablation range'}</strong></div>
+    <div class="detail-note"><small>{isZh?'用途提示':'Use note'}</small><span data-range-note>{gpus[2].note}</span></div>
+  </div>
+
+  <div class="range-zones"><div><b>01</b><span>{isZh?'Smoke / debug':'Smoke / debug'}</span></div><div><b>02</b><span>{isZh?'研究型 ablation':'Research ablation'}</span></div><div><b>03</b><span>{isZh?'接近 paper-scale':'Near paper-scale'}</span></div><div><b>04</b><span>{isZh?'合作 / cluster':'Collab / cluster'}</span></div></div>
+</div>
+
+<style>
+.range-map{border:1px solid var(--rh-border);border-radius:1rem;background:var(--rh-surface);padding:1rem;margin:.8rem 0 1rem}.range-head{display:grid;grid-template-columns:minmax(0,1fr) minmax(20rem,.9fr);gap:1rem;align-items:end}.range-head>div:first-child>span{display:block;color:var(--rh-caramel);font-size:.67rem;letter-spacing:.12em;font-weight:800}.range-head strong{display:block;margin-top:.2rem}.range-head p{margin:.25rem 0 0!important;color:var(--rh-muted);font-size:.73rem;line-height:1.5}.range-axis-labels{display:grid;grid-template-columns:repeat(4,1fr);font-size:.6rem;color:var(--rh-muted);text-align:center}.range-rows{display:grid;gap:.45rem;margin-top:.8rem}.range-row{width:100%;display:grid;grid-template-columns:9rem minmax(0,1fr) 9rem;gap:.65rem;align-items:center;border:1px solid var(--rh-border);border-radius:.65rem;background:var(--rh-surface-2);color:var(--rh-text);padding:.55rem .65rem;font:inherit;margin:0;cursor:pointer;text-align:left}.range-row:hover,.range-row.active{border-color:var(--rh-caramel);background:color-mix(in srgb,var(--rh-surface-3) 65%,var(--rh-surface-2))}.gpu-name{font-size:.76rem;font-weight:700}.track{position:relative;height:.8rem;border-radius:999px;background:linear-gradient(90deg,color-mix(in srgb,#6f8b69 14%,var(--rh-surface)),color-mix(in srgb,var(--rh-latte) 18%,var(--rh-surface)) 45%,color-mix(in srgb,#80729a 14%,var(--rh-surface)) 72%,color-mix(in srgb,#a25d4a 12%,var(--rh-surface)));overflow:visible}.track i{display:block;height:100%;border-radius:999px;background:linear-gradient(90deg,#7f9a79,var(--rh-caramel));opacity:.8}.track em{position:absolute;top:50%;width:.75rem;height:.75rem;border-radius:50%;background:var(--rh-coffee);border:2px solid var(--rh-surface);transform:translate(-50%,-50%);box-shadow:0 0 0 1px var(--rh-border)}.range-status{font-size:.67rem;color:var(--rh-muted);text-align:right}.range-detail{display:grid;grid-template-columns:1fr 1fr 2fr;gap:.55rem;margin-top:.65rem}.range-detail>div{border:1px solid var(--rh-border);border-radius:.65rem;background:var(--rh-surface-2);padding:.6rem}.range-detail small{display:block;color:var(--rh-caramel);font-size:.6rem;text-transform:uppercase;letter-spacing:.05em}.range-detail strong{display:block;margin-top:.2rem;font-size:.78rem}.range-detail span{display:block;margin-top:.2rem;color:var(--rh-muted);font-size:.7rem;line-height:1.45}.range-zones{display:grid;grid-template-columns:repeat(4,1fr);gap:.35rem;margin-top:.55rem}.range-zones>div{display:flex;gap:.35rem;align-items:center;justify-content:center;border-top:2px solid var(--rh-border);padding-top:.35rem}.range-zones b{font-size:.6rem;color:var(--rh-caramel)}.range-zones span{font-size:.62rem;color:var(--rh-muted)}
+:global(.sl-markdown-content .range-map :is(.range-head,.range-axis-labels,.range-rows,.range-detail,.range-zones) > *){margin-top:0!important}
+@media(max-width:800px){.range-head{grid-template-columns:1fr}.range-row{grid-template-columns:1fr}.range-status{text-align:left}.range-detail{grid-template-columns:1fr}.range-axis-labels{display:none}.range-zones{grid-template-columns:1fr 1fr}}
+</style>
+
+<script define:vars={{gpus,isZh}}>
+for(const root of document.querySelectorAll('[data-range-map]')){if(root.dataset.ready)continue;root.dataset.ready='1';const rows=[...root.querySelectorAll('[data-range-row]')],name=root.querySelector('[data-range-name]'),boundary=root.querySelector('[data-range-boundary]'),note=root.querySelector('[data-range-note]');function label(score){return score<45?(isZh?'Smoke / prototype 為主':'Mostly smoke / prototype'):score<70?(isZh?'研究型 ablation 主力':'Strong research-ablation range'):score<85?(isZh?'較大型 ablation，可逼近部分 paper setting':'Larger ablations, approaching some paper settings'):(isZh?'大型單卡研究；完整 paper-scale 仍視模型與多卡需求':'Large single-GPU research; full paper scale still depends on model and multi-GPU needs')}function select(i){rows.forEach((r,j)=>r.classList.toggle('active',i===j));const g=gpus[i];name.textContent=g.name;boundary.textContent=label(g.score);note.textContent=g.note}rows.forEach((r,i)=>r.addEventListener('click',()=>select(i)));select(2)}
+</script>
