@@ -9,7 +9,11 @@ sidebar:
 
 - **Authors**: Zhengyang Geng, Mingyang Deng, Xingjian Bai, J. Zico Kolter, Kaiming He
 - **Venue**: NeurIPS 2025 · Oral
-- **Topic**: one-step generation, flow matching, average velocity
+- **Year**: 2025
+- **Primary task**: ImageNet-1K 256×256 class-conditional one-step / few-step image generation
+- **Core topics**: Flow Matching, interval-average velocity, MeanFlow Identity, JVP, one-step generation
+- **Data / benchmark**: ImageNet-1K 256×256
+- **Main metrics**: FID, Inception Score, NFE
 - **Sources**: [NeurIPS](https://papers.neurips.cc/paper_files/paper/2025/hash/6d13e085b79d454da5910e4ca82a3d9d-Abstract-Conference.html) · [arXiv](https://arxiv.org/abs/2505.13447)
 
 ## Core question
@@ -65,3 +69,7 @@ On ImageNet 256×256 with 1 NFE and training from scratch, MF-XL/2 reports **FID
 ## Interpretation
 
 The main innovation is a change in temporal scale of the modeled object: from a local derivative to finite-interval average transport. The cost is a less direct training relation, which creates the JVP and target-construction issues addressed by later work.
+
+## Related data
+
+- [Datasets | Training Data & Task Map](/research-handbook/en/datasets/)

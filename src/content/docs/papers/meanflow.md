@@ -9,7 +9,11 @@ sidebar:
 
 - **Authors**：Zhengyang Geng, Mingyang Deng, Xingjian Bai, J. Zico Kolter, Kaiming He
 - **Venue**：NeurIPS 2025 · Oral
-- **Topic**：one-step generation, flow matching, average velocity
+- **Year**：2025
+- **Primary task**：ImageNet-1K 256×256 class-conditional one-step / few-step image generation
+- **Core topics**：Flow Matching、interval-average velocity、MeanFlow Identity、JVP、one-step generation
+- **Data / benchmark**：ImageNet-1K 256×256
+- **Main metrics**：FID、Inception Score、NFE
 - **Sources**：[NeurIPS](https://papers.neurips.cc/paper_files/paper/2025/hash/6d13e085b79d454da5910e4ca82a3d9d-Abstract-Conference.html) · [arXiv](https://arxiv.org/abs/2505.13447)
 
 ## Core question
@@ -106,3 +110,7 @@ ImageNet 256×256、1-NFE、from scratch，MF-XL/2 報告 FID **3.43**。
 ## Limitation / next paper
 
 Original MF 把 sample-specific $e-x$ 放入 JVP tangent。這個設計在 [Improved MeanFlow](/research-handbook/papers/improved-meanflow/) 中被重新檢視，並改寫成 state-conditioned v-loss predictor。
+
+## Related data
+
+- [Datasets｜訓練資料集與任務地圖](/research-handbook/datasets/)

@@ -9,7 +9,11 @@ sidebar:
 
 - **Authors**: Jin-Young Kim, Hyojun Go, Lea Bogensperger, Julius Erbach, Nikolai Kalischek, Federico Tombari, Konrad Schindler, Dominik Narnhofer
 - **Venue**: CVPR 2026
-- **Topic**: MeanFlow training dynamics, instantaneous velocity, average velocity, temporal gap, curriculum
+- **Year**: 2026
+- **Primary task**: ImageNet-1K 256×256 MeanFlow training dynamics / one-step image generation
+- **Core topics**: instantaneous velocity, average velocity, temporal gap, short-to-long curriculum, training acceleration
+- **Data / benchmark**: ImageNet-1K 256×256
+- **Main metrics**: FID, training time / convergence, instantaneous / average velocity interaction
 - **Sources**: [CVF Open Access](https://openaccess.thecvf.com/content/CVPR2026/html/Kim_Understanding_Accelerating_and_Improving_MeanFlow_Training_CVPR_2026_paper.html) · [arXiv](https://arxiv.org/abs/2511.19065) · [Code](https://github.com/seahl0119/ImprovedMeanFlow)
 
 ## Core question
@@ -51,3 +55,4 @@ This makes temporal gap a measurable curriculum axis rather than a passive sampl
 - [Research Problem Map](/research-handbook/en/tracks/problem-map/)
 - [AlphaFlow](/research-handbook/en/papers/alphaflow/)
 - [MeanFlow paper](/research-handbook/en/papers/meanflow/)
+- [Datasets | Training Data & Task Map](/research-handbook/en/datasets/)

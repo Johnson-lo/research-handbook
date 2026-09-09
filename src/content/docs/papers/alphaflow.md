@@ -9,7 +9,11 @@ sidebar:
 
 - **Authors**：Huijie Zhang, Aliaksandr Siarohin, Willi Menapace, Michael Vasilkovsky, Sergey Tulyakov, Qing Qu, Ivan Skorokhodov
 - **Venue**：ICLR 2026
-- **Topic**：MeanFlow, optimization conflict, trajectory flow matching, trajectory consistency, curriculum
+- **Year**：2026
+- **Primary task**：ImageNet-1K 256×256 one-step / two-step generative modeling with MeanFlow-style objectives
+- **Core topics**：MeanFlow、optimization conflict、trajectory flow matching、trajectory consistency、curriculum learning
+- **Data / benchmark**：ImageNet-1K 256×256
+- **Main metrics**：FID、NFE、training convergence / gradient interaction
 - **Sources**：[ICLR Proceedings](https://proceedings.iclr.cc/paper_files/paper/2026/hash/e8c20cafe841cba3e31a17488dc9c3f1-Abstract-Conference.html) · [Code](https://github.com/snap-research/alphaflow)
 
 ## Core question
@@ -85,3 +89,4 @@ $$
 - [Research Problem Map](/research-handbook/tracks/problem-map/)
 - [MeanFlow paper](/research-handbook/papers/meanflow/)
 - [MeanFlow Training Dynamics](/research-handbook/papers/meanflow-training/)
+- [Datasets｜訓練資料集與任務地圖](/research-handbook/datasets/)
