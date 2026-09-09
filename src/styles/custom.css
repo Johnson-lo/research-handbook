@@ -11,4 +11,32 @@ html,body{background:var(--rh-bg)} body{color:var(--rh-text)} a{text-underline-o
 .derivation button,.bridge button,.interactive-frame button{box-sizing:border-box;min-height:2.5rem;padding:.5rem .85rem;display:inline-flex;align-items:center;justify-content:center;font:inherit;line-height:1.15;white-space:nowrap;border-color:var(--rh-border)!important;color:var(--rh-text)!important;background:var(--rh-surface)!important}.derivation button:hover,.bridge button:hover,.interactive-frame button:hover{border-color:var(--rh-caramel)!important}.bridge button.active,.loss-tabs button.active{background:var(--rh-surface-3)!important;color:var(--rh-coffee-deep)!important;border-color:var(--rh-caramel)!important}
 .rh-section-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:1rem;margin:1rem 0 1.6rem}.rh-section-grid-3{grid-template-columns:repeat(3,minmax(0,1fr))}.rh-hub-card{display:flex;flex-direction:column;min-height:10.5rem;padding:1rem;border:1px solid var(--rh-border);border-radius:.95rem;background:var(--rh-surface-2);color:var(--rh-text)!important;text-decoration:none!important;transition:transform .18s ease,border-color .18s ease,box-shadow .18s ease}.rh-hub-card:hover{transform:translateY(-2px);border-color:var(--rh-caramel);box-shadow:0 12px 30px rgba(74,49,34,.08)}.rh-hub-card small{color:var(--rh-caramel);text-transform:uppercase;letter-spacing:.08em;font-weight:700;font-size:.7rem}.rh-hub-card strong{margin:.45rem 0;font-size:1.03rem;color:var(--rh-text)}.rh-hub-card span{color:var(--rh-muted);line-height:1.55}
 .sl-markdown-content code:not(pre code){background:color-mix(in srgb,var(--rh-surface-3) 72%,transparent);color:var(--rh-coffee-deep);border-radius:.3rem}.sl-markdown-content table{border-color:var(--rh-border)}.sl-markdown-content .katex-display{max-width:100%;overflow-x:auto;overflow-y:hidden;padding:.12rem 0}.sl-markdown-content pre{max-width:100%;overflow:auto}.sl-markdown-content img,.sl-markdown-content svg{max-width:100%}
+
+/*
+  Starlight gives every block sibling inside .sl-markdown-content a 1rem margin-top.
+  That rule also reaches inside Astro components, so the 2nd/3rd card in a CSS grid
+  is pushed downward even though the grid itself is aligned.  Neutralize that prose
+  rhythm only for layout containers where children are positioned by grid/flex gap.
+*/
+.sl-markdown-content :is(
+  .rh-section-grid,
+  .paper-library-grid,
+  .calc-head,.steps,.step-guide,.equal-grid,.concept-row,.calc-nav,
+  .derivation-head,.controls,.progress,
+  .dist-head,.legend,.tabs,.howto,.layout,.control-title,.range-ends,
+  .jvp-head,.sliders,.readouts,
+  .bridge-head,.bridge-tabs,.shared,.change-banner,.compare,.flowline,.critical,.result,.supervision-row,.scope-grid,
+  .notation-layout,.notation-tabs,.notation-warning,
+  .track-nodes,.detail-grid,
+  .loss-tabs,.loss-flow,
+  .kg-head,.kg-actions,.kg-inspector
+) > * {
+  margin-top: 0;
+}
+
+/* Equal-height card rows should be governed by the grid row, never by prose margins. */
+.sl-markdown-content :is(.equal-grid,.concept-row,.shared,.compare,.detail-grid,.readouts,.scope-grid,.rh-section-grid,.paper-library-grid) > * {
+  align-self: stretch;
+}
+
 @media(max-width:760px){.rh-section-grid,.rh-section-grid-3{grid-template-columns:1fr}}
