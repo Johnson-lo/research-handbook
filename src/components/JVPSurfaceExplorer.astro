@@ -1,0 +1,76 @@
+---
+const { lang = 'zh' } = Astro.props;
+const isZh = lang !== 'en';
+---
+
+<div class="jvp-surface" data-jvp-surface data-lang={isZh ? 'zh' : 'en'}>
+  <div class="surface-head">
+    <div>
+      <span>JVP ON A 3D FUNCTION SURFACE</span>
+      <strong>{isZh ? '把 u 畫成真正的三維函數表面：偏微分是沿座標軸的坡度，JVP 是沿實際移動方向的坡度' : 'Draw u as a real 3D function surface: partial derivatives are axis slopes, while the JVP is the slope along the actual motion direction'}</strong>
+      <p>{isZh ? '因為 u(z_t,r,t) 有三個 inputs，完整圖其實需要 4D 才能同時畫出 output。這裡固定 r，先看切片 u(z_t,t | r)，讓「函數表面上的坡度」變得可見。' : 'Because u(z_t,r,t) has three inputs, showing the output simultaneously would require 4D. We therefore fix r and visualize the slice u(z_t,t | r), making surface slopes visible.'}</p>
+    </div>
+    <div class="surface-formula"><code>u(z,r,t)=0.6z²+0.8zt+0.5r²−0.7rt+1.2t</code></div>
+  </div>
+
+  <div class="surface-controls">
+    <label><span>z_t</span><input data-z type="range" min="-2" max="2" step="0.05" value="0.65"><output data-zo>0.65</output></label>
+    <label><span>r</span><input data-r type="range" min="0" max="0.8" step="0.01" value="0.20"><output data-ro>0.20</output></label>
+    <label><span>t</span><input data-t type="range" min="0.05" max="1" step="0.01" value="0.70"><output data-to>0.70</output></label>
+    <label><span>v = dz_t/dt</span><input data-v type="range" min="-2" max="2" step="0.05" value="0.90"><output data-vo>0.90</output></label>
+  </div>
+
+  <div class="surface-layout">
+    <div class="surface-wrap">
+      <svg data-surface viewBox="0 0 900 560" role="img" aria-label="3D scalar surface for JVP intuition"></svg>
+      <div class="surface-caption" data-caption></div>
+    </div>
+    <aside>
+      <div class="slope-card z-card"><small>∂u/∂z_t</small><strong data-dz></strong><p>{isZh ? '在表面上沿 z_t 軸走一點，看高度 u 上升或下降多快。' : 'Move a little along the z_t axis on the surface and see how quickly height u changes.'}</p></div>
+      <div class="slope-card t-card"><small>∂u/∂t</small><strong data-dt></strong><p>{isZh ? '固定 z_t 與 r，只沿 t 軸走，這是 explicit-time slope。' : 'Hold z_t and r fixed and move only along t: the explicit-time slope.'}</p></div>
+      <div class="slope-card r-card"><small>∂u/∂r</small><strong data-dr></strong><p>{isZh ? 'r 沒畫成表面軸，而是控制整張 surface slice。調 r 時，整張 u(z_t,t|r) 會改變。' : 'r is not drawn as a surface axis; it controls which surface slice is shown. Changing r changes the whole u(z_t,t|r) surface.'}</p></div>
+      <div class="slope-card jvp-card"><small>{isZh ? 'JVP / total derivative' : 'JVP / total derivative'}</small><strong data-jvp></strong><code data-eq></code><p>{isZh ? '黃色方向不是 z 軸也不是 t 軸，而是實際 motion：z_t 以速度 v 改變，同時 t 以速度 1 前進，所以 surface 上看到的是 directional derivative。' : 'The yellow direction is neither the z axis nor the t axis. It is the actual motion: z_t changes at speed v while t advances at speed 1, so the surface slope is a directional derivative.'}</p></div>
+    </aside>
+  </div>
+
+  <div class="surface-legend">
+    <span><i class="axis-z"></i>{isZh ? '藍：沿 z_t 的 partial derivative' : 'Blue: partial derivative along z_t'}</span>
+    <span><i class="axis-t"></i>{isZh ? '橘：沿 t 的 partial derivative' : 'Orange: partial derivative along t'}</span>
+    <span><i class="axis-j"></i>{isZh ? '黃：沿 [v,1] 的 JVP direction' : 'Yellow: JVP direction [v,1]'}</span>
+  </div>
+
+  <div class="r-explanation">
+    <b>{isZh ? '那 r 呢？' : 'What about r?'}</b>
+    <span>{isZh ? '完整 function 是 u(z_t,r,t)。這張圖只是固定 r 的 2D input slice。如果把 r 也當水平軸，就需要再加一個維度才能同時顯示 u。對 MeanFlow 的 du/dt 而言，r 被固定，所以 dr/dt=0；因此 ∂u/∂r 雖然存在，卻不貢獻這一次 JVP。' : 'The full function is u(z_t,r,t). This figure is a 2D-input slice with r fixed. If r were another horizontal axis, one more dimension would be needed to display u simultaneously. In MeanFlow’s du/dt, r is held fixed, so dr/dt=0; therefore ∂u/∂r exists but does not contribute to this JVP.'}</span>
+  </div>
+</div>
+
+<style>
+.jvp-surface{box-sizing:border-box;width:100%;border:1px solid var(--rh-border);border-radius:1rem;padding:1rem;background:var(--rh-surface);margin:1rem 0 1.4rem;overflow:hidden}.surface-head{display:grid;grid-template-columns:minmax(0,1fr) minmax(15rem,.5fr);gap:1rem;align-items:center}.surface-head>div:first-child>span{display:block;color:var(--rh-caramel);font-size:.67rem;font-weight:800;letter-spacing:.12em}.surface-head strong{display:block;margin-top:.2rem}.surface-head p{margin:.25rem 0 0!important;color:var(--rh-muted);line-height:1.5}.surface-formula{border:1px solid var(--rh-border);border-radius:.65rem;background:var(--rh-surface-2);padding:.65rem}.surface-formula code{display:block;white-space:normal;overflow-wrap:anywhere;font-size:.72rem}.surface-controls{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:.45rem;margin-top:.75rem}.surface-controls label{display:grid;grid-template-columns:auto 1fr 3rem;gap:.4rem;align-items:center;border:1px solid var(--rh-border);border-radius:.6rem;background:var(--rh-surface-2);padding:.5rem .6rem}.surface-controls span{font-size:.67rem;color:var(--rh-muted)}.surface-controls input{width:100%;min-width:0}.surface-controls output{font-size:.68rem;text-align:right;color:var(--rh-coffee);font-variant-numeric:tabular-nums}.surface-layout{display:grid;grid-template-columns:minmax(0,1.45fr) minmax(18rem,.75fr);gap:.65rem;margin-top:.65rem;align-items:stretch}.surface-wrap{display:grid;grid-template-rows:minmax(0,1fr) auto;border:1px solid var(--rh-border);border-radius:.7rem;overflow:hidden;background:#f8f3ec;min-width:0}.surface-wrap svg{display:block;width:100%;height:auto;min-height:31rem}.surface-caption{border-top:1px solid var(--rh-border);padding:.5rem .65rem;background:var(--rh-surface-2);color:var(--rh-muted);font-size:.7rem;line-height:1.45}.surface-layout aside{display:grid;grid-template-columns:1fr 1fr;gap:.45rem;align-content:start}.slope-card{border:1px solid var(--rh-border);border-radius:.65rem;background:var(--rh-surface-2);padding:.6rem}.slope-card small{display:block;color:var(--rh-caramel);font-size:.61rem;text-transform:uppercase}.slope-card strong{display:block;margin-top:.18rem}.slope-card p{margin:.3rem 0 0!important;color:var(--rh-muted);font-size:.69rem;line-height:1.45}.jvp-card{grid-column:1/-1;border-left:3px solid #c49a38}.jvp-card code{display:block;margin-top:.3rem;white-space:normal;overflow-wrap:anywhere;font-size:.68rem}.surface-legend{display:flex;gap:.7rem;flex-wrap:wrap;margin-top:.65rem}.surface-legend span{display:flex;align-items:center;gap:.3rem;font-size:.68rem;color:var(--rh-muted)}.surface-legend i{width:.7rem;height:.18rem;border-radius:999px}.axis-z{background:#6f85a8}.axis-t{background:#c47a3d}.axis-j{background:#c49a38}.r-explanation{display:grid;grid-template-columns:auto minmax(0,1fr);gap:.65rem;align-items:start;border-top:1px solid var(--rh-border);margin-top:.65rem;padding-top:.65rem}.r-explanation b{font-size:.72rem}.r-explanation span{font-size:.69rem;color:var(--rh-muted);line-height:1.5}:global(.sl-markdown-content .jvp-surface :is(.surface-head,.surface-controls,.surface-layout,.surface-legend,.r-explanation) > *){margin-top:0!important}
+@media(max-width:900px){.surface-head{grid-template-columns:1fr}.surface-formula{max-width:24rem}.surface-controls{grid-template-columns:repeat(2,minmax(0,1fr))}.surface-layout{grid-template-columns:1fr}}@media(max-width:560px){.surface-controls,.surface-layout aside{grid-template-columns:1fr}.jvp-card{grid-column:auto}.r-explanation{grid-template-columns:1fr}}
+</style>
+
+<script>
+for(const root of document.querySelectorAll('[data-jvp-surface]')){
+  if(root.dataset.ready) continue; root.dataset.ready='1';
+  const zh=root.dataset.lang==='zh',svg=root.querySelector('[data-surface]'),zEl=root.querySelector('[data-z]'),rEl=root.querySelector('[data-r]'),tEl=root.querySelector('[data-t]'),vEl=root.querySelector('[data-v]'),zo=root.querySelector('[data-zo]'),ro=root.querySelector('[data-ro]'),to=root.querySelector('[data-to]'),vo=root.querySelector('[data-vo]'),dzOut=root.querySelector('[data-dz]'),drOut=root.querySelector('[data-dr]'),dtOut=root.querySelector('[data-dt]'),jvpOut=root.querySelector('[data-jvp]'),eq=root.querySelector('[data-eq]'),cap=root.querySelector('[data-caption]');
+  const ns='http://www.w3.org/2000/svg';
+  function U(z,r,t){return .6*z*z+.8*z*t+.5*r*r-.7*r*t+1.2*t}
+  function project(z,t,u){return{x:445+z*108+t*155,y:430-t*150-u*52+z*18}}
+  function E(name,a){const n=document.createElementNS(ns,name);for(const[k,v]of Object.entries(a))n.setAttribute(k,String(v));svg.appendChild(n);return n}
+  function line(a,b,col,w=2,op=1,dash=''){const n=E('line',{x1:a.x,y1:a.y,x2:b.x,y2:b.y,stroke:col,'stroke-width':w,opacity:op,'stroke-linecap':'round'});if(dash)n.setAttribute('stroke-dasharray',dash);return n}
+  function arrow(a,b,col,w=3){line(a,b,col,w);const ang=Math.atan2(b.y-a.y,b.x-a.x),L=10;line(b,{x:b.x-L*Math.cos(ang-.55),y:b.y-L*Math.sin(ang-.55)},col,w);line(b,{x:b.x-L*Math.cos(ang+.55),y:b.y-L*Math.sin(ang+.55)},col,w)}
+  function text(p,s,col='#74665a',size=12){const n=E('text',{x:p.x,y:p.y,fill:col,'font-size':size,'font-weight':650});n.textContent=s;return n}
+  function update(){const z=+zEl.value,r=+rEl.value,t=+tEl.value,v=+vEl.value,dz=1.2*z+.8*t,dr=r-.7*t,dt=.8*z-.7*r+1.2,j=dz*v+dt;zo.textContent=z.toFixed(2);ro.textContent=r.toFixed(2);to.textContent=t.toFixed(2);vo.textContent=v.toFixed(2);dzOut.textContent=dz.toFixed(3);drOut.textContent=dr.toFixed(3);dtOut.textContent=dt.toFixed(3);jvpOut.textContent=j.toFixed(3);eq.textContent=`du/dt = (∂u/∂z_t)·v + (∂u/∂r)·0 + ∂u/∂t = (${dz.toFixed(3)})(${v.toFixed(2)}) + (${dr.toFixed(3)})·0 + ${dt.toFixed(3)} = ${j.toFixed(3)}`;
+    svg.innerHTML='';E('rect',{x:0,y:0,width:900,height:560,fill:'#f8f3ec'});
+    const zs=[];for(let zz=-2;zz<=2.001;zz+=.25)zs.push(zz);const ts=[];for(let tt=.05;tt<=1.001;tt+=.08)ts.push(tt);
+    for(let ti=0;ti<ts.length;ti++){let prev=null;for(const zz of zs){const p=project(zz,ts[ti],U(zz,r,ts[ti]));if(prev)line(prev,p,'#cfc1b3',1,.75);prev=p}}
+    for(let zi=0;zi<zs.length;zi+=2){let prev=null;for(const tt of ts){const p=project(zs[zi],tt,U(zs[zi],r,tt));if(prev)line(prev,p,'#dfd3c7',1,.65);prev=p}}
+    const q=project(z,t,U(z,r,t));E('circle',{cx:q.x,cy:q.y,r:7,fill:'#fffdf8',stroke:'#30251d','stroke-width':2});text({x:q.x+10,y:q.y-10},`u=${U(z,r,t).toFixed(2)}`,'#30251d',13);
+    const eps=.24;const pz=project(z+eps,t,U(z+eps,r,t)),pt=project(z,t+eps*.7,U(z,r,t+eps*.7)),pj=project(z+eps*v,t+eps,U(z+eps*v,r,t+eps));arrow(q,pz,'#6f85a8',3);arrow(q,pt,'#c47a3d',3);arrow(q,pj,'#c49a38',4);text({x:pz.x+6,y:pz.y},'∂/∂z','#5f7092');text({x:pt.x+6,y:pt.y},'∂/∂t','#a05f2f');text({x:pj.x+8,y:pj.y-4},'JVP','#9b7628');
+    const base=project(-2,.05,U(-2,r,.05));text({x:base.x-4,y:base.y+26},'z_t','#65798d');const tbase=project(-2,1,U(-2,r,1));text({x:tbase.x+4,y:tbase.y+10},'t','#a05f2f');
+    cap.textContent=zh?`目前固定 r=${r.toFixed(2)}。網格就是 scalar field u(z_t,t|r) 的 3D surface；點的位置由 (z_t,t) 決定，高度就是 u。`:`r=${r.toFixed(2)} is fixed. The grid is the 3D scalar surface u(z_t,t|r): horizontal position is (z_t,t), height is u.`
+  }
+  [zEl,rEl,tEl,vEl].forEach(x=>x.addEventListener('input',update));update();
+}
+</script>
