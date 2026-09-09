@@ -6,6 +6,21 @@ sidebar:
 ---
 
 import VelocityGTExplorer from '../../../../components/VelocityGTExplorer.astro';
+import FlowMatchingNumericExample from '../../../../components/FlowMatchingNumericExample.astro';
+
+## Start with numbers instead of symbols
+
+Flow Matching is hard to read when $x$, $e$, $z_t$, $v$, and the MSE all appear before any concrete example. The interactive below fixes one 2D sampled pair and calculates the whole training example numerically.
+
+<FlowMatchingNumericExample lang="en" />
+
+Keep three points in mind:
+
+1. training samples $x,e,t$ and constructs $z_t$ directly;
+2. for one sampled pair, the supervision target is $e-x$;
+3. if the same $(z_t,t)$ is compatible with many pairs, MSE learns the conditional mean of those conditional targets.
+
+## General formula
 
 From
 
