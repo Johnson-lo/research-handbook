@@ -10,7 +10,7 @@ import DistributionFamilyExplorer from '../../../../components/DistributionFamil
 import CalculusJVPPrimer from '../../../../components/CalculusJVPPrimer.astro';
 import DerivationStepper from '../../../../components/DerivationStepper.astro';
 import JVPExplorer from '../../../../components/JVPExplorer.astro';
-import JVP3DGeometry from '../../../../components/JVP3DGeometry.astro';
+import JVPSurfaceExplorer from '../../../../components/JVPSurfaceExplorer.astro';
 
 ## 0. What problem is MeanFlow solving?
 
@@ -85,16 +85,30 @@ $$
 \operatorname{JVP}(u;v)\equiv J_{u(z,r,t)}[v,0,1].
 $$
 
-### Visualize $(z_t,r,t)$ as a 3D input space
+### Draw u as an actual 3D function surface first
 
-<JVP3DGeometry lang="en" />
+A point plus a few arrows is not enough to make a partial derivative feel like a slope. The new interactive fixes $r$ and draws the scalar surface
 
-The crucial distinction is:
+$$
+u(z_t,t\mid r),
+$$
 
-- $\partial u/\partial z_t$, $\partial u/\partial r$, and $\partial u/\partial t$ are sensitivities along the three coordinate axes;
-- the JVP follows the actual time-evolution direction $q'(t)=[v,0,1]$.
+where the horizontal axes are $z_t$ and $t$ and the height is $u$.
 
-So $\partial u/\partial r$ can absolutely be nonzero. It contributes zero to this particular total derivative only because $r$ is held fixed while differentiating with respect to $t$, hence $dr/dt=0$.
+<JVPSurfaceExplorer lang="en" />
+
+Now the geometry is visible:
+
+- $\partial u/\partial z_t$ is the slope along the $z_t$ direction on the surface;
+- $\partial u/\partial t$ is the slope along the $t$ direction;
+- the JVP is not an axis derivative; it is the directional slope along the actual motion $[v,1]$ on the surface;
+- $r$ controls which surface slice $u(z_t,t\mid r)$ is being shown. Visualizing all of $(z_t,r,t)$ together with output $u$ would require 4D.
+
+When MeanFlow takes the total derivative with respect to $t$, $r$ is fixed, so $dr/dt=0$. Hence $\partial u/\partial r$ can be nonzero while its contribution to this JVP is
+
+$$
+\frac{\partial u}{\partial r}\frac{dr}{dt}=\frac{\partial u}{\partial r}\cdot0=0.
+$$
 
 <JVPExplorer lang="en" />
 
