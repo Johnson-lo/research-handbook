@@ -1,17 +1,33 @@
 ---
 title: Datasets｜訓練資料集與任務地圖
-description: 依影像、圖文、影片、機器人、自駕、音訊、文字、分子、時間序列、3D 與醫療任務整理訓練資料來源、用途、規模與存取條件。
+description: 依影像、圖文、影片、機器人、自駕、音訊、文字、分子、時間序列、3D 與醫療任務整理訓練資料來源、用途、規模、存取條件與 compute feasibility。
 ---
 
 import DatasetCatalog from '../../components/DatasetCatalog.astro';
+import ComputeFeasibilityPlanner from '../../components/ComputeFeasibilityPlanner.astro';
 
 # Datasets｜訓練資料集與任務地圖
 
-這一頁不是要宣稱「列完世界上所有資料集」，而是建立一個**可以持續擴充的 training-data reference**：當一個研究想法出現時，可以先從任務、modality、資料量、conditioning、license 與 compute budget 反推適合的 dataset。
+這一頁不是要宣稱「列完世界上所有資料集」，而是建立一個**可以持續擴充的 experiment-planning reference**：當一個研究想法出現時，可以從任務、modality、資料量、conditioning、license、storage 與 compute budget 反推適合的 dataset 與實驗尺度。
 
 :::caution[資料授權與可取得性]
 資料集的 license、下載方式、URL 存活率與版本可能改變。尤其是 web-scraped image-text / video-text、醫療資料與自駕資料，**實際下載或重新散布前一定要重新確認官方條款**。下方的「公開下載」也不等於可任意商用或重新散布。
 :::
+
+## 先用 GPU / Storage 反推可行實驗
+
+下面的 planner 不是把「dataset」硬綁一個 VRAM，而是把 **dataset + model / experiment profile** 一起估算。選擇目前可用 GPU、每張 VRAM、GPU 數量、任務與 storage 後，會把候選實驗分成：
+
+- **適合**：目前配置有合理餘裕；
+- **可做・偏緊**：可以做，但建議 mixed precision、gradient accumulation、activation checkpointing 或 cached latent；
+- **可做・需 sharding**：多卡數量夠，但 per-GPU VRAM 不足，需要 FSDP / ZeRO / model sharding；
+- **合作 / cluster 候選**：本機不適合 full run，可改做 subset / smaller backbone，或直接作為共享算力、跨實驗室合作的候選。
+
+:::note[GPU 數量 ≠ VRAM 直接相加]
+普通 DDP 會在每張 GPU 上各放一份 model，因此 `4 × 24 GB` **不是**一張 96 GB GPU。只有 FSDP、ZeRO、tensor/model parallel 等 sharding 方法，才可能把 model / optimizer state 分散到多張卡。
+:::
+
+<ComputeFeasibilityPlanner lang="zh" />
 
 ## MeanFlow 系列目前最直接相關的資料
 
@@ -26,7 +42,21 @@ import DatasetCatalog from '../../components/DatasetCatalog.astro';
 | RMFlow | text-to-image evaluation | **COCO 2017, 5k split** | 額外 CLIP / image-text evaluation；需和訓練資料角色分開看 |
 | [Flow Divergence Matching](/research-handbook/papers/flow-divergence/) | density / dynamics / DNA / video | **2D checkerboard、DNA benchmark、Lorenz / FitzHugh–Nagumo、KTH** | 檢驗 probability-path / divergence objective 跨 modality 是否成立 |
 
-> **重現論文時，dataset 名稱還不夠。** 還要固定 split、resolution、preprocessing、augmentation、class filtering、VAE / tokenizer、cached features 與 evaluation subset。這些細節會直接影響 FID、CLIP、stability 或 trajectory metrics。
+> **重現論文時，dataset 名稱還不夠。** 還要固定 split、resolution、preprocessing、augmentation、class filtering、VAE / tokenizer、cached features、model scale、GPU count 與 evaluation subset。這些細節會直接影響 FID、CLIP、stability 或 trajectory metrics。
+
+## Compute budget 也要當成研究設計的一部分
+
+Dataset 規模和 GPU VRAM 沒有一對一關係。真正決定 memory / training cost 的通常是：
+
+1. **backbone size**：DiT-B / L / XL、video transformer、VLA backbone 的 activation 與 optimizer state 差很多；
+2. **input size**：image resolution、video frame count、trajectory horizon、point / token 數；
+3. **training representation**：pixel-space vs latent-space、是否 freeze encoder / VAE、是否 precompute embedding；
+4. **autodiff complexity**：MeanFlow 的 JVP、divergence / Hutchinson estimator、higher-order derivative 都可能比一般 forward/backward 更吃 memory；
+5. **optimizer / precision**：FP32、BF16 / FP16、Adam state、8-bit optimizer；
+6. **distributed strategy**：DDP、FSDP / ZeRO、tensor parallel、activation checkpointing；
+7. **data pipeline**：video decode、RGB-D / lidar、web URL crawl、robot trajectory cache 可能先卡 CPU / SSD / network，而不是 GPU。
+
+因此網站裡的 VRAM / GPU 建議會明確標成 **planning estimate**；如果 paper 或 official repo 有正式 training hardware，之後會在 paper metadata / reproduction section 優先使用 paper-reported setting。
 
 ## 怎麼選 dataset？
 
@@ -60,8 +90,8 @@ import DatasetCatalog from '../../components/DatasetCatalog.astro';
 
 <DatasetCatalog lang="zh" />
 
-## 每次實驗建議記錄的 dataset metadata
+## 每次實驗建議記錄的 dataset / compute metadata
 
-為了讓未來的 reproduction 不只剩下一句「用 ImageNet 訓練」，每個 experiment 至少記錄：**dataset version / release date、train-val-test split、實際使用樣本數、resolution / sampling rate、preprocessing、augmentation、conditioning 欄位、是否 precompute latent / embedding、filter / dedup 規則、license / access date、evaluation subset 與 metric implementation**。
+為了讓未來的 reproduction 不只剩下一句「用 ImageNet 訓練」，每個 experiment 至少記錄：**dataset version / release date、train-val-test split、實際使用樣本數、resolution / sampling rate、preprocessing、augmentation、conditioning 欄位、是否 precompute latent / embedding、filter / dedup 規則、license / access date、evaluation subset、metric implementation、GPU model / count、precision、global / per-GPU batch、gradient accumulation、optimizer、activation checkpointing、distributed strategy、wall-clock time、peak VRAM 與 checkpoint / cache storage**。
 
 如果是 robotics，另外記 **robot embodiment、camera placement、action representation、control frequency、trajectory horizon、success / failure episode 是否保留**；如果是 time-series，記 **sampling interval、forecast horizon、normalization、missing-value policy**；如果是 molecule / 3D，記 **graph / coordinate representation、canonicalization、conformer / structure filter**。
