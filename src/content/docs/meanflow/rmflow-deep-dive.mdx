@@ -1,6 +1,6 @@
 ---
-title: RMFlow 深入｜原始方法完整推導 + iMF 相容性證明
-description: 先完整保留 RMFlow 原始方法與 Eq. (5)–(17)，再另外推導 iMF target/JVP-tangent 改寫後，哪些部分能嚴格成立、哪些仍只是研究假設。
+title: RMFlow 深入｜原始方法完整推導 + NLL / Cross-Entropy / KL + iMF 相容性證明
+description: 完整保留 RMFlow Eq. (5)–(17)，嚴格推導 NLL、cross-entropy、Jensen gap、KL 的關係，再分析 Improved MeanFlow 取代第一階段 CMFM 時哪些結論成立、哪些仍需額外假設。
 sidebar:
   order: 3
 ---
@@ -8,46 +8,41 @@ sidebar:
 import RMFlowNoiseDemo from '../../../components/RMFlowNoiseDemo.astro';
 
 :::note[這頁的結構]
-這次不再把 RMFlow 原始方法拿掉。整頁分成兩大部分：
+這頁分成三層，而且刻意不把它們混在一起：
 
-1. **Paper 原始內容**：先照 RMFlow 的邏輯完整走過 Eq. (5)–(17) 與 Eq. (12) joint objective。
-2. **我們的研究延伸**：最後才討論 iMF。所有「paper 已證明」與「我們額外在假設下推導」會分開標示。
+1. **RMFlow paper 原始方法**：Eq. (5)–(17) 與 Eq. (12)。
+2. **機率論補完**：把 paper 中沒有完全展開的 NLL → cross-entropy → KL，以及 conditional NLL 與 marginal cross-entropy 的 Jensen gap 嚴格證完。
+3. **iMF research extension**：最後才討論把第一階段 CMFM 換成 Improved MeanFlow 後，哪些結果可保留。
 :::
 
 ---
 
-# Part I — RMFlow 原始方法：先完整保留 paper 的主線
+# Part I — RMFlow 原始方法
 
 # 1. RMFlow 想解什麼？
 
-RMFlow 的出發點很簡單：**1-NFE MeanFlow 很快，但一次 deterministic transport 的 endpoint error 可能很大。**
+MeanFlow 的目標是在單次 neural-function evaluation 內完成 transport。問題是，一次 deterministic transport 必須立刻把 sample 放到合理的 multimodal endpoint；若 endpoint 有偏差，沒有多步 ODE integration 幫忙逐步修正。
 
-原始 MeanFlow 用 average velocity 直接做 one-step transport：
-
-$$
-x_1=x_0+\hat u_{0,1}(x_0;\theta).
-$$
-
-RMFlow 不改掉這個 one-step 主體，而是在後面接一個便宜的 Gaussian refinement：
+RMFlow 保留 one-step MeanFlow，後面接一個便宜的 Gaussian refinement：
 
 $$
 \text{prior}
 \xrightarrow{\text{1-NFE MeanFlow}}
-\text{coarse endpoint}
-\xrightarrow{\text{Gaussian noise}}
+\text{coarse intermediate endpoint}
+\xrightarrow{\text{Gaussian refinement}}
 \text{final sample}.
 $$
 
-Paper 的核心目標是同時保留：
+核心目標是同時保留：
 
-- MeanFlow 的 transport / Wasserstein-style control；
-- 再額外加入 endpoint likelihood / KL 方向的控制。
+- MeanFlow 的 path / transport control；
+- 額外加入 endpoint density / likelihood control。
 
 ---
 
-# 2. Equation (5)：原本 MeanFlow 控制的量
+# 2. Equation (5)：原本 MeanFlow 的 transport-side control
 
-RMFlow 引用既有 flow-map / MeanFlow 理論，寫成
+RMFlow 引用既有 MeanFlow / flow-map 理論，使用
 
 $$
 M\,\mathcal L_{\mathrm{CMFM}}(\theta)
@@ -66,17 +61,17 @@ W_2^2(p_{\mathrm{tgt}},p_\theta)
 \mathbb E_{(x,y)\sim\gamma}\|x-y\|^2.
 $$
 
-這一條的角色是 **transport geometry**：MeanFlow loss 小時，target distribution 與 learned distribution 的 Wasserstein gap 受到控制。
+這條式子的角色是控制 transport geometry。
 
-:::caution[這不是 RMFlow 新證明的 theorem]
-Equation (5) 是 RMFlow 引用既有結果。後面 RMFlow 自己新增的是 likelihood / KL 那一條控制。
+:::caution[Eq. (5) 不是 RMFlow 本文重新證明的 theorem]
+RMFlow 的新理論重點，是後面新增 likelihood / forward-KL 方向的控制。
 :::
 
 ---
 
-# 3. Equation (6)–(8)：RMFlow 的兩段 noise 設計
+# 3. Equation (6)–(8)：兩段 noise 為什麼最後是 $\sigma_{\min}$？
 
-RMFlow 不直接讓第一階段 transport 到最終 noisy target，而是先到一個較窄的 intermediate noisy distribution：
+第一階段 target：
 
 $$
 x_1
@@ -89,7 +84,7 @@ x_{\mathrm{data}}+\sigma\epsilon_1,
 \tag{6}
 $$
 
-第二段再加入
+第二階段：
 
 $$
 x_{\mathrm{tgt}}
@@ -101,7 +96,7 @@ x_1+
 \tag{7}
 $$
 
-假設 $\epsilon_1\perp\epsilon_2$。代入後：
+若 $\epsilon_1\perp\epsilon_2$，則
 
 $$
 x_{\mathrm{tgt}}
@@ -111,15 +106,15 @@ x_{\mathrm{data}}
 +\sqrt{\sigma_{\min}^2-\sigma^2}\,\epsilon_2.
 $$
 
-兩段 Gaussian covariance 相加：
+因為 independent Gaussian covariance 相加：
 
 $$
 \begin{aligned}
 \operatorname{Cov}
-\left(
+\left[
 \sigma\epsilon_1+
 \sqrt{\sigma_{\min}^2-\sigma^2}\,\epsilon_2
-\right)
+\right]
 &=
 \sigma^2I+(\sigma_{\min}^2-\sigma^2)I\\
 &=
@@ -127,7 +122,7 @@ $$
 \end{aligned}
 $$
 
-所以存在新的 standard Gaussian $\epsilon\sim\mathcal N(0,I)$，使
+所以存在新的 $\epsilon\sim\mathcal N(0,I)$ 使
 
 $$
 x_{\mathrm{tgt}}
@@ -135,27 +130,25 @@ x_{\mathrm{tgt}}
 x_{\mathrm{data}}+\sigma_{\min}\epsilon.
 $$
 
-這裡最重要的是：
+因此真正相加的是 variance：
 
 $$
-\underbrace{\sigma^2}_{\text{第一段 variance}}
-+
-\underbrace{(\sigma_{\min}^2-\sigma^2)}_{\text{第二段 variance}}
+\sigma^2+(\sigma_{\min}^2-\sigma^2)
 =
-\underbrace{\sigma_{\min}^2}_{\text{final variance}}.
+\sigma_{\min}^2.
 $$
 
 <RMFlowNoiseDemo lang="zh" />
 
 ## 3.1 Generation equation：Equation (8)
 
-第一階段的 learned 1-NFE endpoint 是
+第一階段 learned endpoint 為
 
 $$
 x_1=x_0+\hat u_{0,1}(x_0;\theta).
 $$
 
-接上第二段 noise：
+接上第二段 Gaussian：
 
 $$
 \hat x_{\mathrm{tgt}}
@@ -166,13 +159,13 @@ x_0+\hat u_{0,1}(x_0;\theta)
 \tag{8}
 $$
 
-昂貴的 neural flow 仍只 evaluate 一次；第二段只是 random Gaussian addition，所以仍算 1-NFE。
+第二段不需要再 evaluate neural network，因此 sampling 仍維持 1-NFE。
 
 ---
 
-# 4. Equation (9)：為什麼 final conditional distribution 是 Gaussian？
+# 4. Equation (9)：conditional Gaussian 與 log-likelihood
 
-定義
+令
 
 $$
 \mu_\theta(x_0)
@@ -185,10 +178,10 @@ $$
 $$
 \tau^2
 :=
-\sigma_{\min}^2-\sigma^2.
+\sigma_{\min}^2-\sigma^2>0.
 $$
 
-Equation (8) 變成
+Equation (8) 可寫成
 
 $$
 \hat x_{\mathrm{tgt}}
@@ -198,68 +191,66 @@ $$
 \epsilon_2\sim\mathcal N(0,I).
 $$
 
-固定 $x_0$ 後，$\mu_\theta(x_0)$ 是 deterministic，唯一 randomness 是 $\epsilon_2$，所以
+固定 $x_0$ 後：
 
 $$
 \hat x_{\mathrm{tgt}}\mid x_0
 \sim
-\mathcal N\bigl(
-\mu_\theta(x_0),
-\tau^2I
-\bigr).
+\mathcal N(\mu_\theta(x_0),\tau^2I).
 $$
 
-因此 conditional density 為
+因此
 
 $$
-p_\theta(x_{\mathrm{tgt}}\mid x_0)
+p_\theta(y\mid x_0)
 =
 \frac{1}{(2\pi\tau^2)^{d/2}}
 \exp\left[
--\frac{1}{2\tau^2}
-\|x_{\mathrm{tgt}}-\mu_\theta(x_0)\|^2
+-\frac{\|y-\mu_\theta(x_0)\|^2}{2\tau^2}
 \right].
 $$
 
 取 log：
 
 $$
-\log p_\theta(x_{\mathrm{tgt}}\mid x_0)
+\log p_\theta(y\mid x_0)
 =
--\frac{1}{2(\sigma_{\min}^2-\sigma^2)}
-\left\|
- x_{\mathrm{tgt}}-
- \bigl(x_0+\hat u_{0,1}(x_0;\theta)\bigr)
-\right\|^2
-+C,
+-\frac{1}{2\tau^2}
+\|y-\mu_\theta(x_0)\|^2
+-
+\frac d2\log(2\pi\tau^2).
 \tag{9}
 $$
 
-其中
+方便起見，之後定義
 
 $$
-C
-=-\frac d2
-\log\left(2\pi(\sigma_{\min}^2-\sigma^2)\right).
+A:=\frac{1}{2\tau^2}>0,
+\qquad
+B:=\frac d2\log(2\pi\tau^2).
+$$
+
+因此
+
+$$
+-\log p_\theta(y\mid x_0)
+=
+A\|y-\mu_\theta(x_0)\|^2+B.
 $$
 
 ---
 
-# 5. Equation (10)：為什麼 NLL 看起來是 MSE？
+# 5. Equation (10)：paper 的 $\mathcal L_{\mathrm{NLL}}$ 到底是不是「真正 NLL」？
 
-因為 target distribution 可等價寫成
+利用
 
 $$
-x_{\mathrm{tgt}}
+y=x_{\mathrm{tgt}}
 \overset d=
 x_{\mathrm{data}}+\sigma_{\min}\epsilon,
-\qquad
-\epsilon\sim\mathcal N(0,I),
 $$
 
-而 $\tau$ 固定時，Gaussian NLL 裡對 $\theta$ 有影響的部分只有 squared endpoint error。
-
-因此 paper 定義
+paper 定義
 
 $$
 \mathcal L_{\mathrm{NLL}}
@@ -275,227 +266,583 @@ $$
 \tag{10}
 $$
 
-嚴格來說，真正的 Gaussian NLL 是
+由 Eq. (9)，真正的 **expected conditional Gaussian NLL** 是
 
 $$
-\frac{1}{2\tau^2}\mathcal L_{\mathrm{NLL}}
-+
-\frac d2\log(2\pi\tau^2),
+\mathbb E[-\log p_\theta(Y\mid X_0)]
+=
+A\mathcal L_{\mathrm{NLL}}+B.
+\tag{10a}
 $$
 
-所以 Eq. (10) 是在 fixed variance 下與 NLL **optimization-equivalent** 的 scaled / shifted surrogate。
+所以 Eq. (10) 本身其實是把固定 positive scale $A$ 與 additive constant $B$ 拿掉後的 MSE surrogate。
+
+只要 $\tau$ 固定：
+
+$$
+\arg\min_\theta
+\mathbb E[-\log p_\theta(Y\mid X_0)]
+=
+\arg\min_\theta
+\mathcal L_{\mathrm{NLL}}.
+$$
+
+若 $\tau$ 也可學，這個 equivalence 不再成立，因為 $A$ 與 $B$ 都會依賴參數。
 
 ---
 
-# 6. Equation (11)：NLL 如何連到 marginal likelihood 與 KL？
+# Part II — NLL、Cross-Entropy、KL：把缺的機率論橋樑嚴格補完
 
-Paper 的 theorem 寫成
+# 6. 先定義 cross-entropy：NLL 與 cross-entropy 不是同一個層級
+
+令 target density 為 $p(y)=p_{\mathrm{tgt}}(y)$，model marginal density 為 $q_\theta(y)=p_\theta(y)$。
+
+假設：
+
+1. $p$ 與 $q_\theta$ 對同一個 base measure 有 density；
+2. $q_\theta(y)>0$ 對 $p$-almost every $y$ 成立；
+3. $\mathbb E_p[|\log q_\theta(Y)|]<\infty$。
+
+定義 **cross-entropy**：
 
 $$
--A\mathcal L_{\mathrm{NLL}}+C
-\le
-\mathbb E_{x_{\mathrm{tgt}}}
-[\log p_\theta(x_{\mathrm{tgt}})]
+H_\times(p,q_\theta)
+:=
+-\int p(y)\log q_\theta(y)\,dy
 =
--H(p_{\mathrm{tgt}})
--D_{\mathrm{KL}}(p_{\mathrm{tgt}}\|p_\theta),
-\tag{11}
+\mathbb E_{Y\sim p}
+[-\log q_\theta(Y)].
+\tag{CE-1}
 $$
 
-其中
+而單一 sample 的 negative log-likelihood 是
 
 $$
-A=
-\frac{1}{2(\sigma_{\min}^2-\sigma^2)}.
+\ell_{\mathrm{NLL}}(y;\theta)
+:=
+-\log q_\theta(y).
 $$
 
-下面把它完整推回去。
+所以最精確的關係是：
 
----
-
-# 7. Equation (13)：marginal likelihood 為什麼是對 $x_0$ 積分？
-
-對固定 target $x_{\mathrm{tgt}}$，prior sample $x_0$ 是 latent variable：
-
-$$
-p_\theta(x_{\mathrm{tgt}})
-=
-\int q(x_0)
- p_\theta(x_{\mathrm{tgt}}\mid x_0)
-\,dx_0.
-$$
+> **NLL 是 per-sample loss；cross-entropy 是把 NLL 對真實 target distribution 取 expectation。**
 
 也就是
 
 $$
-p_\theta(x_{\mathrm{tgt}})
+\boxed{
+H_\times(p,q_\theta)
 =
-\mathbb E_{x_0}
-[p_\theta(x_{\mathrm{tgt}}\mid x_0)].
+\mathbb E_{Y\sim p}
+[\ell_{\mathrm{NLL}}(Y;\theta)]
+}
+\tag{CE-2}
 $$
 
-因為 $\log$ 是 concave，Jensen inequality 給出
-
-$$
-\log\mathbb E[Z]
-\ge
-\mathbb E[\log Z].
-$$
-
-令
-
-$$
-Z=p_\theta(x_{\mathrm{tgt}}\mid x_0),
-$$
-
-得到
-
-$$
-\log p_\theta(x_{\mathrm{tgt}})
-\ge
-\mathbb E_{x_0}
-[\log p_\theta(x_{\mathrm{tgt}}\mid x_0)].
-\tag{13}
-$$
-
-這就是 lower bound 的來源。
+這是 NLL 與 cross-entropy 最基本、也最直接的數學關係。
 
 ---
 
-# 8. Equation (14)：為什麼 expectation 從 $x_0$ 變成 $(x_0,x_{\mathrm{tgt}})$？
+# 7. 為什麼 empirical NLL 是 cross-entropy 的 Monte Carlo estimator？
 
-Equation (13) 對每一個固定 target 都成立，所以再對
+給定 IID samples
 
 $$
-x_{\mathrm{tgt}}\sim p_{\mathrm{tgt}}
+Y_1,\ldots,Y_n\overset{iid}{\sim}p,
+$$
+
+maximum-likelihood training 使用 empirical average NLL：
+
+$$
+\widehat{\mathcal L}_{\mathrm{NLL}}^{\mathrm{marg}}
+:=
+-\frac1n\sum_{i=1}^n
+\log q_\theta(Y_i).
+\tag{CE-3}
 $$
 
 取 expectation：
 
 $$
-\mathbb E_{x_{\mathrm{tgt}}}
-[\log p_\theta(x_{\mathrm{tgt}})]
-\ge
-\mathbb E_{x_{\mathrm{tgt}}}
-\mathbb E_{x_0}
-[\log p_\theta(x_{\mathrm{tgt}}\mid x_0)].
+\begin{aligned}
+\mathbb E
+\left[
+\widehat{\mathcal L}_{\mathrm{NLL}}^{\mathrm{marg}}
+\right]
+&=
+-\frac1n\sum_{i=1}^n
+\mathbb E_{Y_i\sim p}
+[\log q_\theta(Y_i)]\\
+&=
+-\mathbb E_{Y\sim p}
+[\log q_\theta(Y)]\\
+&=
+H_\times(p,q_\theta).
+\end{aligned}
 $$
 
-在 product-measure 的 unguided setting 下：
+因此 empirical average NLL 是 marginal cross-entropy 的 unbiased Monte Carlo estimator。
+
+在適當 integrability 條件下，大數法則還給出
 
 $$
-\mathbb E_{x_{\mathrm{tgt}}}
-\mathbb E_{x_0}[\cdot]
-=
-\mathbb E_{x_0,x_{\mathrm{tgt}}}[\cdot],
+\widehat{\mathcal L}_{\mathrm{NLL}}^{\mathrm{marg}}
+\xrightarrow[n\to\infty]{a.s.}
+H_\times(p,q_\theta).
+$$
+
+這也是為什麼 deep learning 文獻常把「average NLL」與「cross-entropy objective」口語上混著叫；嚴格說，一個是 finite-sample estimator，一個是 population expectation。
+
+---
+
+# 8. Cross-entropy 為什麼等於 entropy + forward KL？
+
+target entropy：
+
+$$
+H(p)
+:=
+-\int p(y)\log p(y)dy.
+$$
+
+forward KL：
+
+$$
+D_{\mathrm{KL}}(p\|q_\theta)
+:=
+\int p(y)
+\log\frac{p(y)}{q_\theta(y)}dy.
+$$
+
+展開：
+
+$$
+\begin{aligned}
+D_{\mathrm{KL}}(p\|q_\theta)
+&=
+\int p(y)\log p(y)dy
+-
+\int p(y)\log q_\theta(y)dy\\
+&=
+-H(p)+H_\times(p,q_\theta).
+\end{aligned}
 $$
 
 因此
 
 $$
-\mathbb E_{x_{\mathrm{tgt}}}
-[\log p_\theta(x_{\mathrm{tgt}})]
+\boxed{
+H_\times(p,q_\theta)
+=
+H(p)
++
+D_{\mathrm{KL}}(p\|q_\theta)
+}
+\tag{CE-4}
+$$
+
+因為 $p=p_{\mathrm{tgt}}$ 固定，$H(p)$ 對 $\theta$ 是常數，所以
+
+$$
+\arg\min_\theta H_\times(p,q_\theta)
+=
+\arg\min_\theta D_{\mathrm{KL}}(p\|q_\theta).
+$$
+
+這就是 maximum likelihood / cross-entropy minimization 與 forward KL minimization 的精確關係。
+
+---
+
+# 9. 關鍵：RMFlow Eq. (10) 其實不是 marginal cross-entropy，而是 averaged conditional cross-entropy
+
+RMFlow 有 latent prior variable $X_0\sim q_0$，conditional model
+
+$$
+p_\theta(y\mid x_0),
+$$
+
+以及 marginal model
+
+$$
+p_\theta(y)
+=
+\int q_0(x_0)p_\theta(y\mid x_0)dx_0.
+\tag{CE-5}
+$$
+
+在 unguided product-measure sampling 下，定義 averaged conditional NLL：
+
+$$
+\mathcal C_{\mathrm{cond}}(\theta)
+:=
+\mathbb E_{Y\sim p_{\mathrm{tgt}},\,X_0\sim q_0}
+[-\log p_\theta(Y\mid X_0)].
+\tag{CE-6}
+$$
+
+也可以寫成
+
+$$
+\mathcal C_{\mathrm{cond}}(\theta)
+=
+\mathbb E_{X_0\sim q_0}
+\left[
+H_\times
+\bigl(
+ p_{\mathrm{tgt}},
+ p_\theta(\cdot\mid X_0)
+\bigr)
+\right].
+$$
+
+由 Gaussian Eq. (9)：
+
+$$
+\boxed{
+\mathcal C_{\mathrm{cond}}(\theta)
+=
+A\mathcal L_{\mathrm{NLL}}+B
+}
+\tag{CE-7}
+$$
+
+所以 RMFlow paper 的 Eq. (10) 最精確的解讀是：
+
+> **它在 fixed variance 下，等價於 minimizing averaged conditional cross-entropy，而不是直接 minimizing marginal cross-entropy $H_\times(p_{\mathrm{tgt}},p_\theta)$。**
+
+這個 distinction 非常重要。
+
+---
+
+# 10. Jensen：為什麼 conditional NLL 是 marginal cross-entropy 的 upper bound？
+
+由 marginal model：
+
+$$
+p_\theta(y)
+=
+\mathbb E_{X_0\sim q_0}
+[p_\theta(y\mid X_0)].
+$$
+
+因為 $\log$ concave：
+
+$$
+\log p_\theta(y)
 \ge
-\mathbb E_{x_0,x_{\mathrm{tgt}}}
-[\log p_\theta(x_{\mathrm{tgt}}\mid x_0)].
-\tag{14}
+\mathbb E_{X_0}
+[\log p_\theta(y\mid X_0)].
+$$
+
+乘以 $-1$：
+
+$$
+-\log p_\theta(y)
+\le
+\mathbb E_{X_0}
+[-\log p_\theta(y\mid X_0)].
+$$
+
+再對 $Y\sim p_{\mathrm{tgt}}$ 平均：
+
+$$
+\boxed{
+H_\times(p_{\mathrm{tgt}},p_\theta)
+\le
+\mathcal C_{\mathrm{cond}}(\theta)
+=
+A\mathcal L_{\mathrm{NLL}}+B
+}
+\tag{CE-8}
+$$
+
+所以在 negative-log / cross-entropy 的方向看：
+
+> **RMFlow 的 conditional NLL surrogate 是 marginal cross-entropy 的 upper bound。**
+
+而在 log-likelihood 的方向看，就是 paper Eq. (11) 的 lower bound。
+
+兩者完全是同一件事，只是乘了 $-1$。
+
+---
+
+# 11. 更強的結果：Jensen gap 可以精確寫成 posterior KL
+
+只寫 inequality 還不夠。我們可以把 gap 本身精確算出來。
+
+定義 model joint density：
+
+$$
+p_\theta(x_0,y)
+:=
+q_0(x_0)p_\theta(y\mid x_0).
+$$
+
+由 Bayes rule：
+
+$$
+p_\theta(x_0\mid y)
+=
+\frac{q_0(x_0)p_\theta(y\mid x_0)}{p_\theta(y)}.
+\tag{CE-9}
+$$
+
+考慮
+
+$$
+D_{\mathrm{KL}}
+\bigl(
+q_0(x_0)
+\|p_\theta(x_0\mid y)
+\bigr).
+$$
+
+直接代入：
+
+$$
+\begin{aligned}
+&D_{\mathrm{KL}}
+\bigl(q_0\|p_\theta(\cdot\mid y)\bigr)\\
+&=
+\int q_0(x_0)
+\log
+\frac{q_0(x_0)}
+{p_\theta(x_0\mid y)}dx_0\\
+&=
+\int q_0(x_0)
+\log
+\frac{q_0(x_0)}
+{q_0(x_0)p_\theta(y\mid x_0)/p_\theta(y)}dx_0\\
+&=
+\int q_0(x_0)
+\left[
+\log p_\theta(y)
+-
+\log p_\theta(y\mid x_0)
+\right]dx_0\\
+&=
+\log p_\theta(y)
+-
+\mathbb E_{X_0\sim q_0}
+[\log p_\theta(y\mid X_0)].
+\end{aligned}
+\tag{CE-10}
+$$
+
+所以 pointwise 地：
+
+$$
+\mathbb E_{X_0}
+[-\log p_\theta(y\mid X_0)]
+=
+-\log p_\theta(y)
++
+D_{\mathrm{KL}}
+\bigl(q_0\|p_\theta(\cdot\mid y)\bigr).
+\tag{CE-11}
+$$
+
+再對 $Y\sim p_{\mathrm{tgt}}$ 平均：
+
+$$
+\boxed{
+\mathcal C_{\mathrm{cond}}(\theta)
+=
+H_\times(p_{\mathrm{tgt}},p_\theta)
++
+\mathbb E_{Y\sim p_{\mathrm{tgt}}}
+D_{\mathrm{KL}}
+\bigl(q_0\|p_\theta(X_0\mid Y)\bigr)
+}
+\tag{CE-12}
+$$
+
+因為 KL 非負，Eq. (CE-8) 立刻跟著成立。
+
+這個式子也精確回答「Jensen bound 為什麼可能鬆」：gap 就是
+
+$$
+\mathbb E_Y
+D_{\mathrm{KL}}
+\bigl(q_0\|p_\theta(X_0\mid Y)\bigr).
 $$
 
 ---
 
-# 9. Equation (15)–(16)：把 Gaussian log-likelihood 代回去
+# 12. 把全部接起來：RMFlow Eq. (10) 的真正 population decomposition
 
-由 Eq. (9)：
-
-$$
-\log p_\theta(x_{\mathrm{tgt}}\mid x_0)
-=
--A
-\|x_{\mathrm{tgt}}-\mu_\theta(x_0)\|^2
-+C.
-$$
-
-取 joint expectation：
+由 Eq. (CE-7)、(CE-12)、(CE-4)：
 
 $$
-\mathbb E_{x_0,x_{\mathrm{tgt}}}
-[\log p_\theta(x_{\mathrm{tgt}}\mid x_0)]
-=
--A\mathcal L_{\mathrm{NLL}}+C.
-\tag{15}
+\begin{aligned}
+A\mathcal L_{\mathrm{NLL}}+B
+&=
+\mathcal C_{\mathrm{cond}}(\theta)\\
+&=
+H_\times(p_{\mathrm{tgt}},p_\theta)
++
+\mathbb E_Y
+D_{\mathrm{KL}}
+\bigl(q_0\|p_\theta(X_0\mid Y)\bigr)\\
+&=
+H(p_{\mathrm{tgt}})
++
+D_{\mathrm{KL}}(p_{\mathrm{tgt}}\|p_\theta)\\
+&\quad+
+\mathbb E_Y
+D_{\mathrm{KL}}
+\bigl(q_0\|p_\theta(X_0\mid Y)\bigr).
+\end{aligned}
+\tag{CE-13}
 $$
 
-結合 Eq. (14)：
+這是整頁最重要的式子。
+
+它說 RMFlow Eq. (10) 在 fixed variance 下，其實同時包含：
+
+1. target entropy $H(p_{\mathrm{tgt}})$：對 $\theta$ 固定；
+2. 我們真正想壓低的 forward KL
+   $$D_{\mathrm{KL}}(p_{\mathrm{tgt}}\|p_\theta);$$
+3. Jensen / latent posterior gap
+   $$\mathbb E_Y D_{\mathrm{KL}}(q_0\|p_\theta(X_0\mid Y)).$$
+
+所以 minimize Eq. (10) 並不是「直接等於 minimize marginal forward KL」，而是 minimize
+
+$$
+\text{forward KL}
++
+\text{posterior Jensen gap}
+$$
+
+再加一個固定 entropy constant。
+
+這比單純寫「NLL 與 KL 有關」精確很多。
+
+---
+
+# 13. Equation (11)、(13)–(17) 現在可以怎麼理解？
+
+由 Eq. (CE-13)：
+
+$$
+A\mathcal L_{\mathrm{NLL}}+B
+\ge
+H(p_{\mathrm{tgt}})
++D_{\mathrm{KL}}(p_{\mathrm{tgt}}\|p_\theta).
+$$
+
+乘上 $-1$：
+
+$$
+-A\mathcal L_{\mathrm{NLL}}-B
+\le
+-H(p_{\mathrm{tgt}})
+-D_{\mathrm{KL}}(p_{\mathrm{tgt}}\|p_\theta).
+$$
+
+由於
+
+$$
+-B
+=-\frac d2\log(2\pi\tau^2)
+$$
+
+就是 paper log-likelihood 裡的 additive constant $C$，因此
 
 $$
 -A\mathcal L_{\mathrm{NLL}}+C
 \le
-\mathbb E_{x_{\mathrm{tgt}}}
-[\log p_\theta(x_{\mathrm{tgt}})].
-\tag{16}
-$$
-
-所以 minimize $\mathcal L_{\mathrm{NLL}}$ 的直接保證是：
-
-$$
-\mathcal L_{\mathrm{NLL}}\downarrow
-\quad\Longrightarrow\quad
-\text{這個可計算的 likelihood lower bound 上升}.
-$$
-
-它不是在說每個 SGD step 都保證真正 marginal likelihood 單調增加。
-
----
-
-# 10. Equation (17)：expected log-likelihood 為什麼等於 $-H-D_{KL}$？
-
-forward KL 定義：
-
-$$
-D_{\mathrm{KL}}(p_{\mathrm{tgt}}\|p_\theta)
-=
 \mathbb E_{p_{\mathrm{tgt}}}
-\left[
-\log\frac{p_{\mathrm{tgt}}(x)}{p_\theta(x)}
-\right].
-$$
-
-拆開：
-
-$$
-D_{\mathrm{KL}}
-=
-\mathbb E_{p_{\mathrm{tgt}}}[\log p_{\mathrm{tgt}}]
--
-\mathbb E_{p_{\mathrm{tgt}}}[\log p_\theta].
-$$
-
-又因為
-
-$$
-H(p_{\mathrm{tgt}})
-=
--\mathbb E_{p_{\mathrm{tgt}}}[\log p_{\mathrm{tgt}}],
-$$
-
-所以
-
-$$
-\mathbb E_{p_{\mathrm{tgt}}}
-[\log p_\theta]
+[\log p_\theta(Y)]
 =
 -H(p_{\mathrm{tgt}})
 -D_{\mathrm{KL}}(p_{\mathrm{tgt}}\|p_\theta).
-\tag{17}
+\tag{11}
 $$
 
-因為 $p_{\mathrm{tgt}}$ 固定，entropy 對 $\theta$ 是常數，因此 maximizing expected log-likelihood 等價於 minimizing forward KL。
+所以 paper 的 Eq. (11) 可以視為 Eq. (CE-13) 把 nonnegative posterior-KL gap 丟掉後的 inequality version。
+
+Equation (13)–(16) 是用 Jensen 推這個 inequality；Equation (17) 則是 cross-entropy / KL decomposition 的 log-likelihood 版本。
 
 ---
 
-# 11. Equation (12)：RMFlow 原始 joint objective
+# 14. 一個重要修正：降低 RMFlow conditional NLL 不保證 marginal cross-entropy 每一步都下降
 
-RMFlow paper 最終使用
+因為
+
+$$
+\mathcal C_{\mathrm{cond}}
+=
+H_\times(p_{\mathrm{tgt}},p_\theta)
++
+\text{Jensen gap}_\theta,
+$$
+
+而 Jensen gap 本身也依賴 $\theta$。
+
+所以即使
+
+$$
+\mathcal C_{\mathrm{cond}}\downarrow,
+$$
+
+也不能只靠這條式子推出每個 optimizer step 都滿足
+
+$$
+H_\times(p_{\mathrm{tgt}},p_\theta)\downarrow.
+$$
+
+嚴格能說的是：RMFlow minimize 一個 **upper bound on marginal cross-entropy**，等價地 maximize 一個 **lower bound on marginal expected log-likelihood**。
+
+---
+
+# 15. Guided setting 的嚴格版本
+
+若有 condition $c$，應該改成
+
+$$
+q_\omega(x_0\mid c),
+\qquad
+p_{\mathrm{tgt}}(y\mid c),
+\qquad
+p_\theta(y\mid c)
+=
+\int q_\omega(x_0\mid c)
+p_\theta(y\mid x_0,c)dx_0.
+$$
+
+對每個固定 $c$：
+
+$$
+\begin{aligned}
+&\mathbb E_{Y\sim p_{\mathrm{tgt}}(\cdot\mid c),
+X_0\sim q_\omega(\cdot\mid c)}
+[-\log p_\theta(Y\mid X_0,c)]\\
+&=
+H_\times
+\bigl(
+p_{\mathrm{tgt}}(\cdot\mid c),
+p_\theta(\cdot\mid c)
+\bigr)\\
+&\quad+
+\mathbb E_Y
+D_{\mathrm{KL}}
+\left(
+q_\omega(X_0\mid c)
+\|p_\theta(X_0\mid Y,c)
+\right).
+\end{aligned}
+$$
+
+最後再對 $c$ 取 expectation 即可。
+
+這比直接假設所有變數 unconditional independent 更嚴格。
+
+---
+
+# 16. Equation (12)：原始 RMFlow joint objective
+
+RMFlow 最終 objective：
 
 $$
 \mathcal L_{\mathrm{RMFlow}}(\theta,\omega)
@@ -510,221 +857,111 @@ $$
 \tag{12}
 $$
 
-三項分別是：
-
 | Term | Paper 中的角色 |
 |---|---|
-| $\mathcal L_{\mathrm{CMFM}}$ | MeanFlow path / Wasserstein-style control |
-| $\mathcal L_{\mathrm{NLL}}$ | endpoint likelihood / forward-KL-related control |
+| $\mathcal L_{\mathrm{CMFM}}$ | MeanFlow path / transport control |
+| $\mathcal L_{\mathrm{NLL}}$ | averaged conditional cross-entropy surrogate，亦即 marginal CE 的 upper bound |
 | $\|\phi_\omega(c)\|^2$ | guided prior regularization |
 
-這裡要特別保留一個事實：**原始 RMFlow 的 Term I 是 CMFM，不是 iMF。**
-
-因此如果我們把 iMF 接進來，那已經是研究延伸，不再是 paper 原公式。
+原始 RMFlow 的第一項是 CMFM，不是 iMF。
 
 ---
 
-# Part II — iMF + RMFlow：從 paper formula 出發重新證，不混淆 target
+# Part III — iMF + RMFlow research extension
 
-# 12. 先把 iMF 的「target 改成 $v$」說精確
+# 17. iMF 的「target 改成 $v$」要怎麼講才精確？
 
-iMF paper 使用
+iMF 使用
 
 $$
-z_t=(1-t)x+te,
+z_t=(1-t)x+te.
 $$
 
-其中 data sample $x\sim p_{\mathrm{data}}$，prior noise $e\sim p_{\mathrm{prior}}$。
-
-sample-level conditional velocity 是
+sample conditional velocity：
 
 $$
 v_c=e-x.
 $$
 
-Flow Matching 用 sample label $e-x$ 訓練，但真正唯一的 regression target 是 marginal velocity：
+marginal velocity：
 
 $$
 v(z_t,t)
 =
 \mathbb E[e-x\mid z_t,t].
-\tag{iMF-2}
 $$
 
-所以「iMF 把 target 改成 $v_\theta$」這句話要修正成：
+所以：
 
-- **training label 仍然是 $e-x$；**
-- **population regression target 是 marginal $v(z_t,t)$；**
-- iMF 真正改的是 **compound predictor 的 JVP tangent**：從 sample-specific $e-x$ 改成 network-predicted $v_\theta(z_t,t)$。
-
-這是 paper Eq. (9) → Eq. (12) 的核心。
+- sample supervision 仍是 $e-x$；
+- population MSE target 是 marginal $v(z_t,t)$；
+- iMF 真正換掉的是 JVP tangent：$e-x\to v_\theta(z_t,t)$。
 
 ---
 
-# 13. Original MF → $v$-loss：paper 的 exact algebraic reformulation
+# 18. Original MF 的 $u$-loss 如何 exact reformulate 成 $v$-loss？
 
 MeanFlow identity：
 
 $$
-u(z_t,r,t)
+ u(z_t,r,t)
 =
 v(z_t,t)
 -(t-r)\frac{d}{dt}u(z_t,r,t).
 $$
 
-移項：
+因此
 
 $$
 v(z_t,t)
 =
-u(z_t,r,t)
-+(t-r)\frac{d}{dt}u(z_t,r,t).
-\tag{iMF-8}
+ u(z_t,r,t)
++(t-r)\operatorname{JVP}(u;v).
 $$
 
-而
+Original MF 使用 sample tangent $e-x$ 定義
 
 $$
-\frac{d}{dt}u
-=
-\operatorname{JVP}(u;v).
-$$
-
-Original MF 用 sample conditional velocity $e-x$ 代替 marginal $v$，得到 apparent target
-
-$$
-u_{\mathrm{tgt}}
+ u_{\mathrm{tgt}}
 =
 (e-x)
--(t-r)\operatorname{JVP}(u_\theta;e-x).
-\tag{iMF-6}
+-(t-r)
+\operatorname{JVP}_{\mathrm{sg}}(u_\theta;e-x).
 $$
 
-以及 original MF loss
-
-$$
-\mathbb E
-\|u_\theta-\operatorname{sg}(u_{\mathrm{tgt}})\|^2.
-\tag{iMF-7}
-$$
-
-現在定義 compound predictor
+若定義
 
 $$
 V_\theta^{\mathrm{MF}}
 =
-u_\theta
+ u_\theta
 +(t-r)
-\operatorname{JVP}_{\mathrm{sg}}(u_\theta;e-x).
-\tag{iMF-9}
+\operatorname{JVP}_{\mathrm{sg}}(u_\theta;e-x),
 $$
 
-則 pointwise residual：
+則
 
 $$
-\begin{aligned}
 V_\theta^{\mathrm{MF}}-(e-x)
-&=
-u_\theta
-+(t-r)\operatorname{JVP}_{\mathrm{sg}}(u_\theta;e-x)
--(e-x)\\
-&=
-u_\theta-u_{\mathrm{tgt}}.
-\end{aligned}
+=
+ u_\theta-u_{\mathrm{tgt}}.
 $$
 
-所以
-
-$$
-\mathbb E
-\|V_\theta^{\mathrm{MF}}-(e-x)\|^2
-$$
-
-與 original MF 的 $u$-loss 在 function value 上完全相同；在相同 stop-gradient convention 下，gradient 也一致。
-
-這就是 iMF paper 所說的：**Original MeanFlow 可以完全等價地看成 $v$-loss re-parameterized by $u_\theta$。**
+因此兩個 squared residual 完全相同；在相同 stop-gradient convention 下，gradient 也相同。
 
 ---
 
-# 14. iMF 真正改的是 JVP tangent
-
-Original MF 的 compound function 是
-
-$$
-V_\theta^{\mathrm{MF}}(z_t,e-x)
-=
-u_\theta(z_t,r,t)
-+(t-r)
-\operatorname{JVP}_{\mathrm{sg}}(u_\theta;e-x).
-$$
-
-它除了 $z_t$，還直接依賴 sample-specific $e-x$。
-
-iMF 改成
-
-$$
-V_\theta^{\mathrm{iMF}}(z_t)
-=
-u_\theta(z_t,r,t)
-+(t-r)
-\operatorname{JVP}_{\mathrm{sg}}(u_\theta;v_\theta(z_t,t)).
-\tag{iMF-12}
-$$
-
-但是 loss **仍然** 是
-
-$$
-\mathcal L_{\mathrm{iMF}}
-=
-\mathbb E
-\|V_\theta^{\mathrm{iMF}}(z_t)-(e-x)\|^2.
-$$
-
-paper 的 boundary realization 是
-
-$$
-v_\theta(z_t,t)
-\equiv
-u_\theta(z_t,t,t).
-$$
-
-因為 exact field 滿足
-
-$$
-v(z_t,t)=u(z_t,t,t).
-$$
-
-這一點是 paper 明確使用的 boundary condition。
-
----
-
-# 15. 一個真正需要的 MSE theorem：為什麼 label 是 $e-x$，target 卻是 marginal $v$？
-
-這是標準 conditional-expectation regression theorem，不是 iMF 自己新發明的 theorem。
+# 19. 為什麼 sample label $e-x$ 的 state-only MSE optimum 是 marginal $v$？
 
 令
 
 $$
-C=e-x.
+C=e-x,
+\qquad
+m(z_t,t)=\mathbb E[C\mid z_t,t].
 $$
 
-對任何只以 $(z_t,t)$ 為輸入的 prediction function $F(z_t,t)$，考慮
-
-$$
-\mathcal R(F)
-=
-\mathbb E\|F(z_t,t)-C\|^2.
-$$
-
-定義
-
-$$
-m(z_t,t)
-:=
-\mathbb E[C\mid z_t,t].
-$$
-
-則有 orthogonal decomposition：
+對任何 state-only predictor $F(z_t,t)$：
 
 $$
 \mathbb E\|F-C\|^2
@@ -734,128 +971,75 @@ $$
 \mathbb E\|C-m\|^2.
 $$
 
-證明很直接。寫
+原因是令 $C=m+\xi$ 且 $\mathbb E[\xi\mid z_t,t]=0$，cross term 的 expectation 為零。
 
-$$
-C=m+\xi,
-\qquad
-\mathbb E[\xi\mid z_t,t]=0.
-$$
-
-則
-
-$$
-\|F-C\|^2
-=
-\|F-m\|^2+
-\|\xi\|^2-
-2(F-m)^T\xi.
-$$
-
-最後一項取 expectation 後為零：
-
-$$
-\begin{aligned}
-\mathbb E[(F-m)^T\xi]
-&=
-\mathbb E\left[
-(F-m)^T
-\mathbb E[\xi\mid z_t,t]
-\right]\\
-&=0.
-\end{aligned}
-$$
-
-因此 population MSE minimizer 是
+因此唯一的 population MSE optimum（a.s.）是
 
 $$
 F^*(z_t,t)
-=
-m(z_t,t)
-=
-\mathbb E[e-x\mid z_t,t]
+=m(z_t,t)
 =
 v(z_t,t).
 $$
 
-這就是為什麼 **sample label 可以是 noisy conditional velocity $e-x$，但 population target 是 marginal velocity $v$。**
-
 ---
 
-# 16. iMF 的可行性到底能嚴格證到哪裡？
+# 20. iMF tangent replacement 能嚴格證到哪裡？
 
-這裡要比上一版更保守、更精確。
+假設 exact fields $(u^*,v^*)$：
 
-假設 exact MeanFlow fields $(u^*,v^*)$ 存在且足夠光滑，並滿足 MeanFlow identity：
+1. 存在且足夠光滑；
+2. 滿足 MeanFlow identity；
+3. 可被 model class 表示。
 
-$$
-v^*
-=
-u^*
-+(t-r)\operatorname{JVP}(u^*;v^*).
-$$
-
-再假設 model class 能精確表示 $u^*$，而 $v_\theta$ 的 realization 也能精確表示 $v^*$。
-
-把
+若
 
 $$
-u_\theta=u^*,
+ u_\theta=u^*,
 \qquad
-v_\theta=v^*
+v_\theta=v^*,
 $$
 
-代入 iMF compound predictor：
+則 iMF compound predictor
 
 $$
-\begin{aligned}
 V_\theta^{\mathrm{iMF}}
-&=
-u^*
-+(t-r)\operatorname{JVP}(u^*;v^*)\\
-&=v^*.
-\end{aligned}
+=
+ u^*
++(t-r)\operatorname{JVP}(u^*;v^*)
+=
+v^*.
 $$
 
-而上一節已證明：對 state-only regression，Bayes-optimal predictor 正是 $v^*$。
+而 $v^*$ 正是前一節的 Bayes-optimal state-only regression target。
 
-所以在這些假設下可以嚴格說：
+因此能嚴格說的是：
 
-> **iMF 的 parameterization 不會把 exact MeanFlow solution 排除在 hypothesis class 外；若 exact $u^*,v^*$ 可表示，則 compound predictor 可以等於 Bayes-optimal marginal velocity $v^*$。**
+> **在 population / exact-representability 假設下，iMF parameterization 不會排除 exact MeanFlow solution。**
 
-這是一個 **realizability / consistency argument**。
-
-:::caution[這不是 convergence theorem]
-它沒有證明 SGD 一定找到 $(u^*,v^*)$，也沒有證明 finite-width network、finite data、stop-gradient optimization 一定收斂到 exact field。
-
-上一版把這一段寫得太像「iMF 已被我們完整證明」，這是表述過頭。
-:::
-
-另外，stop-gradient 不改變 forward function value，所以不影響上面「是否能表示 exact solution」的論證；但它會改變 optimization gradient，因此不能從 function-level realizability 直接推出 training dynamics。
+這是 realizability / consistency argument，不是 SGD convergence theorem。
 
 ---
 
-# 17. 現在才把 iMF 接到 RMFlow：第一個關鍵是 target distribution 要先改成 intermediate $p_\sigma$
+# 21. 如果 iMF 要取代 RMFlow 第一階段，target 必須改成 intermediate $p_\sigma$
 
-這是上一版最缺的一層。
-
-RMFlow 第一階段不是直接 transport 到 final target
-
-$$
-p_{\mathrm{tgt}}
-=
-p_{\mathrm{data}}*\mathcal N(0,\sigma_{\min}^2I),
-$$
-
-而是先 transport 到
+RMFlow 第一階段真正要到的是
 
 $$
 p_\sigma
 =
-p_{\mathrm{data}}*\mathcal N(0,\sigma^2I).
+p_{\mathrm{data}}*\mathcal N(0,\sigma^2I),
 $$
 
-所以如果要把 iMF 當作 RMFlow 的第一階段，iMF training 裡的 data endpoint 不應該再用乾淨的 $x_{\mathrm{data}}$，而應該用
+不是 final
+
+$$
+p_{\mathrm{tgt}}
+=
+p_{\mathrm{data}}*\mathcal N(0,\sigma_{\min}^2I).
+$$
+
+所以 iMF 的 data-side endpoint 應該改成
 
 $$
 X_\sigma
@@ -863,23 +1047,19 @@ X_\sigma
 X_{\mathrm{data}}+\sigma\epsilon_1.
 $$
 
-在 iMF 的時間方向 convention 下，令 prior noise 為 $E$，則
+在 iMF convention 下：
 
 $$
-Z_t
-=
-(1-t)X_\sigma+tE.
+Z_t=(1-t)X_\sigma+tE,
 $$
 
 sample conditional velocity 變成
 
 $$
-C_\sigma
-=
-E-X_\sigma.
+C_\sigma=E-X_\sigma,
 $$
 
-對應的 marginal velocity 是
+marginal velocity：
 
 $$
 v_\sigma(z_t,t)
@@ -887,7 +1067,7 @@ v_\sigma(z_t,t)
 \mathbb E[E-X_\sigma\mid Z_t=z_t,t].
 $$
 
-因此 proposed iMF-first-stage objective 應該是
+因此 proposed first-stage loss 應是
 
 $$
 \mathcal L_{\mathrm{iMF}}^{(\sigma)}
@@ -897,72 +1077,38 @@ $$
 V_\theta^{\mathrm{iMF}}(Z_t)
 -
 (E-X_\sigma)
-\right\|^2,
+\right\|^2.
 $$
-
-其中
-
-$$
-V_\theta^{\mathrm{iMF}}(Z_t)
-=
-u_\theta(Z_t,r,t)
-+(t-r)
-\operatorname{JVP}_{\mathrm{sg}}
-\left(u_\theta;v_\theta(Z_t,t)\right).
-$$
-
-這才是「把 iMF 真正放進 RMFlow 第一階段」時正確的 target 對應。
 
 ---
 
-# 18. Exact case：如果 iMF 第一階段真的把 prior transport 到 $p_\sigma$，第二段 Gaussian 會不會得到正確 $p_{\mathrm{tgt}}$？
+# 22. Exact distribution case：第一階段到 $p_\sigma$，第二階段就 exact 到 $p_{\mathrm{tgt}}$
 
-這一段可以嚴格證，而且非常乾淨。
-
-假設 exact one-step map $G^*$ 滿足
+若 exact map $G^*$ 滿足
 
 $$
 G^*_{\#}q=p_\sigma,
 $$
 
-也就是 prior $q$ 經過 $G^*$ pushforward 後，distribution 正好是 $p_\sigma$。
-
-RMFlow 第二段加入
+且第二段加
 
 $$
 \tau\epsilon_2,
 \qquad
-\tau^2=\sigma_{\min}^2-\sigma^2.
+\tau^2=\sigma_{\min}^2-\sigma^2,
 $$
 
-則 final distribution 是 convolution：
-
-$$
-p_{\mathrm{final}}
-=
-p_\sigma*\mathcal N(0,\tau^2I).
-$$
-
-而
-
-$$
-p_\sigma
-=
-p_{\mathrm{data}}*\mathcal N(0,\sigma^2I).
-$$
-
-所以
+則
 
 $$
 \begin{aligned}
 p_{\mathrm{final}}
 &=
+p_\sigma*\mathcal N(0,\tau^2I)\\
+&=
 p_{\mathrm{data}}
 *\mathcal N(0,\sigma^2I)
 *\mathcal N(0,\tau^2I)\\
-&=
-p_{\mathrm{data}}
-*\mathcal N(0,(\sigma^2+\tau^2)I)\\
 &=
 p_{\mathrm{data}}
 *\mathcal N(0,\sigma_{\min}^2I)\\
@@ -971,47 +1117,25 @@ p_{\mathrm{tgt}}.
 \end{aligned}
 $$
 
-因此：
-
-> **若 iMF 第一階段 exact transport 到 RMFlow 所要求的 intermediate distribution $p_\sigma$，那麼 RMFlow 的第二段 Gaussian refinement 在 distribution level 上會 exact 得到 $p_{\mathrm{tgt}}$。**
-
-這個結論不需要使用 original CMFM loss；它只依賴第一階段 endpoint distribution 是否真的等於 $p_\sigma$。
+這是 distribution-level exact compatibility。
 
 ---
 
-# 19. Approximate case：learned iMF endpoint 接 RMFlow NLL 為什麼仍然合法？
+# 23. Approximate endpoint case：RMFlow cross-entropy / likelihood proof 是否還在？
 
-這裡要小心 iMF 和 RMFlow 的時間方向符號不同。
-
-iMF paper convention 從 prior $z_1$ 往 data-side $z_0$ sampling：
+統一把 one-step endpoint 寫成
 
 $$
-G_\theta(E)
-=
-E-u_\theta(E,0,1).
+G_\theta(S_0).
 $$
 
-RMFlow paper 自己的 convention 則寫成
+RMFlow refinement：
 
 $$
-G_\theta(x_0)
-=
-x_0+\hat u_{0,1}(x_0;\theta).
+Y=G_\theta(S_0)+\tau\epsilon_2.
 $$
 
-兩者只是 flow orientation / sign convention 不同。下面統一寫 $G_\theta$。
-
-RMFlow refinement 定義
-
-$$
-Y
-=
-G_\theta(S_0)+\tau\epsilon_2,
-\qquad
-\epsilon_2\sim\mathcal N(0,I).
-$$
-
-所以
+因此
 
 $$
 Y\mid S_0=s
@@ -1019,140 +1143,109 @@ Y\mid S_0=s
 \mathcal N(G_\theta(s),\tau^2I).
 $$
 
-因此 conditional log-likelihood 必然是
+所以 conditional NLL 仍然是
 
 $$
-\log p_\theta(y\mid s)
+-\log p_\theta(y\mid s)
 =
--\frac{1}{2\tau^2}
-\|y-G_\theta(s)\|^2
-+C.
+\frac{\|y-G_\theta(s)\|^2}{2\tau^2}+B.
 $$
 
-這個公式完全不需要知道 $G_\theta$ 是用 CMFM 還是 iMF 訓練出來的。
+它不在乎 $G_\theta$ 是 CMFM 還是 iMF 訓練出來的。
 
-所以 proposed hybrid 可以加入 endpoint term
+因此 Part II 的整套 decomposition 仍然成立：
 
 $$
-\mathcal L_{\mathrm{endpoint}}
+A\mathcal L_{\mathrm{endpoint}}+B
 =
-\mathbb E
-\left[
-\|Y_{\mathrm{tgt}}-G_\theta(S_0)\|^2
-\right],
+H(p_{\mathrm{tgt}})
++D_{\mathrm{KL}}(p_{\mathrm{tgt}}\|p_\theta)
++
+\mathbb E_Y
+D_{\mathrm{KL}}
+\bigl(q_0\|p_\theta(S_0\mid Y)\bigr),
 $$
 
-其中
+只要使用同一個 prior / marginalization setup 並滿足前述 integrability 條件。
 
-$$
-Y_{\mathrm{tgt}}
-\overset d=
-X_{\mathrm{data}}+\sigma_{\min}\epsilon.
-$$
-
-一樣由 Jensen 得到
-
-$$
--\frac{1}{2\tau^2}
-\mathcal L_{\mathrm{endpoint}}
-+C
-\le
-\mathbb E_{Y\sim p_{\mathrm{tgt}}}
-[\log p_\theta(Y)].
-$$
-
-因此 **RMFlow 的 likelihood lower-bound proof 可以保留**。
+所以 **iMF replacement 不會破壞 Gaussian conditional NLL → cross-entropy → KL 這條機率論鏈。**
 
 ---
 
-# 20. Proposed iMF + RMFlow objective：這不是 RMFlow paper 原式
+# 24. Proposed hybrid objective
 
-如果真的要做 hybrid，一個自然的研究版 objective 是
+一個自然的研究版 objective：
 
 $$
 \mathcal L_{\mathrm{iMF+RM}}
 =
 \mathcal L_{\mathrm{iMF}}^{(\sigma)}
 +
-\lambda_{\mathrm{NLL}}
-\mathcal L_{\mathrm{endpoint}}
+\lambda_{\mathrm{NLL}}\mathcal L_{\mathrm{endpoint}}
 +
-\lambda_{\mathrm{guide}}
-\mathcal L_{\mathrm{guide}}.
+\lambda_{\mathrm{guide}}\mathcal L_{\mathrm{guide}}.
 $$
 
-注意它和 paper Eq. (12) 不同：
-
-$$
-\underbrace{\mathcal L_{\mathrm{CMFM}}}_{\text{RMFlow paper}}
-\quad\longrightarrow\quad
-\underbrace{\mathcal L_{\mathrm{iMF}}^{(\sigma)}}_{\text{our proposed replacement}}.
-$$
-
-所以這裡必須標成 **proposal / research extension**，不能寫成 RMFlow 已證明的公式。
+這是 proposal，不是 RMFlow paper 原式。
 
 ---
 
-# 21. 目前到底證明了什麼？
+# 25. 最後嚴格區分「已證明」與「沒證明」
 
-## 21.1 Paper 已經明確成立
+## Paper / standard probability identities 能成立的部分
 
-- RMFlow Eq. (6)–(8) 的 noise-injection construction；
-- conditional Gaussian Eq. (9)；
-- NLL surrogate Eq. (10)；
-- Jensen / expected log-likelihood / KL chain Eq. (11)、(13)–(17)；
-- original joint objective Eq. (12) 使用的是 CMFM + NLL + guidance regularization。
+- RMFlow Eq. (6)–(10) 的 Gaussian construction；
+- NLL population expectation = cross-entropy；
+- cross-entropy = entropy + forward KL；
+- RMFlow averaged conditional NLL = marginal cross-entropy + expected posterior-KL Jensen gap；
+- 因此 Eq. (10) 是 marginal CE 的 upper bound，Eq. (11) 是 marginal expected log-likelihood 的 lower bound；
+- exact first-stage distribution $p_\sigma$ 接 Gaussian refinement 會得到 $p_{\mathrm{tgt}}$。
 
-## 21.2 我們可以在明確假設下嚴格推出
+## 在 explicit assumptions 下可推出
 
-- Original MF 的 $u$-loss 與 iMF paper 的 $v$-loss reformulation 是 algebraically equivalent；
-- state-only MSE regression 到 conditional label $e-x$ 的 population target 是 marginal velocity $v(z_t,t)$；
-- 若 exact $u^*,v^*$ 可表示，iMF compound parameterization 可以表示 Bayes-optimal $v^*$；
-- 若 iMF 第一階段 exact transport 到 $p_\sigma$，再加 RMFlow noise 後 distribution exact 變成 $p_{\mathrm{tgt}}$；
-- 對 approximate learned endpoint map，RMFlow Gaussian NLL / Jensen lower bound 仍然成立。
+- Original MF $u$-loss 與 $v$-loss reformulation 等價；
+- state-only regression 對 $e-x$ 的 population target 是 marginal $v$；
+- exact $(u^*,v^*)$ 可表示時，iMF parameterization 可表示 Bayes-optimal solution；
+- 將 iMF endpoint 接到 RMFlow 後，conditional Gaussian / CE / KL decomposition 仍成立。
 
-## 21.3 還沒有被證明
+## 尚未證明
 
-下面這些不能再寫成 theorem：
-
-1. SGD 訓練 iMF 一定收斂到 exact $u^*,v^*$；
-2. finite network / finite data 下，iMF objective 一定得到正確 $p_\sigma$；
-3. original RMFlow 的
-   $$
-   M\mathcal L_{\mathrm{CMFM}}\ge W_2^2
-   $$
-   能直接把 $\mathcal L_{\mathrm{CMFM}}$ 換成 $\mathcal L_{\mathrm{iMF}}$；
-4. hybrid objective 一定改善 FID / KL / perceptual quality。
-
-特別是第 3 點，這才是真正還缺的理論破口：需要建立
-
-$$
-\mathcal L_{\mathrm{iMF}}^{(\sigma)}
-\Longrightarrow
-\text{endpoint transport error}
-\Longrightarrow
-W_2\text{ control}
-$$
-
-的 stability theorem。
+1. iMF finite-data / finite-network / SGD 一定得到 exact $p_\sigma$；
+2. original RMFlow 的
+   $$M\mathcal L_{\mathrm{CMFM}}\ge W_2^2$$
+   可以直接把 CMFM loss 換成 iMF loss；
+3. minimizing RMFlow conditional NLL 時，marginal cross-entropy 每個 SGD step 都單調下降；
+4. hybrid 一定改善 FID / perceptual quality。
 
 ---
 
-# 22. 最後用一張邏輯表把三種「target」分開
+# 26. 一條最完整的數學鏈
 
-| 層次 | quantity | 它是什麼 |
-|---|---|---|
-| sample supervision | $e-x$，hybrid 時是 $e-X_\sigma$ | Monte Carlo conditional velocity label |
-| population velocity target | $v(z_t,t)=\mathbb E[e-x\mid z_t,t]$ | state-conditioned marginal velocity |
-| iMF JVP tangent | $v_\theta(z_t,t)$ | 對 marginal velocity 的 network estimate |
-| RMFlow first-stage endpoint | $G_\theta(S_0)$ | one-step deterministic transport result |
-| RMFlow likelihood target | $X_{\mathrm{data}}+\sigma_{\min}\epsilon$ | final noisy target distribution |
+$$
+\boxed{
+\begin{aligned}
+\mathcal L_{\mathrm{NLL}}^{\mathrm{paper}}
+&\xrightarrow{\times A\,+B}
+\mathbb E[-\log p_\theta(Y\mid X_0)]\\
+&=
+H_\times(p_{\mathrm{tgt}},p_\theta)
++
+\mathbb E_Y
+D_{\mathrm{KL}}(q_0\|p_\theta(X_0\mid Y))\\
+&=
+H(p_{\mathrm{tgt}})
++D_{\mathrm{KL}}(p_{\mathrm{tgt}}\|p_\theta)
++
+\text{Jensen gap}.
+\end{aligned}
+}
+$$
 
-所以最精確的說法不是「iMF 把 target 從 $e-x$ 改成 $v_\theta$」，而是：
+所以最精確的一句話是：
 
-> **iMF 保留 $e-x$ 這個 sample supervision，但把 JVP tangent 從 sample-specific $e-x$ 改成 state-conditioned $v_\theta$；若拿來做 RMFlow 第一階段，sample supervision 進一步要改成 $e-X_\sigma$，因為第一階段真正要 transport 到的是 intermediate distribution $p_\sigma$。**
+> **RMFlow 的 Eq. (10) 不是直接等於 marginal cross-entropy；它在 fixed Gaussian variance 下等價於 averaged conditional cross-entropy，而這個 quantity 恰好等於 marginal cross-entropy 加上一個 nonnegative posterior-KL Jensen gap。**
 
-這樣才把 RMFlow 原始方法、iMF target change、以及兩者結合時真正需要改的地方接在同一條數學鏈上。
+這才是 NLL、cross-entropy、KL 三者完整而嚴格的關係。
 
 ## Sources
 
