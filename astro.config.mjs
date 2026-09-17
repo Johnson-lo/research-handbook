@@ -49,6 +49,7 @@ export default defineConfig({
             { label: '研究脈絡總覽', translations: { en: 'Overview' }, slug: 'tracks' },
             { label: 'Research Problem Map', slug: 'tracks/problem-map' },
             { label: 'MeanFlow Evolution', slug: 'meanflow/story' },
+            { label: 'RMFlow 深入｜Noise → NLL → KL', translations: { en: 'RMFlow Deep Dive | Noise → NLL → KL' }, slug: 'meanflow/rmflow-deep-dive' },
             { label: 'Flow Matching Objectives', slug: 'tracks/flow-matching-objectives' }
           ]
         },
