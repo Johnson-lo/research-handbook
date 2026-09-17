@@ -238,6 +238,24 @@ $$
 A\|y-\mu_\theta(x_0)\|^2+B.
 $$
 
+:::caution[Paper Appendix 的 variance coefficient 有 notation inconsistency]
+由 Eq. (7) 與 Eq. (9) 可知 refinement variance 明確是
+
+$$
+\tau^2=\sigma_{\min}^2-\sigma^2,
+$$
+
+所以 Gaussian quadratic coefficient 應為
+
+$$
+A=\frac{1}{2(\sigma_{\min}^2-\sigma^2)}.
+$$
+
+RMFlow main text 與 conditional Gaussian 都與此一致；但 Appendix 某處印成 $1/[2(\sigma_{\min}-\sigma)^2]$。這兩者一般不相等，後者與 Eq. (7) 的 variance 定義不一致，因此本站後續一律使用前者。
+
+另外，只有 $A>0$ 是必要的；additive constant $B=\frac d2\log(2\pi\tau^2)$ 本身不必為正。
+:::
+
 ---
 
 # 5. Equation (10)：paper 的 $\mathcal L_{\mathrm{NLL}}$ 到底是不是「真正 NLL」？
@@ -297,13 +315,24 @@ $$
 
 令 target density 為 $p(y)=p_{\mathrm{tgt}}(y)$，model marginal density 為 $q_\theta(y)=p_\theta(y)$。
 
-假設：
+以下推導假設：
 
 1. $p$ 與 $q_\theta$ 對同一個 base measure 有 density；
-2. $q_\theta(y)>0$ 對 $p$-almost every $y$ 成立；
-3. $\mathbb E_p[|\log q_\theta(Y)|]<\infty$。
+2. $p\ll q_\theta$，也就是 $p$ 不會在 $q_\theta=0$ 的地方放正 probability mass；
+3. $\mathbb E_p[|\log p(Y)|]<\infty$；
+4. $\mathbb E_p[|\log q_\theta(Y)|]<\infty$。
 
-定義 **cross-entropy**：
+第 3、4 點避免 entropy / cross-entropy decomposition 出現不定型的 $\infty-\infty$。
+
+這裡是 continuous-density setting，所以
+
+$$
+H(p)=-\int p(y)\log p(y)dy
+$$
+
+是 **differential entropy**；它和 continuous cross-entropy 都不必為正。
+
+定義 cross-entropy：
 
 $$
 H_\times(p,q_\theta)
@@ -330,31 +359,29 @@ $$
 也就是
 
 $$
-\boxed{
 H_\times(p,q_\theta)
 =
 \mathbb E_{Y\sim p}
-[\ell_{\mathrm{NLL}}(Y;\theta)]
-}
+[\ell_{\mathrm{NLL}}(Y;\theta)].
 \tag{CE-2}
 $$
 
-這是 NLL 與 cross-entropy 最基本、也最直接的數學關係。
+RMFlow 的 non-degenerate Gaussian conditional 在 $\tau>0$ 時對所有 $y$ 都給正 density；相應 marginal Gaussian mixture 也具有 full support，因此在 paper 的 Gaussian setup 下，support mismatch 通常不是主要問題。
 
 ---
 
 # 7. 為什麼 empirical NLL 是 cross-entropy 的 Monte Carlo estimator？
 
-給定 IID samples
+先固定一個 **不依賴這批 evaluation samples 的參數 $\theta$**。給定 IID samples
 
 $$
 Y_1,\ldots,Y_n\overset{iid}{\sim}p,
 $$
 
-maximum-likelihood training 使用 empirical average NLL：
+定義 empirical average NLL：
 
 $$
-\widehat{\mathcal L}_{\mathrm{NLL}}^{\mathrm{marg}}
+\widehat{\mathcal L}_{\mathrm{NLL}}^{\mathrm{marg}}(\theta)
 :=
 -\frac1n\sum_{i=1}^n
 \log q_\theta(Y_i).
@@ -367,7 +394,7 @@ $$
 \begin{aligned}
 \mathbb E
 \left[
-\widehat{\mathcal L}_{\mathrm{NLL}}^{\mathrm{marg}}
+\widehat{\mathcal L}_{\mathrm{NLL}}^{\mathrm{marg}}(\theta)
 \right]
 &=
 -\frac1n\sum_{i=1}^n
@@ -381,23 +408,37 @@ H_\times(p,q_\theta).
 \end{aligned}
 $$
 
-因此 empirical average NLL 是 marginal cross-entropy 的 unbiased Monte Carlo estimator。
+因此，**對固定 $\theta$**，empirical average NLL 是 marginal cross-entropy 的 unbiased Monte Carlo estimator。
 
-在適當 integrability 條件下，大數法則還給出
+在上述 integrability 條件下，大數法則還給出
 
 $$
-\widehat{\mathcal L}_{\mathrm{NLL}}^{\mathrm{marg}}
+\widehat{\mathcal L}_{\mathrm{NLL}}^{\mathrm{marg}}(\theta)
 \xrightarrow[n\to\infty]{a.s.}
 H_\times(p,q_\theta).
 $$
 
-這也是為什麼 deep learning 文獻常把「average NLL」與「cross-entropy objective」口語上混著叫；嚴格說，一個是 finite-sample estimator，一個是 population expectation。
+:::caution[Training-set NLL 不自動是 unbiased population CE estimate]
+如果
+
+$$
+\hat\theta=\hat\theta(Y_1,\ldots,Y_n)
+$$
+
+本身就是用同一批 samples fit 出來的，那麼 $\hat\theta$ 與 evaluation samples 相依，不能再直接把
+
+$$
+-\frac1n\sum_i\log q_{\hat\theta}(Y_i)
+$$
+
+稱為 $H_\times(p,q_{\hat\theta})$ 的 unbiased estimator。要估計 fitted model 的 population CE，應使用獨立 validation/test samples，或另外做 generalization analysis。
+:::
 
 ---
 
 # 8. Cross-entropy 為什麼等於 entropy + forward KL？
 
-target entropy：
+target differential entropy：
 
 $$
 H(p)
@@ -414,7 +455,7 @@ D_{\mathrm{KL}}(p\|q_\theta)
 \log\frac{p(y)}{q_\theta(y)}dy.
 $$
 
-展開：
+在 Section 6 的 absolute-continuity 與 integrability assumptions 下，展開：
 
 $$
 \begin{aligned}
@@ -431,13 +472,11 @@ $$
 因此
 
 $$
-\boxed{
 H_\times(p,q_\theta)
 =
 H(p)
 +
-D_{\mathrm{KL}}(p\|q_\theta)
-}
+D_{\mathrm{KL}}(p\|q_\theta).
 \tag{CE-4}
 $$
 
@@ -498,19 +537,15 @@ $$
 由 Gaussian Eq. (9)：
 
 $$
-\boxed{
 \mathcal C_{\mathrm{cond}}(\theta)
 =
-A\mathcal L_{\mathrm{NLL}}+B
-}
+A\mathcal L_{\mathrm{NLL}}+B.
 \tag{CE-7}
 $$
 
 所以 RMFlow paper 的 Eq. (10) 最精確的解讀是：
 
 > **它在 fixed variance 下，等價於 minimizing averaged conditional cross-entropy，而不是直接 minimizing marginal cross-entropy $H_\times(p_{\mathrm{tgt}},p_\theta)$。**
-
-這個 distinction 非常重要。
 
 ---
 
@@ -546,29 +581,19 @@ $$
 再對 $Y\sim p_{\mathrm{tgt}}$ 平均：
 
 $$
-\boxed{
 H_\times(p_{\mathrm{tgt}},p_\theta)
 \le
 \mathcal C_{\mathrm{cond}}(\theta)
 =
-A\mathcal L_{\mathrm{NLL}}+B
-}
+A\mathcal L_{\mathrm{NLL}}+B.
 \tag{CE-8}
 $$
 
-所以在 negative-log / cross-entropy 的方向看：
-
-> **RMFlow 的 conditional NLL surrogate 是 marginal cross-entropy 的 upper bound。**
-
-而在 log-likelihood 的方向看，就是 paper Eq. (11) 的 lower bound。
-
-兩者完全是同一件事，只是乘了 $-1$。
+所以在 negative-log / cross-entropy 的方向看：RMFlow 的 conditional NLL surrogate 是 marginal cross-entropy 的 upper bound；在 log-likelihood 方向看，就是 Eq. (11) 的 lower bound。
 
 ---
 
 # 11. 更強的結果：Jensen gap 可以精確寫成 posterior KL
-
-只寫 inequality 還不夠。我們可以把 gap 本身精確算出來。
 
 定義 model joint density：
 
@@ -587,7 +612,7 @@ p_\theta(x_0\mid y)
 \tag{CE-9}
 $$
 
-考慮
+對任何使下列 quantities 有限的 $y$，考慮
 
 $$
 D_{\mathrm{KL}}
@@ -608,11 +633,6 @@ $$
 \log
 \frac{q_0(x_0)}
 {p_\theta(x_0\mid y)}dx_0\\
-&=
-\int q_0(x_0)
-\log
-\frac{q_0(x_0)}
-{q_0(x_0)p_\theta(y\mid x_0)/p_\theta(y)}dx_0\\
 &=
 \int q_0(x_0)
 \left[
@@ -645,27 +665,17 @@ $$
 再對 $Y\sim p_{\mathrm{tgt}}$ 平均：
 
 $$
-\boxed{
 \mathcal C_{\mathrm{cond}}(\theta)
 =
 H_\times(p_{\mathrm{tgt}},p_\theta)
 +
 \mathbb E_{Y\sim p_{\mathrm{tgt}}}
 D_{\mathrm{KL}}
-\bigl(q_0\|p_\theta(X_0\mid Y)\bigr)
-}
+\bigl(q_0\|p_\theta(X_0\mid Y)\bigr).
 \tag{CE-12}
 $$
 
-因為 KL 非負，Eq. (CE-8) 立刻跟著成立。
-
-這個式子也精確回答「Jensen bound 為什麼可能鬆」：gap 就是
-
-$$
-\mathbb E_Y
-D_{\mathrm{KL}}
-\bigl(q_0\|p_\theta(X_0\mid Y)\bigr).
-$$
+因此 Jensen gap 精確等於 expected posterior KL。
 
 ---
 
@@ -696,16 +706,6 @@ D_{\mathrm{KL}}
 \tag{CE-13}
 $$
 
-這是整頁最重要的式子。
-
-它說 RMFlow Eq. (10) 在 fixed variance 下，其實同時包含：
-
-1. target entropy $H(p_{\mathrm{tgt}})$：對 $\theta$ 固定；
-2. 我們真正想壓低的 forward KL
-   $$D_{\mathrm{KL}}(p_{\mathrm{tgt}}\|p_\theta);$$
-3. Jensen / latent posterior gap
-   $$\mathbb E_Y D_{\mathrm{KL}}(q_0\|p_\theta(X_0\mid Y)).$$
-
 所以 minimize Eq. (10) 並不是「直接等於 minimize marginal forward KL」，而是 minimize
 
 $$
@@ -714,9 +714,7 @@ $$
 \text{posterior Jensen gap}
 $$
 
-再加一個固定 entropy constant。
-
-這比單純寫「NLL 與 KL 有關」精確很多。
+再加一個對 $\theta$ 固定的 target differential entropy。
 
 ---
 
@@ -740,14 +738,13 @@ $$
 -D_{\mathrm{KL}}(p_{\mathrm{tgt}}\|p_\theta).
 $$
 
-由於
+令
 
 $$
--B
-=-\frac d2\log(2\pi\tau^2)
+C:=-B=-\frac d2\log(2\pi\tau^2),
 $$
 
-就是 paper log-likelihood 裡的 additive constant $C$，因此
+則
 
 $$
 -A\mathcal L_{\mathrm{NLL}}+C
@@ -760,9 +757,7 @@ $$
 \tag{11}
 $$
 
-所以 paper 的 Eq. (11) 可以視為 Eq. (CE-13) 把 nonnegative posterior-KL gap 丟掉後的 inequality version。
-
-Equation (13)–(16) 是用 Jensen 推這個 inequality；Equation (17) 則是 cross-entropy / KL decomposition 的 log-likelihood 版本。
+所以 Eq. (11) 可以視為 Eq. (CE-13) 把 nonnegative posterior-KL gap 丟掉後的 inequality version。
 
 ---
 
@@ -835,8 +830,6 @@ q_\omega(X_0\mid c)
 $$
 
 最後再對 $c$ 取 expectation 即可。
-
-這比直接假設所有變數 unconditional independent 更嚴格。
 
 ---
 
@@ -951,35 +944,84 @@ $$
 
 ---
 
-# 19. 為什麼 sample label $e-x$ 的 state-only MSE optimum 是 marginal $v$？
+# 19. 為什麼 sample label $e-x$ 的 MSE population optimum 是 marginal $v$？
+
+這裡要保留 iMF predictor 真的使用的 interval variable $R$，不能偷偷省略。
 
 令
 
 $$
-C=e-x,
+C:=E-X,
 \qquad
-m(z_t,t)=\mathbb E[C\mid z_t,t].
+S:=(Z_t,T,R).
 $$
 
-對任何 state-only predictor $F(z_t,t)$：
+對任何只依賴 $S$ 的 measurable predictor $F(S)$：
+
+$$
+\mathcal R(F)
+:=
+\mathbb E\|F(S)-C\|^2.
+$$
+
+標準 conditional-expectation theorem 給出 Bayes regressor：
+
+$$
+F^*(S)
+=
+\mathbb E[C\mid S]
+=
+\mathbb E[E-X\mid Z_t,T,R].
+\tag{iMF-CE1}
+$$
+
+若 iMF 的 sampling scheme 滿足
+
+$$
+R\perp (X,E)\mid T,
+\tag{iMF-A1}
+$$
+
+也就是在給定 $T$ 後，$R$ 的抽樣不再攜帶關於 data/noise pair 的額外資訊，則
+
+$$
+\mathbb E[E-X\mid Z_t,T,R]
+=
+\mathbb E[E-X\mid Z_t,T]
+=
+v(Z_t,T).
+\tag{iMF-CE2}
+$$
+
+因此在這個 conditional-independence assumption 下，population MSE optimum 才可簡化為 marginal velocity $v(Z_t,T)$。
+
+完整 orthogonal decomposition 是：令
+
+$$
+m(S):=\mathbb E[C\mid S],
+\qquad
+C=m(S)+\xi,
+\qquad
+\mathbb E[\xi\mid S]=0.
+$$
+
+則
 
 $$
 \mathbb E\|F-C\|^2
 =
 \mathbb E\|F-m\|^2
 +
-\mathbb E\|C-m\|^2.
+\mathbb E\|C-m\|^2,
 $$
 
-原因是令 $C=m+\xi$ 且 $\mathbb E[\xi\mid z_t,t]=0$，cross term 的 expectation 為零。
-
-因此唯一的 population MSE optimum（a.s.）是
+因為 cross term
 
 $$
-F^*(z_t,t)
-=m(z_t,t)
+\mathbb E[(F-m)^T\xi]
 =
-v(z_t,t).
+\mathbb E\left[(F-m)^T\mathbb E[\xi\mid S]\right]
+=0.
 $$
 
 ---
@@ -990,7 +1032,8 @@ $$
 
 1. 存在且足夠光滑；
 2. 滿足 MeanFlow identity；
-3. 可被 model class 表示。
+3. 可被 model class 表示；
+4. sampling scheme 滿足 Section 19 的 $R\perp(X,E)\mid T$，因此 Bayes state/interval regressor 可簡化為 $v^*(Z_t,T)$。
 
 若
 
@@ -1011,13 +1054,13 @@ V_\theta^{\mathrm{iMF}}
 v^*.
 $$
 
-而 $v^*$ 正是前一節的 Bayes-optimal state-only regression target。
+而 $v^*$ 正是前一節在上述 assumptions 下的 Bayes-optimal predictor。
 
 因此能嚴格說的是：
 
-> **在 population / exact-representability 假設下，iMF parameterization 不會排除 exact MeanFlow solution。**
+> **在 population / exact-representability / stated-sampling assumptions 下，iMF parameterization 不會排除 exact MeanFlow solution。**
 
-這是 realizability / consistency argument，不是 SGD convergence theorem。
+這是 function-level realizability / consistency argument，不是 SGD convergence theorem。stop-gradient 不改 forward function value，但會改 optimization gradient，因此不能從這個 argument 推出 training dynamics 必然收斂。
 
 ---
 
@@ -1067,6 +1110,14 @@ v_\sigma(z_t,t)
 \mathbb E[E-X_\sigma\mid Z_t=z_t,t].
 $$
 
+同樣地，若 predictor 還輸入 $R$，要把上式當成 Bayes target，也需要相應的
+
+$$
+R\perp(X_\sigma,E)\mid T
+$$
+
+sampling assumption。
+
 因此 proposed first-stage loss 應是
 
 $$
@@ -1074,7 +1125,7 @@ $$
 =
 \mathbb E
 \left\|
-V_\theta^{\mathrm{iMF}}(Z_t)
+V_\theta^{\mathrm{iMF}}(Z_t,R,T)
 -
 (E-X_\sigma)
 \right\|^2.
@@ -1166,7 +1217,7 @@ D_{\mathrm{KL}}
 \bigl(q_0\|p_\theta(S_0\mid Y)\bigr),
 $$
 
-只要使用同一個 prior / marginalization setup 並滿足前述 integrability 條件。
+只要使用同一個 prior / marginalization setup 並滿足前述 absolute-continuity / integrability 條件。
 
 所以 **iMF replacement 不會破壞 Gaussian conditional NLL → cross-entropy → KL 這條機率論鏈。**
 
@@ -1195,8 +1246,8 @@ $$
 ## Paper / standard probability identities 能成立的部分
 
 - RMFlow Eq. (6)–(10) 的 Gaussian construction；
-- NLL population expectation = cross-entropy；
-- cross-entropy = entropy + forward KL；
+- 對固定 model parameter，empirical NLL 是 population cross-entropy 的 Monte Carlo estimator；
+- 在 stated regularity assumptions 下，cross-entropy = differential entropy + forward KL；
 - RMFlow averaged conditional NLL = marginal cross-entropy + expected posterior-KL Jensen gap；
 - 因此 Eq. (10) 是 marginal CE 的 upper bound，Eq. (11) 是 marginal expected log-likelihood 的 lower bound；
 - exact first-stage distribution $p_\sigma$ 接 Gaussian refinement 會得到 $p_{\mathrm{tgt}}$。
@@ -1204,7 +1255,7 @@ $$
 ## 在 explicit assumptions 下可推出
 
 - Original MF $u$-loss 與 $v$-loss reformulation 等價；
-- state-only regression 對 $e-x$ 的 population target 是 marginal $v$；
+- 若 $R\perp(X,E)\mid T$，則 interval-aware regression 對 $e-x$ 的 population target 可簡化為 marginal $v(Z_t,T)$；
 - exact $(u^*,v^*)$ 可表示時，iMF parameterization 可表示 Bayes-optimal solution；
 - 將 iMF endpoint 接到 RMFlow 後，conditional Gaussian / CE / KL decomposition 仍成立。
 
@@ -1215,14 +1266,16 @@ $$
    $$M\mathcal L_{\mathrm{CMFM}}\ge W_2^2$$
    可以直接把 CMFM loss 換成 iMF loss；
 3. minimizing RMFlow conditional NLL 時，marginal cross-entropy 每個 SGD step 都單調下降；
-4. hybrid 一定改善 FID / perceptual quality。
+4. training-set empirical NLL 對 fitted model 的 population cross-entropy 是 unbiased estimator；
+5. hybrid 一定改善 FID / perceptual quality。
 
 ---
 
 # 26. 一條最完整的數學鏈
 
+在固定 $\tau>0$、stated support/integrability assumptions 下：
+
 $$
-\boxed{
 \begin{aligned}
 \mathcal L_{\mathrm{NLL}}^{\mathrm{paper}}
 &\xrightarrow{\times A\,+B}
@@ -1238,14 +1291,11 @@ H(p_{\mathrm{tgt}})
 +
 \text{Jensen gap}.
 \end{aligned}
-}
 $$
 
 所以最精確的一句話是：
 
 > **RMFlow 的 Eq. (10) 不是直接等於 marginal cross-entropy；它在 fixed Gaussian variance 下等價於 averaged conditional cross-entropy，而這個 quantity 恰好等於 marginal cross-entropy 加上一個 nonnegative posterior-KL Jensen gap。**
-
-這才是 NLL、cross-entropy、KL 三者完整而嚴格的關係。
 
 ## Sources
 
