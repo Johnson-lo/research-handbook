@@ -1,0 +1,176 @@
+---
+title: RMFlow Deep Dive | Noise → NLL → Jensen → KL → iMF Feasibility
+description: Interactive intuition and a rigorous compatibility proof for combining RMFlow's endpoint likelihood mechanism with Improved MeanFlow.
+sidebar:
+  order: 3
+---
+
+import RMFlowNoiseDemo from '../../../components/RMFlowNoiseDemo.astro';
+
+# 0. Begin with the object RMFlow creates
+
+For one prior sample $x_0$, iMF / MeanFlow produces a deterministic one-step endpoint
+
+$$
+\mu_\theta(x_0)=x_0+u_\theta(x_0,0,1).
+$$
+
+RMFlow turns that point into a conditional distribution by adding Gaussian refinement noise:
+
+$$
+Y=\mu_\theta(x_0)+\tau\varepsilon,
+\qquad \varepsilon\sim\mathcal N(0,I).
+$$
+
+Thus
+
+$$
+Y\mid x_0\sim\mathcal N(\mu_\theta(x_0),\tau^2I).
+$$
+
+<RMFlowNoiseDemo lang="en" />
+
+The demo should be read before the algebra: the neural model supplies the center; the stochastic refinement supplies the local width and therefore an explicit density.
+
+# 1. Variance composition
+
+With
+
+$$
+X_1=X_{\mathrm{data}}+\sigma\varepsilon_1
+$$
+
+and
+
+$$
+X_{\mathrm{tgt}}=X_1+\sqrt{\sigma_{\min}^2-\sigma^2}\,\varepsilon_2,
+$$
+
+independence gives
+
+$$
+\operatorname{Cov}(X_{\mathrm{tgt}}\mid X_{\mathrm{data}})
+=\sigma^2I+(\sigma_{\min}^2-\sigma^2)I
+=\sigma_{\min}^2I.
+$$
+
+Therefore
+
+$$
+X_{\mathrm{tgt}}\overset d=
+X_{\mathrm{data}}+\sigma_{\min}\varepsilon.
+$$
+
+# 2. Gaussian NLL
+
+Let
+
+$$
+\tau^2=\sigma_{\min}^2-\sigma^2.
+$$
+
+Then
+
+$$
+-\log p_\theta(y\mid x_0)
+=
+\frac{\|y-\mu_\theta(x_0)\|^2}{2\tau^2}
++\frac d2\log(2\pi\tau^2).
+$$
+
+For fixed $\tau$, minimizing NLL is equivalent to minimizing the squared endpoint error.
+
+# 3. Jensen lower bound
+
+The marginal density is
+
+$$
+p_\theta(y)=\int q(x_0)p_\theta(y\mid x_0)dx_0.
+$$
+
+Since $\log$ is concave,
+
+$$
+\log p_\theta(y)
+\ge
+\mathbb E_{X_0}[\log p_\theta(y\mid X_0)].
+$$
+
+Averaging over $Y\sim p_{\mathrm{tgt}}$ yields
+
+$$
+-A\mathcal L_{\mathrm{NLL}}+C
+\le
+\mathbb E_Y[\log p_\theta(Y)],
+\qquad
+A=\frac{1}{2\tau^2}>0.
+$$
+
+Finally,
+
+$$
+\mathbb E_{p_{\mathrm{tgt}}}[\log p_\theta(Y)]
+=-H(p_{\mathrm{tgt}})
+-D_{KL}(p_{\mathrm{tgt}}\|p_\theta).
+$$
+
+# 4. Rigorous iMF compatibility proposition
+
+Assume a measurable deterministic one-step map $g_\theta$, fixed $\tau>0$, independent $\varepsilon\sim\mathcal N(0,I)$, and
+
+$$
+Y=g_\theta(X_0)+\tau\varepsilon.
+$$
+
+Then
+
+$$
+Y\mid X_0=x_0
+\sim\mathcal N(g_\theta(x_0),\tau^2I),
+$$
+
+and consequently
+
+$$
+-\frac1{2\tau^2}
+\mathbb E\|Y-g_\theta(X_0)\|^2+C
+\le
+\mathbb E_Y[\log p_\theta(Y)].
+$$
+
+The proof only uses the final map and Gaussian refinement; it does not use the training-time JVP tangent.
+
+For Improved MeanFlow, set
+
+$$
+g_\theta(x_0)=x_0+u_\theta(x_0,0,1).
+$$
+
+Therefore replacing the original sample-specific JVP tangent with $v_\theta$ does not invalidate the RMFlow likelihood proof.
+
+If $g_\theta$ is differentiable in $\theta$ and differentiation can be exchanged with expectation,
+
+$$
+\nabla_\theta
+\mathbb E\|Y-g_\theta(X_0)\|^2
+=
+2\mathbb E\left[
+J_{g_\theta}(X_0)^T(g_\theta(X_0)-Y)
+\right],
+$$
+
+so the endpoint term directly updates the one-step inference map.
+
+# 5. What this does not prove
+
+This compatibility result does **not** imply
+
+$$
+M\mathcal L_{\mathrm{iMF}}\ge W_2^2
+$$
+
+because the original Wasserstein-style theorem is tied to a specific CMFM discrepancy. A separate comparison or stability theorem is required.
+
+It also does not prove that lowering endpoint NLL must lower FID, nor that the true marginal likelihood improves monotonically at every optimizer step. Those are empirical / theoretical questions beyond the compatibility proposition.
+
+For the full English derivation of every expectation and KL step, see [RMFlow paper notes](/research-handbook/en/papers/rmflow/).
