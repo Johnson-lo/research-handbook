@@ -1,580 +1,953 @@
 ---
-title: RMFlow 深入｜Noise → NLL → Jensen → KL → iMF 可行性證明
-description: 用互動 toy demo 理解 RMFlow 的 stochastic refinement，並嚴格證明與 Improved MeanFlow 結合時哪些部分成立、哪些不能直接宣稱。
+title: RMFlow 深入｜Noise → NLL → Jensen → KL → iMF 嚴格可行性證明
+description: 從 RMFlow 的 Gaussian refinement 出發，完整證明 Original MeanFlow 到 iMF 的 target / JVP-tangent 變化，以及 iMF + RMFlow endpoint likelihood 的可行性與理論邊界。
 sidebar:
   order: 3
 ---
 
 import RMFlowNoiseDemo from '../../../components/RMFlowNoiseDemo.astro';
 
-# 0. 先看「為什麼要加 noise」而不是先背公式
+# 0. 先用一個 point 看懂 RMFlow 在做什麼
 
-假設 1-NFE MeanFlow 對某個 prior sample $x_0$ 只輸出一個 deterministic coarse point：
-
-$$
-\mu_\theta(x_0)=x_0+u_\theta(x_0,0,1).
-$$
-
-如果模型最後只停在這個點，我們只有一個 deterministic endpoint；但 RMFlow 想要的是一個**有明確 probability density 的 local distribution**，這樣才能寫 likelihood。
-
-最簡單的方法就是
+先暫時不要管 iMF。假設 one-step model 對一個 prior sample 產生 deterministic endpoint
 
 $$
-Y=\mu_\theta(x_0)+\tau\varepsilon,
-\qquad \varepsilon\sim\mathcal N(0,I).
+\mu_\theta(x_0)=g_\theta(x_0).
 $$
 
-固定 $x_0$ 之後，$\mu_\theta(x_0)$ 是常數，而唯一 randomness 來自 $\varepsilon$，因此
+RMFlow 再加一段 Gaussian refinement：
 
 $$
-Y\mid x_0\sim\mathcal N(\mu_\theta(x_0),\tau^2I).
+Y=g_\theta(x_0)+\tau\varepsilon,
+\qquad
+\varepsilon\sim\mathcal N(0,I).
 $$
 
-這就是 RMFlow 後面所有 NLL / Jensen / KL 推導的起點。
+固定 $x_0$ 後，$g_\theta(x_0)$ 是常數，所以
+
+$$
+Y\mid X_0=x_0
+\sim
+\mathcal N\bigl(g_\theta(x_0),\tau^2I\bigr).
+$$
 
 <RMFlowNoiseDemo lang="zh" />
 
-:::tip[先把物理圖像記住]
-MeanFlow：$x_0\mapsto$ 一個 coarse point。  
-RMFlow refinement：以這個 point 當 Gaussian mean，在它附近展開一個小分布。  
-因為這個小分布的 density 能寫出來，所以 target sample 距離 mean 多遠，就能直接變成 log-likelihood / NLL。
+:::tip[這個 demo 對後面 proof 的角色]
+後面的 iMF 只會改變「$g_\theta$ 是怎麼被訓練出來的」。只要 inference 最後仍有一個 deterministic one-step map $g_\theta$，Gaussian refinement 的 conditional density 就仍可直接寫出。
 :::
 
 ---
 
-# 1. 兩段 noise 為什麼最後是 $\sigma_{\min}$？
+# 1. 先把 iMF 最容易誤會的「target 改成 $v$」說精確
 
-RMFlow 先使用 intermediate noisy target
-
-$$
-X_1=X_{\mathrm{data}}+\sigma\varepsilon_1,
-\qquad \varepsilon_1\sim\mathcal N(0,I),
-$$
-
-再補上
+iMF paper 使用線性 interpolation
 
 $$
-X_{\mathrm{tgt}}
-=X_1+\sqrt{\sigma_{\min}^2-\sigma^2}\,\varepsilon_2,
-\qquad \varepsilon_2\sim\mathcal N(0,I),
+Z_t=(1-t)X+tE,
 $$
 
-其中 $\varepsilon_1\perp\varepsilon_2$。
+其中 $X\sim p_{\mathrm{data}}$，$E\sim p_{\mathrm{prior}}$。
 
-把第一式代入第二式：
-
-$$
-X_{\mathrm{tgt}}
-=X_{\mathrm{data}}
-+\sigma\varepsilon_1
-+\sqrt{\sigma_{\min}^2-\sigma^2}\,\varepsilon_2.
-$$
-
-由獨立 Gaussian 線性組合：
+對單一 sampled pair $(X,E)$，conditional velocity 是
 
 $$
-\operatorname{Cov}(a\varepsilon_1+b\varepsilon_2)
-=a^2I+b^2I.
+C:=E-X.
 $$
 
-因此
+但是給定同一個 $Z_t=z$，可能有很多不同 $(X,E)$ pair 都能產生它。因此真正只由 state 決定的 marginal velocity 是
 
 $$
-\operatorname{Cov}(X_{\mathrm{tgt}}\mid X_{\mathrm{data}})
-=\sigma^2I+(\sigma_{\min}^2-\sigma^2)I
-=\sigma_{\min}^2I.
+v^*(z,t)
+:=
+\mathbb E[C\mid Z_t=z,T=t].
 $$
 
-所以存在新的 $\varepsilon\sim\mathcal N(0,I)$ 使
+這裡有一個非常重要的語意修正：
 
-$$
-X_{\mathrm{tgt}}\overset d=
-X_{\mathrm{data}}+\sigma_{\min}\varepsilon.
-$$
+:::caution[「target 改成 $v_\theta$」不是最精確的說法]
+- sample-level supervision **仍然是** $E-X$；
+- population regression target 是 marginal velocity $v^*(z,t)=\mathbb E[E-X\mid Z_t=z]$；
+- iMF 真正改掉的是 **JVP 裡的 tangent**：從 sample-specific $E-X$ 改成 network-predicted $v_\theta(Z_t,t)$。
 
-**重點：** $\sqrt{\sigma_{\min}^2-\sigma^2}$ 是「第二段新增 noise 的標準差」，不是 final target 的標準差。final variance 是兩段 variance 相加後的 $\sigma_{\min}^2$。
+所以不是把 loss label 直接換成 $v_\theta$。
+:::
+
+Paper 的核心改動正是：Original MF 的 compound predictor 會偷偷依賴 sample-specific $E-X$，而 iMF 要把 predictor 變成只依賴 current state 的函數。
 
 ---
 
-# 2. 從 conditional Gaussian 嚴格推到 NLL
+# 2. MeanFlow identity：為什麼可以從 $u$ 改寫成 $v$？
 
-令
-
-$$
-\tau^2:=\sigma_{\min}^2-\sigma^2>0,
-\qquad
-\mu_\theta(x_0):=x_0+u_\theta(x_0,0,1).
-$$
-
-final generator 為
+MeanFlow 定義 interval-average velocity
 
 $$
-Y=\mu_\theta(x_0)+\tau\varepsilon,
-\qquad \varepsilon\sim\mathcal N(0,I).
-$$
-
-所以
-
-$$
-p_\theta(y\mid x_0)
-=\frac{1}{(2\pi\tau^2)^{d/2}}
-\exp\left[-\frac{\|y-\mu_\theta(x_0)\|^2}{2\tau^2}\right].
-$$
-
-取負 log：
-
-$$
--\log p_\theta(y\mid x_0)
-=\frac{1}{2\tau^2}\|y-\mu_\theta(x_0)\|^2
-+\frac d2\log(2\pi\tau^2).
-$$
-
-如果 $\tau$ 是固定 hyperparameter，第二項不依賴 $\theta$，第一項前面的 $1/(2\tau^2)$ 也是固定正數，因此
-
-$$
-\arg\min_\theta\mathbb E[-\log p_\theta(Y\mid X_0)]
+u^*(z_t,r,t)
 =
-\arg\min_\theta
-\mathbb E\|Y-\mu_\theta(X_0)\|^2.
-$$
-
-這就是 RMFlow Eq. (10) 為什麼可以寫成 MSE-looking 的 NLL surrogate。
-
-:::caution[variance 如果可學，不能把常數項丟掉]
-若 $\tau=\tau_\theta$ 也要學，則
-
-$$
-\frac{1}{2\tau_\theta^2}\|y-\mu_\theta\|^2
-+\frac d2\log\tau_\theta^2
-$$
-
-兩項都依賴參數；此時只留 MSE 已經不再等價於 Gaussian NLL。
-:::
-
----
-
-# 3. $\mathbb E_{x_0}$ 和 $\mathbb E_{x_0,y}$ 到底差在哪？
-
-對固定 target $y$，先把 latent prior sample $x_0$ 積掉：
-
-$$
-p_\theta(y)
-=\int q(x_0)p_\theta(y\mid x_0)\,dx_0
-=\mathbb E_{X_0\sim q}[p_\theta(y\mid X_0)].
-$$
-
-所以這一層的 expectation 只對 $X_0$：
-
-$$
-\mathbb E_{X_0}[\log p_\theta(y\mid X_0)].
-$$
-
-如果接著再把不同 target $Y\sim p_{\mathrm{tgt}}$ 也平均，就變成
-
-$$
-\mathbb E_{Y\sim p_{\mathrm{tgt}}}
-\mathbb E_{X_0\sim q}
-[\log p_\theta(Y\mid X_0)].
-$$
-
-若 $X_0$ 與 $Y$ 在這個 bound 的 sampling measure 下使用 product measure，便可簡寫成
-
-$$
-\mathbb E_{X_0,Y}[\log p_\theta(Y\mid X_0)].
-$$
-
-所以不是「期望值突然多了一個變數」，而是：**先對 latent source 平均，再對 target population 平均。**
-
----
-
-# 4. Jensen lower bound 完整證明
-
-因為 $\log$ 是 concave function，對任意 positive random variable $Z$：
-
-$$
-\log\mathbb E[Z]\ge\mathbb E[\log Z].
+\frac{1}{t-r}
+\int_r^t v^*(z_\tau,\tau)\,d\tau.
 $$
 
 令
 
 $$
-Z=p_\theta(y\mid X_0)>0.
+\Delta:=t-r.
+$$
+
+MeanFlow identity 可寫成
+
+$$
+u^*(z_t,r,t)
+=
+v^*(z_t,t)-\Delta\frac{d}{dt}u^*(z_t,r,t).
+$$
+
+移項得到
+
+$$
+v^*(z_t,t)
+=
+u^*(z_t,r,t)
++
+\Delta\frac{d}{dt}u^*(z_t,r,t).
+$$
+
+而 total derivative 是
+
+$$
+\frac{d}{dt}u^*
+=
+\partial_z u^*\,v^*
++
+\partial_t u^*.
+$$
+
+用 JVP 記號：
+
+$$
+\frac{d}{dt}u^*
+=
+\operatorname{JVP}(u^*;v^*).
+$$
+
+因此 exact identity 是
+
+$$
+\boxed{
+ v^*
+=
+u^*+\Delta\operatorname{JVP}(u^*;v^*)
+}
+\tag{A}
+$$
+
+這是後面 iMF replacement 可以成立的根本原因。
+
+---
+
+# 3. Theorem 1 — Original MF 的 $u$-loss 與 $v$-loss 為什麼完全等價？
+
+Original MF 用 sample conditional velocity $C=E-X$ 近似 marginal $v^*$，並定義 apparent target
+
+$$
+u_{\mathrm{tgt}}
+=
+C-
+\Delta\operatorname{JVP}_{\mathrm{sg}}(u_\theta;C).
+$$
+
+Original MF loss 是
+
+$$
+\mathcal L_{\mathrm{MF}}
+=
+\mathbb E
+\left\|
+ u_\theta-\operatorname{sg}(u_{\mathrm{tgt}})
+\right\|^2.
+$$
+
+現在定義 compound predictor
+
+$$
+V_\theta^{\mathrm{MF}}
+:=
+u_\theta
++
+\Delta\operatorname{JVP}_{\mathrm{sg}}(u_\theta;C).
+$$
+
+考慮 pointwise residual：
+
+$$
+\begin{aligned}
+V_\theta^{\mathrm{MF}}-C
+&=
+u_\theta
++
+\Delta\operatorname{JVP}_{\mathrm{sg}}(u_\theta;C)
+-C\\
+&=
+u_\theta-
+\left[
+C-
+\Delta\operatorname{JVP}_{\mathrm{sg}}(u_\theta;C)
+\right]\\
+&=
+u_\theta-u_{\mathrm{tgt}}.
+\end{aligned}
+$$
+
+因此數值上
+
+$$
+\left\|V_\theta^{\mathrm{MF}}-C\right\|^2
+=
+\left\|u_\theta-u_{\mathrm{tgt}}\right\|^2.
+$$
+
+而兩邊的 JVP output 都被 stop-gradient，因此 backward 時 JVP term 都視為常數。故兩個 loss 不只 function value 相同，對 $\theta$ 的 gradient 也相同：
+
+$$
+\nabla_\theta
+\left\|V_\theta^{\mathrm{MF}}-C\right\|^2
+=
+\nabla_\theta
+\left\|u_\theta-\operatorname{sg}(u_{\mathrm{tgt}})\right\|^2.
+$$
+
+所以 Original MF 可以**嚴格等價**看成
+
+$$
+\mathcal L_{\mathrm{MF}}
+=
+\mathbb E
+\left\|
+V_\theta^{\mathrm{MF}}-(E-X)
+\right\|^2.
+$$
+
+這就是 paper 所說的「MeanFlow as $v$-loss」。
+
+---
+
+# 4. Theorem 2 — 為什麼拿 $E-X$ 當 sample label，最後卻學到 marginal $v^*$？
+
+這一步是理解 iMF 最關鍵的機率論證明。
+
+令
+
+$$
+C=E-X,
+\qquad
+S=(Z_t,T,R).
+$$
+
+假設 $R$ 在給定 $T$ 後不再攜帶 $(X,E)$ 的額外資訊，也就是
+
+$$
+\mathbb E[C\mid S]
+=
+\mathbb E[C\mid Z_t,T]
+=
+v^*(Z_t,T).
+$$
+
+對任意只依賴 $S$ 的可測函數 $F(S)$，考慮 MSE：
+
+$$
+\mathcal R(F)
+=
+\mathbb E\|F(S)-C\|^2.
+$$
+
+定義
+
+$$
+m(S):=\mathbb E[C\mid S].
+$$
+
+把 $C$ 寫成
+
+$$
+C=m(S)+\xi,
+\qquad
+\mathbb E[\xi\mid S]=0.
 $$
 
 則
 
 $$
+F(S)-C
+=
+F(S)-m(S)-\xi.
+$$
+
+平方展開：
+
+$$
 \begin{aligned}
-\log p_\theta(y)
-&=\log\int q(x_0)p_\theta(y\mid x_0)\,dx_0\\
-&=\log\mathbb E_{X_0\sim q}[p_\theta(y\mid X_0)]\\
-&\ge
-\mathbb E_{X_0\sim q}[\log p_\theta(y\mid X_0)].
+\|F-C\|^2
+&=
+\|F-m\|^2
++
+\|\xi\|^2
+-
+2(F-m)^T\xi.
 \end{aligned}
 $$
 
-再對 $Y\sim p_{\mathrm{tgt}}$ 取 expectation：
+取 expectation：
 
 $$
-\mathbb E_Y[\log p_\theta(Y)]
-\ge
-\mathbb E_{Y,X_0}[\log p_\theta(Y\mid X_0)].
+\begin{aligned}
+\mathbb E\|F-C\|^2
+&=
+\mathbb E\|F-m\|^2
++
+\mathbb E\|\xi\|^2\\
+&\quad-
+2\mathbb E[(F-m)^T\xi].
+\end{aligned}
 $$
 
-而 Gaussian conditional likelihood 給出
+最後一項為零，因為
 
 $$
-\mathbb E_{Y,X_0}[\log p_\theta(Y\mid X_0)]
-=-A\,\mathcal L_{\mathrm{NLL}}+C,
+\begin{aligned}
+\mathbb E[(F-m)^T\xi]
+&=
+\mathbb E\left[
+\mathbb E[(F-m)^T\xi\mid S]
+\right]\\
+&=
+\mathbb E\left[
+(F-m)^T\mathbb E[\xi\mid S]
+\right]\\
+&=0.
+\end{aligned}
 $$
 
-其中
+因此得到 orthogonal decomposition：
 
 $$
-A=\frac{1}{2\tau^2}>0.
+\boxed{
+\mathbb E\|F(S)-C\|^2
+=
+\mathbb E\|F(S)-m(S)\|^2
++
+\mathbb E\|C-m(S)\|^2
+}
+\tag{B}
+$$
+
+第二項與 $F$ 無關，所以唯一的 population MSE minimizer（a.s.）是
+
+$$
+F^*(S)=m(S)=v^*(Z_t,T).
+$$
+
+因此：
+
+> **雖然每個 minibatch 的 label 是 $E-X$，只要 predictor 本身只能看 $Z_t$（以及 $r,t$），MSE 的 population optimum 就是 marginal velocity $v^*$。**
+
+這正是 Flow Matching 與 iMF 可以使用 noisy conditional label 的數學理由。
+
+---
+
+# 5. Original MF 真正的問題：predictor 偷看了 sample-specific $E-X$
+
+Original MF 的 compound predictor 是
+
+$$
+V_\theta^{\mathrm{MF}}
+=
+u_\theta
++
+\Delta\operatorname{JVP}_{\mathrm{sg}}(u_\theta;E-X).
+$$
+
+所以它其實是
+
+$$
+V_\theta^{\mathrm{MF}}
+=
+V_\theta^{\mathrm{MF}}(Z_t,E-X,R,T).
+$$
+
+這時 Theorem 2 的前提被破壞了：predictor 不再只是 $S=(Z_t,R,T)$ 的函數，而是額外看到了 sample-specific $C=E-X$。
+
+因此它不是標準的
+
+$$
+F(S)\rightarrow C
+$$
+
+regression problem。
+
+這也解釋為什麼「把 $E-X$ 丟進 JVP」不是只是 harmless implementation detail：JVP tangent 本身帶有 conditional variance，而且 Jacobian-vector product 可能把這個 variance 放大。
+
+---
+
+# 6. Theorem 3 — iMF 把 JVP tangent 改成 $v_\theta$ 後，為什麼在 population 上是可行的？
+
+iMF 定義
+
+$$
+V_\theta^{\mathrm{iMF}}(S)
+=
+u_\theta(Z_t,R,T)
++
+\Delta\operatorname{JVP}_{\mathrm{sg}}
+\bigl(u_\theta;v_\theta(Z_t,T)\bigr).
+$$
+
+Loss 仍是
+
+$$
+\mathcal L_{\mathrm{iMF}}
+=
+\mathbb E
+\left\|
+V_\theta^{\mathrm{iMF}}(S)-C
+\right\|^2.
+$$
+
+注意：現在 predictor 不再直接輸入 $C=E-X$；它只看 $S$。
+
+由 Theorem 2，對任意 state-only predictor，population-optimal prediction 必為
+
+$$
+V^*(S)=v^*(Z_t,T).
+$$
+
+所以 iMF 的 regression target 在 population 上就是 marginal velocity。
+
+但我們還要證明：**MeanFlow 的 exact solution $(u^*,v^*)$ 確實能讓 iMF compound predictor 等於這個 Bayes-optimal $v^*$。**
+
+假設：
+
+1. $u^*$、$v^*$ 足夠光滑，使 JVP 存在；
+2. exact MeanFlow identity (A) 成立；
+3. model class 能表示 $u^*$ 與 $v^*$。
+
+把
+
+$$
+u_\theta=u^*,
+\qquad
+v_\theta=v^*
+$$
+
+代入 iMF compound predictor：
+
+$$
+\begin{aligned}
+V_\theta^{\mathrm{iMF}}
+&=
+u^*
++
+\Delta\operatorname{JVP}(u^*;v^*)\\
+&=v^*,
+\end{aligned}
+$$
+
+最後一步正是 MeanFlow identity (A)。
+
+所以 exact fields $(u^*,v^*)$ 會達到
+
+$$
+V_\theta^{\mathrm{iMF}}=v^*.
+$$
+
+再由 Theorem 2，$v^*$ 是所有 state-only predictor 的 Bayes-optimal MSE solution。因此
+
+$$
+\mathcal L_{\mathrm{iMF}}(u^*,v^*)
+=
+\mathbb E\|C-v^*(S)\|^2,
+$$
+
+也就是不可消除的 conditional variance（Bayes risk）。
+
+因此我們得到一個真正的 consistency statement：
+
+:::note[嚴格可說的結論]
+在 population limit、exact fields 可表示、MeanFlow identity 成立的條件下，**把 JVP tangent 從 sample-specific $E-X$ 改成 marginal $v_\theta$ 並不排除正確解；相反地，exact $(u^*,v^*)$ 本身就是 iMF objective 的 global population minimizer 之一。**
+:::
+
+這比單純說「看起來可以」強很多。
+
+---
+
+# 7. Boundary form 為什麼可以令 $v_\theta(z_t,t)=u_\theta(z_t,t,t)$？
+
+由 average velocity 定義
+
+$$
+u^*(z_t,r,t)
+=
+\frac{1}{t-r}
+\int_r^t v^*(z_\tau,\tau)d\tau.
+$$
+
+如果 $v^*$ 對時間連續，令 $r\to t$：
+
+$$
+\lim_{r\to t}
+\frac{1}{t-r}
+\int_r^t v^*(z_\tau,\tau)d\tau
+=
+v^*(z_t,t).
 $$
 
 因此
 
 $$
 \boxed{
--A\mathcal L_{\mathrm{NLL}}+C
-\le
-\mathbb E_Y[\log p_\theta(Y)]
+ u^*(z_t,t,t)=v^*(z_t,t)
 }
+\tag{C}
 $$
 
-這是「minimize NLL 會抬高 likelihood lower bound」的精確數學敘述。
+這不是 heuristic，而是 average over a vanishing interval 的極限。
 
-但要注意：**lower bound 上升，不代表每個 SGD step 都保證真實 marginal likelihood 單調增加**；Jensen gap 可能同時變化。
+所以 iMF 可以用
+
+$$
+v_\theta(z_t,t)
+:=
+u_\theta(z_t,t,t)
+$$
+
+作為 tangent estimate。
+
+而當 $r=t$ 時，$\Delta=0$，compound predictor 直接退化成
+
+$$
+V_\theta^{\mathrm{iMF}}
+=
+u_\theta(z_t,t,t).
+$$
+
+此時對 $E-X$ 做 MSE regression，由 Theorem 2，population optimum 正是
+
+$$
+u_\theta(z_t,t,t)=v^*(z_t,t).
+$$
+
+因此 boundary construction 和 marginal-velocity regression 是互相一致的。
 
 ---
 
-# 5. Expected log-likelihood 為什麼等於 $-H-D_{KL}$？
+# 8. Auxiliary $v$-head 為什麼也合理？
 
-forward KL 定義：
+如果不用 boundary form，而是另外建立 auxiliary $v$-head，paper 會加標準 Flow Matching auxiliary loss：
 
 $$
-D_{\mathrm{KL}}(p_{\mathrm{tgt}}\|p_\theta)
+\mathcal L_v
 =
-\int p_{\mathrm{tgt}}(y)
-\log\frac{p_{\mathrm{tgt}}(y)}{p_\theta(y)}dy.
+\mathbb E
+\left\|
+v_\theta(Z_t,T)-(E-X)
+\right\|^2.
 $$
 
-拆開：
+由 Theorem 2 直接得到
 
 $$
-D_{\mathrm{KL}}
+v_\theta^*(Z_t,T)
 =
-\mathbb E_{p_{\mathrm{tgt}}}[\log p_{\mathrm{tgt}}(Y)]
--
-\mathbb E_{p_{\mathrm{tgt}}}[\log p_\theta(Y)].
+\mathbb E[E-X\mid Z_t,T]
+=
+v^*(Z_t,T).
 $$
 
-又因為 entropy
+因此 auxiliary head 不是在學一個任意 latent quantity；它有明確的 Bayes regression target。
+
+:::caution[沒有 auxiliary loss 時不能亂宣稱]
+如果 auxiliary head 的 unshared parameters 只透過被 stop-gradient 的 JVP output 出現，那些參數可能收不到足夠 gradient。因此 paper 額外掛上 $\|v_\theta-(E-X)\|^2$ 的 FM loss。這一點不能省略。
+:::
+
+---
+
+# 9. 現在才接回 RMFlow：iMF 改 tangent 後，endpoint NLL 為什麼仍成立？
+
+這裡最好不要被不同 paper 的時間方向 / 正負號搞混，所以統一寫成 generic one-step endpoint map
 
 $$
-H(p_{\mathrm{tgt}})
-=-\mathbb E_{p_{\mathrm{tgt}}}[\log p_{\mathrm{tgt}}(Y)],
+G_\theta:S_0\mapsto \text{deterministic endpoint}.
+$$
+
+在 iMF paper 的 sampling convention，可以寫成
+
+$$
+G_\theta(z_1)=z_1-u_\theta(z_1,0,1).
+$$
+
+在 RMFlow 使用的另一種 index / sign convention，也可能寫成
+
+$$
+G_\theta(x_0)=x_0+\hat u_{0,1}(x_0;\theta).
+$$
+
+後面的 proof 對這個 sign 沒有依賴。
+
+RMFlow refinement 定義
+
+$$
+Y=G_\theta(S_0)+\tau\varepsilon,
+\qquad
+\varepsilon\sim\mathcal N(0,I),
+\qquad
+\tau>0.
+$$
+
+固定 $S_0=s$：
+
+$$
+Y\mid S_0=s
+\sim
+\mathcal N\bigl(G_\theta(s),\tau^2I\bigr).
 $$
 
 所以
 
 $$
-\boxed{
-\mathbb E_{p_{\mathrm{tgt}}}[\log p_\theta(Y)]
-=-H(p_{\mathrm{tgt}})
--D_{\mathrm{KL}}(p_{\mathrm{tgt}}\|p_\theta)
-}
+-\log p_\theta(y\mid s)
+=
+\frac{1}{2\tau^2}
+\|y-G_\theta(s)\|^2
++
+\frac d2\log(2\pi\tau^2).
 $$
 
-由於 target distribution 固定，$H(p_{\mathrm{tgt}})$ 對 $\theta$ 是常數。因此 maximizing expected log-likelihood 等價於 minimizing forward KL。
-
----
-
-# 6. 嚴格證明：RMFlow likelihood regularizer 與 iMF 相容
-
-下面把我們剛剛討論的「iMF 改成 $v_\theta$ 之後還能不能用 RMFlow？」寫成正式 proposition。
-
-## Proposition 1 — Gaussian refinement 對 training objective 是 model-agnostic 的
-
-設：
-
-1. $X_0\sim q$ 為 prior；
-2. 任意 one-step generative model 定義 measurable deterministic map
-   $$g_\theta:\mathbb R^d\to\mathbb R^d;$$
-3. $\tau>0$ 固定；
-4. $\varepsilon\sim\mathcal N(0,I)$ 且與 $X_0$ independent；
-5. 定義 final sample
-   $$Y=g_\theta(X_0)+\tau\varepsilon.$$
-
-則對每個固定 $x_0$：
+如果 $\tau$ 固定，與參數有關的部分就是 endpoint MSE：
 
 $$
-Y\mid X_0=x_0\sim\mathcal N(g_\theta(x_0),\tau^2I).
+\mathcal L_{\mathrm{endpoint}}
+:=
+\mathbb E
+\left[
+\|Y-G_\theta(S_0)\|^2
+\right].
 $$
 
-進而
+注意這個式子刻意不用 `\boxed{...}`，避免上一版頁面出現的 KaTeX render error。
+
+再把 latent prior 積掉：
 
 $$
-\log p_\theta(y\mid x_0)
-=-\frac{1}{2\tau^2}\|y-g_\theta(x_0)\|^2+C.
+p_\theta(y)
+=
+\int q(s)p_\theta(y\mid s)ds.
 $$
 
-若 $\mathbb E\|Y-g_\theta(X_0)\|^2<\infty$，則 Jensen 給出
+由 Jensen：
+
+$$
+\log p_\theta(y)
+\ge
+\mathbb E_{S_0}
+[\log p_\theta(y\mid S_0)].
+$$
+
+再對 target distribution 平均：
 
 $$
 -\frac{1}{2\tau^2}
-\mathbb E\|Y-g_\theta(X_0)\|^2+C
-\le
-\mathbb E_Y[\log p_\theta(Y)].
-$$
-
-### Proof
-
-第一步直接來自 Gaussian affine transform：
-
-$$
-\tau\varepsilon\sim\mathcal N(0,\tau^2I),
-$$
-
-加上 deterministic shift $g_\theta(x_0)$ 後即得 conditional Gaussian。
-
-第二步把 Gaussian density 取 log 即得 conditional log-likelihood。
-
-第三步對
-
-$$
-p_\theta(y)=\int q(x_0)p_\theta(y\mid x_0)dx_0
-$$
-
-使用 Jensen inequality，再對 target distribution 積分，即得 lower bound。證畢。
-
-:::note[這個命題故意沒有提 MeanFlow]
-因為 proof 完全不需要知道 $g_\theta$ 是怎麼訓練出來的。它可以來自 original MeanFlow、Improved MeanFlow、distillation，甚至任何其他 one-step map。
-:::
-
----
-
-# 7. Proposition 1 套到 Improved MeanFlow
-
-iMF 的 objective reformulation 改的是 training-time compound predictor / JVP tangent。典型寫法：
-
-$$
-V_\theta(z_t)
-=u_\theta(z_t,r,t)
-+(t-r)\operatorname{JVP}_{sg}(u_\theta;v_\theta),
-$$
-
-並以 sample-level conditional velocity 做 regression supervision。
-
-但 inference 的 one-step endpoint 仍由 learned mean-flow map 定義。沿用本站 convention：
-
-$$
-g_\theta(x_0)
-:=x_0+u_\theta(x_0,0,1).
-$$
-
-只要 $g_\theta$ 是 well-defined measurable map，而且 $\tau>0$，直接把 Proposition 1 的 $g_\theta$ 換成 iMF 的 endpoint map，就得到
-
-$$
-Y\mid X_0=x_0
-\sim
-\mathcal N\left(
- x_0+u_\theta(x_0,0,1),
- \tau^2I
-\right).
-$$
-
-所以 iMF + RMFlow 的 endpoint NLL 可以定義為
-
-$$
-\boxed{
 \mathcal L_{\mathrm{endpoint}}
-=
-\mathbb E
-\left\|
-Y-igl(X_0+u_\theta(X_0,0,1)\bigr)
-\right\|^2
-}
-$$
-
-並且同樣有
-
-$$
--\frac{1}{2\tau^2}\mathcal L_{\mathrm{endpoint}}+C
++C
 \le
 \mathbb E_Y[\log p_\theta(Y)].
 $$
 
-因此：
+而
 
 $$
-\boxed{
-\text{iMF 把 JVP tangent 從 sample-specific }(e-x)
-\text{ 改成 }v_\theta
-\text{，不會破壞 RMFlow 的 likelihood proof。}
-}
+\mathbb E_{p_{\mathrm{tgt}}}
+[\log p_\theta(Y)]
+=
+-H(p_{\mathrm{tgt}})
+-D_{\mathrm{KL}}(p_{\mathrm{tgt}}\|p_\theta).
 $$
 
-原因非常具體：**likelihood proof 只看到 final map $g_\theta$ 與 Gaussian refinement；它根本沒有使用 JVP tangent 的形式。**
+所以 endpoint NLL 的 likelihood / forward-KL interpretation 完整保留。
+
+### 為什麼 iMF 的 $v_\theta$ replacement 不會破壞這個 proof？
+
+因為上面整段只用到
+
+$$
+G_\theta(S_0)
+$$
+
+和 Gaussian noise $\tau\varepsilon$。
+
+它**沒有任何一步**使用
+
+$$
+E-X,
+\qquad
+v_\theta,
+\qquad
+\operatorname{JVP}(u_\theta;\cdot)
+$$
+
+的具體形式。
+
+因此只要 iMF 最後仍定義一個 deterministic one-step endpoint map $G_\theta$，RMFlow 的 Gaussian conditional likelihood 就仍然合法。
 
 ---
 
-# 8. Proposition 2 — 加上 RMFlow loss 後，gradient 是否真的能更新 iMF？
-
-假設 $u_\theta(x_0,0,1)$ 對 $\theta$ 可微，而且
-
-$$
-g_\theta(x_0)=x_0+u_\theta(x_0,0,1).
-$$
+# 10. Theorem 4 — endpoint NLL 的 gradient 到底更新到哪裡？
 
 令
 
 $$
-\mathcal L_R(\theta)=\mathbb E\|Y-g_\theta(X_0)\|^2.
+\mathcal L_{\mathrm{endpoint}}
+=
+\mathbb E
+\|Y-G_\theta(S_0)\|^2.
 $$
 
-在可交換 gradient 與 expectation 的標準 regularity conditions 下：
+若 $G_\theta$ 對 $\theta$ 可微，且可交換 gradient 與 expectation：
 
 $$
 \begin{aligned}
-\nabla_\theta\mathcal L_R
+\nabla_\theta\mathcal L_{\mathrm{endpoint}}
 &=
-\mathbb E\left[
-\nabla_\theta
-(Y-g_\theta)^T(Y-g_\theta)
-\right]\\
-&=
-2\mathbb E\left[
-J_{g_\theta}(X_0)^T
-(g_\theta(X_0)-Y)
+2\mathbb E
+\left[
+J_{G_\theta}(S_0)^T
+\bigl(G_\theta(S_0)-Y\bigr)
 \right].
 \end{aligned}
 $$
 
-所以只要 endpoint map 真正依賴 iMF backbone parameters，RMFlow NLL gradient 就會直接作用在同一個 one-step map 上。
+因此 endpoint likelihood term 會直接更新 **inference 真正使用的 one-step map**。
 
-### Boundary $v_\theta$
+對 boundary form，$v_\theta=u_\theta(z,t,t)$ 與 endpoint $u_\theta$ 共用參數，因此兩個 objective 在 backbone 上會耦合。
 
-若
+對 auxiliary $v$-head，RMFlow endpoint loss 不一定直接更新 head 的 unshared layers；那部分仍主要由 auxiliary FM loss
 
 $$
-v_\theta(z_t,t)=u_\theta(z_t,t,t),
+\|v_\theta-(E-X)\|^2
 $$
 
-則 $v_\theta$ 與 $u_\theta$ 共用 parameters；endpoint NLL 更新 $u_\theta$ 時，也會更新同一組 backbone parameters。
-
-### Auxiliary $v$-head
-
-若 $v_\theta$ 是 training-only auxiliary head，endpoint NLL 是否直接更新該 head，取決於它和 $u_\theta$ 的 computational graph / shared backbone。這不影響 Proposition 1 的 likelihood validity，只影響 optimization coupling。
+負責。
 
 ---
 
-# 9. 一個合理的 hybrid objective
+# 11. 所以 iMF + RMFlow 的 joint objective 可以怎麼寫？
 
-因此數學上可以考慮
+一個數學上合法的形式是
 
 $$
-\boxed{
 \mathcal L_{\mathrm{hybrid}}
 =
 \mathcal L_{\mathrm{iMF}}
-+\beta\mathcal L_v
-+\lambda_{\mathrm{NLL}}\mathcal L_{\mathrm{endpoint}}
-+\lambda_2\mathcal L_{\mathrm{guide}}
-}
++
+\beta\mathcal L_v
++
+\lambda_{\mathrm{NLL}}\mathcal L_{\mathrm{endpoint}}
++
+\lambda_{\mathrm{guide}}\mathcal L_{\mathrm{guide}}.
 $$
 
-其中：
+其中
 
-- $\mathcal L_{\mathrm{iMF}}$：學 state-conditioned compound predictor；
-- $\mathcal L_v$：若使用 auxiliary $v$-head，提供 instantaneous velocity supervision；
-- $\mathcal L_{\mathrm{endpoint}}$：直接約束 1-NFE endpoint likelihood；
-- $\mathcal L_{\mathrm{guide}}$：若採 RMFlow conditional prior / guidance encoder，再加入相應 regularization。
+$$
+\mathcal L_{\mathrm{iMF}}
+=
+\mathbb E
+\|V_\theta^{\mathrm{iMF}}-(E-X)\|^2,
+$$
 
-這證明的是「objective 在機率模型與微分上是合法且相容的」，不是證明它一定比 iMF 更好。
+而
+
+$$
+\mathcal L_{\mathrm{endpoint}}
+=
+\mathbb E
+\|Y-G_\theta(S_0)\|^2.
+$$
+
+這兩項控制不同層次：
+
+- iMF loss：要求 compound predictor 在 probability path 上回歸 marginal instantaneous velocity；
+- RMFlow endpoint loss：要求 one-step final map 對 refined target 給出高 conditional likelihood。
+
+因此兩者不是重複 loss。
 
 ---
 
-# 10. 哪些東西還沒有被證明？
+# 12. 這個 proof 到底證明了什麼？
 
-這裡最重要。
+目前可以嚴格證明的有四件事：
 
-## 10.1 不能直接寫 $M\mathcal L_{\mathrm{iMF}}\ge W_2^2$
-
-RMFlow 引用的 Wasserstein-style bound 是針對特定 CMFM / flow-map training error。iMF 改寫 objective 後，除非另外證明
-
-$$
-\mathcal L_{\mathrm{CMFM}}
-\le C\,\mathcal L_{\mathrm{iMF}}
-$$
-
-或證明兩者的 population optimum / induced vector field error 等價，否則不能直接把原 theorem 搬過來。
-
-## 10.2 NLL lower bound 不保證 FID / perceptual quality 必然改善
-
-我們有
-
-$$
-\mathcal L_{\mathrm{NLL}}\downarrow
-\Rightarrow
-\text{computable lower bound}\uparrow,
-$$
-
-但沒有 theorem 說
-
-$$
-\mathcal L_{\mathrm{NLL}}\downarrow
-\Rightarrow
-\mathrm{FID}\downarrow
-$$
-
-或每一步都讓真實 $D_{KL}$ 單調下降。
-
-## 10.3 這正是研究缺口
-
-真正值得證明的是：
-
-1. iMF objective 對 original CMFM discrepancy 是否有 upper/lower comparison bound；
-2. endpoint NLL 與 iMF regression 同時存在時，是否能建立新的 transport + likelihood joint bound；
-3. $\lambda_{\mathrm{NLL}}$ 對 bias / variance / optimization geometry 有什麼作用；
-4. boundary-$v$ 與 auxiliary-$v$ 版本是否有不同 stability condition。
+1. Original MF 的 $u$-loss 與 paper 的 $v$-loss reformulation 在 stop-gradient convention 下 pointwise residual 與 gradient 都等價。
+2. 對 sample conditional label $E-X$ 做 state-only MSE regression，其 population optimum 是 marginal velocity $v^*(z_t,t)$。
+3. 若 exact $u^*,v^*$ 滿足 MeanFlow identity，則把 JVP tangent 改成 $v_\theta$ 後，$(u^*,v^*)$ 仍然達到 iMF 的 Bayes-optimal population risk；所以 replacement 在理論上是 consistent / feasible 的。
+4. iMF 最後只要仍定義 deterministic endpoint map，RMFlow 的 Gaussian NLL、Jensen lower bound 與 forward-KL relation 全部仍成立。
 
 ---
 
-# 11. 最後把整條邏輯壓成一條鏈
+# 13. 哪些東西還沒有被證明？
+
+這裡不能混在一起。
+
+### 13.1 還不能直接說 iMF 自動繼承 original CMFM 的 Wasserstein theorem
+
+要得到類似
 
 $$
-\boxed{
-\begin{aligned}
-X_0
-&\xrightarrow{\text{iMF / MeanFlow one-step}}
-\mu_\theta(X_0)\\
-&\xrightarrow{+\tau\varepsilon}
-Y,\\[1mm]
-Y\mid X_0
-&\sim\mathcal N(\mu_\theta(X_0),\tau^2I)\\
-&\Downarrow\\
--\log p_\theta(Y\mid X_0)
-&=\frac{\|Y-\mu_\theta(X_0)\|^2}{2\tau^2}+C\\
-&\Downarrow\;\text{Jensen}\\
--A\mathcal L_{\mathrm{endpoint}}+C
-&\le \mathbb E[\log p_\theta(Y)]\\
-&= -H(p_{\mathrm{tgt}})-D_{KL}(p_{\mathrm{tgt}}\|p_\theta).
-\end{aligned}
-}
+W_2^2(p_\theta,p_*)
+\le
+C\mathcal L_{\mathrm{iMF}},
 $$
 
-因此目前可以嚴格說：
+還需要建立 iMF regression error 到 endpoint map error 的 stability bound。
 
-> **RMFlow 的 Gaussian endpoint-likelihood mechanism 可以套到 iMF，因為它只要求一個 deterministic final map，而不要求 original MeanFlow 的 sample-specific JVP tangent。**
+### 13.2 可以先證明一個 conditional transport statement
 
-但目前不能嚴格說：
+假設未來能證明
 
-> **iMF + RMFlow 自動繼承 original CMFM 的 Wasserstein theorem，或一定比兩者單獨使用更好。**
+$$
+\mathbb E
+\|G_\theta(S_0)-G_*(S_0)\|^2
+\le
+C\mathcal L_{\mathrm{iMF}}.
+$$
 
-這一段就是接下來可以真正做成 theorem + experiment 的地方。
+用同一個 $S_0$ 作 coupling，則
+
+$$
+W_2^2
+\bigl((G_\theta)_\#q,(G_*)_\#q\bigr)
+\le
+\mathbb E
+\|G_\theta(S_0)-G_*(S_0)\|^2.
+$$
+
+再對兩邊加**同一個** Gaussian noise $\tau\varepsilon$，shared-noise coupling 給出
+
+$$
+W_2^2
+\left(
+(G_\theta)_\#q*\mathcal N(0,\tau^2I),
+(G_*)_\#q*\mathcal N(0,\tau^2I)
+\right)
+\le
+W_2^2
+\bigl((G_\theta)_\#q,(G_*)_\#q\bigr).
+$$
+
+所以 Gaussian refinement 本身不會把這個 shared-coupling $W_2$ bound 放大。
+
+真正還缺的核心 theorem，就是
+
+$$
+\mathcal L_{\mathrm{iMF}}
+\Longrightarrow
+\text{endpoint map error}
+$$
+
+這一段。
+
+### 13.3 也沒有 theorem 保證加 NLL 一定讓 FID 下降
+
+我們能證明的是 likelihood lower bound：
+
+$$
+\mathcal L_{\mathrm{endpoint}}\downarrow
+\quad\Rightarrow\quad
+\text{computable likelihood lower bound}\uparrow.
+$$
+
+但不能因此直接寫
+
+$$
+\mathcal L_{\mathrm{endpoint}}\downarrow
+\quad\Rightarrow\quad
+\mathrm{FID}\downarrow.
+$$
+
+FID / perceptual quality 仍需要 experiment。
+
+---
+
+# 14. 最後把「target 從哪裡變到哪裡」畫成一條邏輯鏈
+
+Original MF：
+
+$$
+C=E-X
+\longrightarrow
+u_{\mathrm{tgt}}
+=
+C-\Delta\operatorname{JVP}(u_\theta;C).
+$$
+
+等價 reformulation：
+
+$$
+V_\theta^{\mathrm{MF}}(Z_t,C)
+=
+u_\theta
++
+\Delta\operatorname{JVP}(u_\theta;C),
+$$
+
+並回歸
+
+$$
+V_\theta^{\mathrm{MF}}(Z_t,C)
+\rightarrow C.
+$$
+
+iMF：
+
+$$
+V_\theta^{\mathrm{iMF}}(Z_t)
+=
+u_\theta
++
+\Delta\operatorname{JVP}(u_\theta;v_\theta(Z_t)),
+$$
+
+仍使用 sample label
+
+$$
+C=E-X,
+$$
+
+但由 MSE conditional-expectation theorem，population target 是
+
+$$
+v^*(Z_t)=\mathbb E[E-X\mid Z_t].
+$$
+
+RMFlow 再作用在 inference endpoint：
+
+$$
+S_0
+\xrightarrow{\;G_\theta\;}
+\text{one-step mean}
+\xrightarrow{+\tau\varepsilon}
+Y.
+$$
+
+所以三個層次不要混在一起：
+
+> **sample supervision 是 $E-X$；iMF JVP tangent 是 $v_\theta$；RMFlow NLL 作用的是 final endpoint map $G_\theta$。**
+
+這才是完整的 iMF + RMFlow 可行性論證。
+
+## Sources
+
+- [Improved Mean Flows: On the Challenges of Fastforward Generative Models](https://arxiv.org/abs/2512.02012)
+- [RMFlow: Refined Mean Flow by a Noise-Injection Step for Multimodal Generation](https://arxiv.org/abs/2602.00849)
 
 ## Related pages
 
