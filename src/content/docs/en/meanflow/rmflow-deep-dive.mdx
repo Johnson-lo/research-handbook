@@ -1,585 +1,1099 @@
 ---
-title: RMFlow Deep Dive | Noise → NLL → Jensen → KL → rigorous iMF feasibility
-description: A rigorous derivation of the Original MeanFlow-to-iMF target/JVP-tangent change and why RMFlow endpoint likelihood remains valid.
+title: RMFlow Deep Dive | Original derivation + rigorous iMF compatibility analysis
+description: Preserve the full RMFlow method and Eqs. (5)–(17) first, then separately derive what remains valid, what requires assumptions, and what is still open when replacing the first-stage CMFM objective with Improved MeanFlow.
 sidebar:
   order: 3
 ---
 
 import RMFlowNoiseDemo from '../../../components/RMFlowNoiseDemo.astro';
 
-# 0. Start from the endpoint object RMFlow refines
+:::note[Page structure]
+This page deliberately separates two layers:
 
-Let a one-step model produce a deterministic endpoint
+1. **Original RMFlow**: the method and equations are presented first, in the paper's own logical order.
+2. **Research extension to iMF**: only after the original derivation is complete do we analyze what changes if Improved MeanFlow replaces the first-stage CMFM objective.
+
+Statements proved in RMFlow and statements derived here under extra assumptions are explicitly separated.
+:::
+
+---
+
+# Part I — Original RMFlow method and equations
+
+# 1. What problem does RMFlow address?
+
+MeanFlow aims to generate with a single neural-function evaluation by learning an interval-averaged velocity. The difficulty is that a one-step deterministic map must place the sample close to the correct multimodal endpoint immediately.
+
+RMFlow keeps the one-step MeanFlow transport, but appends a cheap Gaussian refinement:
 
 $$
-\mu_\theta(x_0)=g_\theta(x_0).
+\text{prior}
+\xrightarrow{\text{1-NFE MeanFlow}}
+\text{coarse endpoint}
+\xrightarrow{\text{Gaussian noise}}
+\text{final sample}.
 $$
 
-RMFlow adds Gaussian refinement
+The goal is to retain transport-style control from MeanFlow while adding an endpoint likelihood / KL criterion.
+
+---
+
+# 2. Equation (5): the original transport-side control
+
+RMFlow cites an existing MeanFlow / flow-map result of the form
 
 $$
-Y=g_\theta(x_0)+\tau\varepsilon,
+M\,\mathcal L_{\mathrm{CMFM}}(\theta)
+\ge
+W_2^2(p_{\mathrm{tgt}},p_\theta),
+\qquad M>0.
+\tag{5}
+$$
+
+with
+
+$$
+W_2^2(p_{\mathrm{tgt}},p_\theta)
+=
+\inf_{\gamma\in\Pi(p_{\mathrm{tgt}},p_\theta)}
+\mathbb E_{(x,y)\sim\gamma}\|x-y\|^2.
+$$
+
+This is the transport-geometry side of the argument: small CMFM discrepancy controls a Wasserstein gap.
+
+:::caution[Not a new RMFlow theorem]
+Equation (5) is imported from prior MeanFlow / flow-map theory. RMFlow's new contribution is the additional likelihood-related control derived below.
+:::
+
+---
+
+# 3. Equations (6)–(8): the two-stage noise construction
+
+RMFlow first defines an intermediate noisy target
+
+$$
+x_1
+=
+x_{\mathrm{data}}+\sigma\epsilon_1,
 \qquad
-\varepsilon\sim\mathcal N(0,I).
+\epsilon_1\sim\mathcal N(0,I),
+\qquad
+\sigma<\sigma_{\min}.
+\tag{6}
 $$
 
-Hence
+Then it adds a second Gaussian perturbation
 
 $$
-Y\mid X_0=x_0
-\sim
-\mathcal N\bigl(g_\theta(x_0),\tau^2I\bigr).
+x_{\mathrm{tgt}}
+=
+x_1+
+\sqrt{\sigma_{\min}^2-\sigma^2}\,\epsilon_2,
+\qquad
+\epsilon_2\sim\mathcal N(0,I).
+\tag{7}
+$$
+
+Assuming $\epsilon_1\perp\epsilon_2$,
+
+$$
+x_{\mathrm{tgt}}
+=
+x_{\mathrm{data}}
++\sigma\epsilon_1
++\sqrt{\sigma_{\min}^2-\sigma^2}\,\epsilon_2.
+$$
+
+Because independent Gaussian covariances add,
+
+$$
+\begin{aligned}
+\operatorname{Cov}
+\left(
+\sigma\epsilon_1+
+\sqrt{\sigma_{\min}^2-\sigma^2}\,\epsilon_2
+\right)
+&=
+\sigma^2I+(\sigma_{\min}^2-\sigma^2)I\\
+&=
+\sigma_{\min}^2I.
+\end{aligned}
+$$
+
+Hence there exists a standard Gaussian $\epsilon\sim\mathcal N(0,I)$ such that
+
+$$
+x_{\mathrm{tgt}}
+\overset d=
+x_{\mathrm{data}}+\sigma_{\min}\epsilon.
+$$
+
+The important identity is therefore
+
+$$
+\underbrace{\sigma^2}_{\text{first-stage variance}}
++
+\underbrace{(\sigma_{\min}^2-\sigma^2)}_{\text{refinement variance}}
+=
+\underbrace{\sigma_{\min}^2}_{\text{final variance}}.
 $$
 
 <RMFlowNoiseDemo lang="en" />
 
-The key point is that iMF changes how the deterministic map is trained, whereas RMFlow only needs the final deterministic map itself.
+## 3.1 Generation equation: Equation (8)
 
----
-
-# 1. What exactly changes from Original MF to iMF?
-
-For linear interpolation
+The learned one-step intermediate endpoint is
 
 $$
-Z_t=(1-t)X+tE,
+x_1=x_0+\hat u_{0,1}(x_0;\theta).
 $$
 
-let the sample conditional velocity be
+Appending the second noise step gives
 
 $$
-C:=E-X.
-$$
-
-The state-conditioned marginal velocity is
-
-$$
-v^*(z,t)
-:=
-\mathbb E[C\mid Z_t=z,T=t].
-$$
-
-A crucial distinction is:
-
-- the sample label remains $E-X$;
-- the population regression target is the conditional mean $v^*(z,t)$;
-- iMF changes the **JVP tangent** from the sample-specific $E-X$ to a state-conditioned prediction $v_\theta(z,t)$.
-
-So it is imprecise to say that iMF simply "replaces the target by $v_\theta$."
-
----
-
-# 2. MeanFlow identity
-
-Let $u^*(z_t,r,t)$ denote the interval-average velocity and define
-
-$$
-\Delta=t-r.
-$$
-
-The MeanFlow identity can be written as
-
-$$
- u^*(z_t,r,t)
+\hat x_{\mathrm{tgt}}
 =
-v^*(z_t,t)-\Delta\frac{d}{dt}u^*(z_t,r,t).
+x_0+\hat u_{0,1}(x_0;\theta)
++
+\sqrt{\sigma_{\min}^2-\sigma^2}\,\epsilon_2.
+\tag{8}
+$$
+
+The neural flow is still evaluated only once; the second stage is just Gaussian sampling and addition, so generation remains 1-NFE.
+
+---
+
+# 4. Equation (9): the conditional Gaussian and its log-likelihood
+
+Define
+
+$$
+\mu_\theta(x_0)
+:=
+x_0+\hat u_{0,1}(x_0;\theta),
+$$
+
+and
+
+$$
+\tau^2
+:=
+\sigma_{\min}^2-\sigma^2.
+$$
+
+Then Equation (8) becomes
+
+$$
+\hat x_{\mathrm{tgt}}
+=
+\mu_\theta(x_0)+\tau\epsilon_2,
+\qquad
+\epsilon_2\sim\mathcal N(0,I).
+$$
+
+Conditioning on $x_0$ makes $\mu_\theta(x_0)$ deterministic, so
+
+$$
+\hat x_{\mathrm{tgt}}\mid x_0
+\sim
+\mathcal N\bigl(
+\mu_\theta(x_0),
+\tau^2I
+\bigr).
+$$
+
+Its conditional density is
+
+$$
+p_\theta(x_{\mathrm{tgt}}\mid x_0)
+=
+\frac{1}{(2\pi\tau^2)^{d/2}}
+\exp\left[
+-\frac{1}{2\tau^2}
+\|x_{\mathrm{tgt}}-\mu_\theta(x_0)\|^2
+\right].
+$$
+
+Taking logs gives
+
+$$
+\log p_\theta(x_{\mathrm{tgt}}\mid x_0)
+=
+-\frac{1}{2(\sigma_{\min}^2-\sigma^2)}
+\left\|
+ x_{\mathrm{tgt}}-
+ \bigl(x_0+\hat u_{0,1}(x_0;\theta)\bigr)
+\right\|^2
++C,
+\tag{9}
+$$
+
+where
+
+$$
+C
+=-\frac d2
+\log\left(2\pi(\sigma_{\min}^2-\sigma^2)\right).
+$$
+
+---
+
+# 5. Equation (10): why the NLL becomes an MSE-like objective
+
+Since
+
+$$
+x_{\mathrm{tgt}}
+\overset d=
+x_{\mathrm{data}}+\sigma_{\min}\epsilon,
+\qquad
+\epsilon\sim\mathcal N(0,I),
+$$
+
+and $\tau$ is fixed, the only $\theta$-dependent term in the Gaussian NLL is the squared endpoint error. RMFlow therefore defines
+
+$$
+\mathcal L_{\mathrm{NLL}}
+:=
+\mathbb E_{x_0,x_{\mathrm{data}},\epsilon}
+\left[
+\left\|
+(x_{\mathrm{data}}+\sigma_{\min}\epsilon)
+-
+(x_0+\hat u_{0,1}(x_0;\theta))
+\right\|^2
+\right].
+\tag{10}
+$$
+
+Strictly, the full Gaussian NLL is
+
+$$
+\frac{1}{2\tau^2}\mathcal L_{\mathrm{NLL}}
++
+\frac d2\log(2\pi\tau^2).
+$$
+
+Thus Equation (10) is a scaled / shifted surrogate that is optimization-equivalent to Gaussian NLL when the variance is fixed.
+
+---
+
+# 6. Equation (11): linking NLL to marginal likelihood and forward KL
+
+RMFlow's main likelihood relation is
+
+$$
+-A\mathcal L_{\mathrm{NLL}}+C
+\le
+\mathbb E_{x_{\mathrm{tgt}}}
+[\log p_\theta(x_{\mathrm{tgt}})]
+=
+-H(p_{\mathrm{tgt}})
+-D_{\mathrm{KL}}(p_{\mathrm{tgt}}\|p_\theta),
+\tag{11}
+$$
+
+with
+
+$$
+A=
+\frac{1}{2(\sigma_{\min}^2-\sigma^2)}.
+$$
+
+The remaining equations explain why this bound is valid.
+
+---
+
+# 7. Equation (13): why marginal likelihood is an expectation over $x_0$
+
+For fixed $x_{\mathrm{tgt}}$, $x_0$ is a latent variable:
+
+$$
+p_\theta(x_{\mathrm{tgt}})
+=
+\int q(x_0)
+ p_\theta(x_{\mathrm{tgt}}\mid x_0)
+\,dx_0
+=
+\mathbb E_{x_0}
+[p_\theta(x_{\mathrm{tgt}}\mid x_0)].
+$$
+
+Because $\log$ is concave,
+
+$$
+\log\mathbb E[Z]\ge\mathbb E[\log Z].
+$$
+
+Setting
+
+$$
+Z=p_\theta(x_{\mathrm{tgt}}\mid x_0)
+$$
+
+gives
+
+$$
+\log p_\theta(x_{\mathrm{tgt}})
+\ge
+\mathbb E_{x_0}
+[\log p_\theta(x_{\mathrm{tgt}}\mid x_0)].
+\tag{13}
+$$
+
+This is the Jensen lower bound.
+
+---
+
+# 8. Equation (14): why the expectation expands to $(x_0,x_{\mathrm{tgt}})$
+
+Equation (13) holds for every fixed target. Averaging both sides over
+
+$$
+x_{\mathrm{tgt}}\sim p_{\mathrm{tgt}}
+$$
+
+gives
+
+$$
+\mathbb E_{x_{\mathrm{tgt}}}
+[\log p_\theta(x_{\mathrm{tgt}})]
+\ge
+\mathbb E_{x_{\mathrm{tgt}}}
+\mathbb E_{x_0}
+[\log p_\theta(x_{\mathrm{tgt}}\mid x_0)].
+$$
+
+In the unguided product-measure setting,
+
+$$
+\mathbb E_{x_{\mathrm{tgt}}}
+\mathbb E_{x_0}[\cdot]
+=
+\mathbb E_{x_0,x_{\mathrm{tgt}}}[\cdot],
+$$
+
+so
+
+$$
+\mathbb E_{x_{\mathrm{tgt}}}
+[\log p_\theta(x_{\mathrm{tgt}})]
+\ge
+\mathbb E_{x_0,x_{\mathrm{tgt}}}
+[\log p_\theta(x_{\mathrm{tgt}}\mid x_0)].
+\tag{14}
+$$
+
+---
+
+# 9. Equations (15)–(16): substitute the Gaussian likelihood
+
+From Equation (9),
+
+$$
+\log p_\theta(x_{\mathrm{tgt}}\mid x_0)
+=
+-A
+\|x_{\mathrm{tgt}}-\mu_\theta(x_0)\|^2
++C.
 $$
 
 Therefore
 
 $$
- v^*(z_t,t)
+\mathbb E_{x_0,x_{\mathrm{tgt}}}
+[\log p_\theta(x_{\mathrm{tgt}}\mid x_0)]
 =
- u^*(z_t,r,t)
-+
-\Delta\operatorname{JVP}(u^*;v^*).
-\tag{A}
+-A\mathcal L_{\mathrm{NLL}}+C.
+\tag{15}
 $$
 
-This exact identity is what makes a state-conditioned JVP tangent theoretically admissible.
+Combining this with Equation (14),
+
+$$
+-A\mathcal L_{\mathrm{NLL}}+C
+\le
+\mathbb E_{x_{\mathrm{tgt}}}
+[\log p_\theta(x_{\mathrm{tgt}})].
+\tag{16}
+$$
+
+Hence the precise optimization statement is
+
+$$
+\mathcal L_{\mathrm{NLL}}\downarrow
+\quad\Longrightarrow\quad
+\text{the computable likelihood lower bound increases}.
+$$
+
+This does not imply that the true marginal likelihood must increase monotonically after every SGD step.
 
 ---
 
-# 3. Theorem 1 — Original MF $u$-loss equals its $v$-loss reformulation
+# 10. Equation (17): expected log-likelihood equals $-H-D_{KL}$
 
-Original MF uses the apparent target
+Forward KL is
+
+$$
+D_{\mathrm{KL}}(p_{\mathrm{tgt}}\|p_\theta)
+=
+\mathbb E_{p_{\mathrm{tgt}}}
+\left[
+\log\frac{p_{\mathrm{tgt}}(x)}{p_\theta(x)}
+\right].
+$$
+
+Expanding,
+
+$$
+D_{\mathrm{KL}}
+=
+\mathbb E_{p_{\mathrm{tgt}}}[\log p_{\mathrm{tgt}}]
+-
+\mathbb E_{p_{\mathrm{tgt}}}[\log p_\theta].
+$$
+
+Since
+
+$$
+H(p_{\mathrm{tgt}})
+=
+-\mathbb E_{p_{\mathrm{tgt}}}[\log p_{\mathrm{tgt}}],
+$$
+
+we obtain
+
+$$
+\mathbb E_{p_{\mathrm{tgt}}}
+[\log p_\theta]
+=
+-H(p_{\mathrm{tgt}})
+-D_{\mathrm{KL}}(p_{\mathrm{tgt}}\|p_\theta).
+\tag{17}
+$$
+
+Because $p_{\mathrm{tgt}}$ is fixed, its entropy is constant with respect to $\theta$.
+
+---
+
+# 11. Equation (12): the original RMFlow joint objective
+
+The RMFlow paper optimizes
+
+$$
+\mathcal L_{\mathrm{RMFlow}}(\theta,\omega)
+=
+\mathcal L_{\mathrm{CMFM}}
++
+\lambda_1\mathcal L_{\mathrm{NLL}}
++
+\lambda_2
+\mathbb E_{(x_{\mathrm{data}},c)}
+\|\phi_\omega(c)\|^2.
+\tag{12}
+$$
+
+| Term | Role in the paper |
+|---|---|
+| $\mathcal L_{\mathrm{CMFM}}$ | MeanFlow path / Wasserstein-style control |
+| $\mathcal L_{\mathrm{NLL}}$ | endpoint likelihood / forward-KL-related control |
+| $\|\phi_\omega(c)\|^2$ | guided-prior regularization |
+
+A key factual point is that **the original RMFlow objective uses CMFM, not iMF**. Replacing the first term with iMF is therefore a research extension, not part of the original paper.
+
+---
+
+# Part II — iMF + RMFlow as a research extension
+
+# 12. Precisely what changes from Original MF to iMF?
+
+Use the iMF interpolation
+
+$$
+z_t=(1-t)x+te,
+$$
+
+with data sample $x\sim p_{\mathrm{data}}$ and prior noise $e\sim p_{\mathrm{prior}}$.
+
+The sample conditional velocity is
+
+$$
+v_c=e-x.
+$$
+
+But the state-conditioned marginal velocity is
+
+$$
+v(z_t,t)
+=
+\mathbb E[e-x\mid z_t,t].
+\tag{iMF-2}
+$$
+
+Therefore the phrase "iMF changes the target to $v_\theta$" is too loose. The precise statement is:
+
+- the **sample supervision remains $e-x$**;
+- the **population regression target is the marginal velocity $v(z_t,t)$**;
+- iMF changes the **JVP tangent** from sample-specific $e-x$ to state-conditioned $v_\theta(z_t,t)$.
+
+---
+
+# 13. Original MF to the $v$-loss: exact algebraic reformulation
+
+The MeanFlow identity is
+
+$$
+ u(z_t,r,t)
+=
+v(z_t,t)
+-(t-r)\frac{d}{dt}u(z_t,r,t).
+$$
+
+Equivalently,
+
+$$
+v(z_t,t)
+=
+ u(z_t,r,t)
++(t-r)\frac{d}{dt}u(z_t,r,t).
+\tag{iMF-8}
+$$
+
+with
+
+$$
+\frac{d}{dt}u
+=
+\operatorname{JVP}(u;v).
+$$
+
+Original MF substitutes the sample conditional velocity $e-x$ for the marginal tangent and defines
 
 $$
  u_{\mathrm{tgt}}
 =
-C-
-\Delta\operatorname{JVP}_{\mathrm{sg}}(u_\theta;C).
+(e-x)
+-(t-r)\operatorname{JVP}(u_\theta;e-x).
+\tag{iMF-6}
 $$
 
-Its loss is
+The original loss is
 
 $$
-\mathcal L_{\mathrm{MF}}
-=
 \mathbb E
-\left\|
- u_\theta-\operatorname{sg}(u_{\mathrm{tgt}})
-\right\|^2.
+\|u_\theta-\operatorname{sg}(u_{\mathrm{tgt}})\|^2.
+\tag{iMF-7}
 $$
 
-Define
+Now define
 
 $$
 V_\theta^{\mathrm{MF}}
-:=
+=
  u_\theta
-+
-\Delta\operatorname{JVP}_{\mathrm{sg}}(u_\theta;C).
++(t-r)
+\operatorname{JVP}_{\mathrm{sg}}(u_\theta;e-x).
+\tag{iMF-9}
 $$
 
 Then pointwise
 
 $$
 \begin{aligned}
-V_\theta^{\mathrm{MF}}-C
+V_\theta^{\mathrm{MF}}-(e-x)
 &=
  u_\theta
-+
-\Delta\operatorname{JVP}_{\mathrm{sg}}(u_\theta;C)-C\\
++(t-r)\operatorname{JVP}_{\mathrm{sg}}(u_\theta;e-x)
+-(e-x)\\
 &=
  u_\theta-u_{\mathrm{tgt}}.
 \end{aligned}
 $$
 
-Hence
-
-$$
-\left\|V_\theta^{\mathrm{MF}}-C\right\|^2
-=
-\left\|u_\theta-u_{\mathrm{tgt}}\right\|^2.
-$$
-
-Because the JVP output is stop-gradient in both forms, the gradients with respect to $\theta$ also agree. Thus Original MF is exactly equivalent, under the stated stop-gradient convention, to
-
-$$
-\mathcal L_{\mathrm{MF}}
-=
-\mathbb E
-\left\|
-V_\theta^{\mathrm{MF}}-(E-X)
-\right\|^2.
-$$
+Therefore the residuals are identical, and under the same stop-gradient convention the gradients with respect to $\theta$ are identical as well. This is the exact $u$-loss to $v$-loss reformulation used by iMF.
 
 ---
 
-# 4. Theorem 2 — Why sample labels $E-X$ recover marginal velocity
-
-Let
-
-$$
-C=E-X,
-\qquad
-S=(Z_t,T,R),
-$$
-
-and assume
-
-$$
-\mathbb E[C\mid S]
-=
-\mathbb E[C\mid Z_t,T]
-=
-v^*(Z_t,T).
-$$
-
-For any measurable predictor $F(S)$ define
-
-$$
-\mathcal R(F)=\mathbb E\|F(S)-C\|^2.
-$$
-
-Set
-
-$$
-m(S):=\mathbb E[C\mid S].
-$$
-
-Using the standard orthogonal decomposition,
-
-$$
-\boxed{
-\mathbb E\|F(S)-C\|^2
-=
-\mathbb E\|F(S)-m(S)\|^2
-+
-\mathbb E\|C-m(S)\|^2
-}
-\tag{B}
-$$
-
-because the cross term vanishes by conditional expectation. Therefore the population MSE minimizer is
-
-$$
-F^*(S)=m(S)=v^*(Z_t,T)
-$$
-
-almost surely.
-
-So although each minibatch label is sample-specific $E-X$, a predictor that only depends on the current state is driven toward the marginal velocity.
-
----
-
-# 5. Why Original MF is not a standard state-only regression
+# 14. What iMF actually changes: the JVP tangent
 
 Original MF uses
 
 $$
-V_\theta^{\mathrm{MF}}
+V_\theta^{\mathrm{MF}}(z_t,e-x)
 =
- u_\theta
-+
-\Delta\operatorname{JVP}_{\mathrm{sg}}(u_\theta;E-X).
+ u_\theta(z_t,r,t)
++(t-r)
+\operatorname{JVP}_{\mathrm{sg}}(u_\theta;e-x),
 $$
 
-The predictor therefore depends explicitly on the sample-specific conditional velocity. It is effectively
+which directly depends on the sample-specific quantity $e-x$.
+
+iMF instead defines
 
 $$
-V_\theta^{\mathrm{MF}}(Z_t,E-X,R,T),
-$$
-
-not merely a function of state and time. This is the structural issue iMF removes.
-
----
-
-# 6. Theorem 3 — Why replacing the JVP tangent by $v_\theta$ is population-consistent
-
-iMF defines
-
-$$
-V_\theta^{\mathrm{iMF}}(S)
+V_\theta^{\mathrm{iMF}}(z_t)
 =
- u_\theta(Z_t,R,T)
-+
-\Delta\operatorname{JVP}_{\mathrm{sg}}
-\bigl(u_\theta;v_\theta(Z_t,T)\bigr),
+ u_\theta(z_t,r,t)
++(t-r)
+\operatorname{JVP}_{\mathrm{sg}}
+\left(u_\theta;v_\theta(z_t,t)\right).
+\tag{iMF-12}
 $$
 
-with loss
+The loss is still
 
 $$
 \mathcal L_{\mathrm{iMF}}
 =
 \mathbb E
-\left\|
-V_\theta^{\mathrm{iMF}}(S)-C
-\right\|^2.
+\|V_\theta^{\mathrm{iMF}}(z_t)-(e-x)\|^2.
 $$
 
-Now the predictor is state-only with respect to the sample pair. By Theorem 2, its Bayes-optimal population prediction is $v^*(Z_t,T)$.
+The boundary realization used in the paper is
 
-Assume:
+$$
+v_\theta(z_t,t)
+\equiv
+ u_\theta(z_t,t,t),
+$$
 
-1. $u^*$ and $v^*$ are sufficiently smooth;
-2. the exact MeanFlow identity (A) holds;
-3. the model class can represent $u^*$ and $v^*$.
+reflecting the exact boundary relation
 
-Substituting
+$$
+v(z_t,t)=u(z_t,t,t).
+$$
+
+---
+
+# 15. Conditional-expectation theorem: why labels $e-x$ recover marginal $v$
+
+Let
+
+$$
+C=e-x.
+$$
+
+For any predictor $F(z_t,t)$ that only depends on state and time, consider
+
+$$
+\mathcal R(F)
+=
+\mathbb E\|F(z_t,t)-C\|^2.
+$$
+
+Define
+
+$$
+m(z_t,t)
+:=
+\mathbb E[C\mid z_t,t].
+$$
+
+Then the standard orthogonal decomposition gives
+
+$$
+\mathbb E\|F-C\|^2
+=
+\mathbb E\|F-m\|^2
++
+\mathbb E\|C-m\|^2.
+$$
+
+To see why, write
+
+$$
+C=m+\xi,
+\qquad
+\mathbb E[\xi\mid z_t,t]=0.
+$$
+
+Expanding the square yields a cross term
+
+$$
+-2\mathbb E[(F-m)^T\xi],
+$$
+
+but
+
+$$
+\mathbb E[(F-m)^T\xi]
+=
+\mathbb E\left[
+(F-m)^T\mathbb E[\xi\mid z_t,t]
+\right]
+=0.
+$$
+
+Therefore the population MSE minimizer is
+
+$$
+F^*(z_t,t)
+=
+\mathbb E[e-x\mid z_t,t]
+=
+v(z_t,t).
+$$
+
+So the minibatch label may be the noisy conditional velocity $e-x$, while the state-conditioned population target is the marginal velocity.
+
+---
+
+# 16. How far can iMF feasibility be proved rigorously?
+
+Assume exact fields $(u^*,v^*)$ exist, are sufficiently smooth, satisfy the MeanFlow identity
+
+$$
+v^*
+=
+ u^*
++(t-r)\operatorname{JVP}(u^*;v^*),
+$$
+
+and are representable by the model class.
+
+If
 
 $$
  u_\theta=u^*,
 \qquad
-v_\theta=v^*
+v_\theta=v^*,
 $$
 
-into the iMF compound predictor gives
+then
 
 $$
 \begin{aligned}
 V_\theta^{\mathrm{iMF}}
 &=
  u^*
-+
-\Delta\operatorname{JVP}(u^*;v^*)\\
++(t-r)\operatorname{JVP}(u^*;v^*)\\
 &=v^*.
 \end{aligned}
 $$
 
-Therefore the exact MeanFlow solution attains the Bayes-optimal population predictor. Equivalently, the tangent replacement does not exclude the correct solution.
+Section 15 shows that $v^*$ is the Bayes-optimal state-only MSE predictor. Therefore, under these assumptions, the iMF parameterization **does not exclude the exact MeanFlow solution**.
 
-This is the rigorous feasibility statement:
+This is a realizability / population-consistency statement.
 
-> Under the population-limit, representability, smoothness, and exact-identity assumptions, replacing the sample-specific JVP tangent $E-X$ by the marginal tangent $v_\theta$ is consistent with the exact MeanFlow solution.
+:::caution[Not a convergence theorem]
+This does not prove that SGD, finite-width networks, finite data, or the stop-gradient training dynamics will converge to $(u^*,v^*)$. Stop-gradient leaves the forward function value unchanged but changes the optimization dynamics.
+:::
 
 ---
 
-# 7. Boundary construction
+# 17. The missing layer in the hybrid: RMFlow's first-stage target is $p_\sigma$
 
-From the interval-average definition,
+This is essential when replacing CMFM with iMF.
+
+RMFlow does not ask the first-stage flow to land directly at
 
 $$
- u^*(z_t,r,t)
+p_{\mathrm{tgt}}
 =
-\frac{1}{t-r}
-\int_r^t v^*(z_\tau,\tau)d\tau.
+p_{\mathrm{data}}*\mathcal N(0,\sigma_{\min}^2I).
 $$
 
-If $v^*$ is continuous, then as $r\to t$,
+Instead, the first stage targets the intermediate distribution
 
 $$
-\boxed{
- u^*(z_t,t,t)=v^*(z_t,t)
-}
-\tag{C}
+p_\sigma
+=
+p_{\mathrm{data}}*\mathcal N(0,\sigma^2I).
 $$
 
-so the boundary parameterization
+Therefore, if iMF replaces the first stage, its data-side endpoint should be
 
 $$
-v_\theta(z_t,t):=u_\theta(z_t,t,t)
+X_\sigma
+=
+X_{\mathrm{data}}+\sigma\epsilon_1.
 $$
 
-is consistent with the exact solution.
-
----
-
-# 8. Auxiliary $v$-head
-
-If iMF uses a separate auxiliary head, the standard FM auxiliary objective is
+Using the iMF time-direction convention and prior noise $E$,
 
 $$
-\mathcal L_v
+Z_t
+=
+(1-t)X_\sigma+tE.
+$$
+
+The sample conditional velocity becomes
+
+$$
+C_\sigma
+=
+E-X_\sigma,
+$$
+
+and the corresponding marginal velocity is
+
+$$
+v_\sigma(z_t,t)
+=
+\mathbb E[E-X_\sigma\mid Z_t=z_t,t].
+$$
+
+Thus a properly matched first-stage iMF objective is
+
+$$
+\mathcal L_{\mathrm{iMF}}^{(\sigma)}
 =
 \mathbb E
 \left\|
-v_\theta(Z_t,T)-(E-X)
-\right\|^2.
+V_\theta^{\mathrm{iMF}}(Z_t)
+-
+(E-X_\sigma)
+\right\|^2,
 $$
 
-By Theorem 2 its population minimizer is
+with
 
 $$
-v_\theta^*(Z_t,T)
+V_\theta^{\mathrm{iMF}}(Z_t)
 =
-\mathbb E[E-X\mid Z_t,T]
-=
-v^*(Z_t,T).
+ u_\theta(Z_t,r,t)
++(t-r)
+\operatorname{JVP}_{\mathrm{sg}}
+\left(u_\theta;v_\theta(Z_t,t)\right).
 $$
 
-Thus the auxiliary head has an explicit Bayes regression target.
+This is the correct target correspondence for an iMF first stage inside RMFlow.
 
 ---
 
-# 9. RMFlow endpoint likelihood still holds after the iMF change
+# 18. Exact distribution-level compatibility
 
-Use a generic deterministic one-step endpoint map
+Assume an exact one-step map $G^*$ satisfies
+
+$$
+G^*_{\#}q=p_\sigma.
+$$
+
+That is, pushing the prior $q$ through $G^*$ exactly produces the intermediate RMFlow distribution.
+
+The second stage adds
+
+$$
+\tau\epsilon_2,
+\qquad
+\tau^2=\sigma_{\min}^2-\sigma^2.
+$$
+
+Therefore
+
+$$
+p_{\mathrm{final}}
+=
+p_\sigma*\mathcal N(0,\tau^2I).
+$$
+
+Since
+
+$$
+p_\sigma
+=
+p_{\mathrm{data}}*\mathcal N(0,\sigma^2I),
+$$
+
+we obtain
+
+$$
+\begin{aligned}
+p_{\mathrm{final}}
+&=
+p_{\mathrm{data}}
+*\mathcal N(0,\sigma^2I)
+*\mathcal N(0,\tau^2I)\\
+&=
+p_{\mathrm{data}}
+*\mathcal N(0,(\sigma^2+\tau^2)I)\\
+&=
+p_{\mathrm{data}}
+*\mathcal N(0,\sigma_{\min}^2I)\\
+&=
+p_{\mathrm{tgt}}.
+\end{aligned}
+$$
+
+Hence, if iMF exactly transports the prior to $p_\sigma$, the RMFlow Gaussian refinement exactly recovers the desired final target distribution.
+
+This statement does not depend on the original CMFM loss; it depends only on the first-stage endpoint distribution being correct.
+
+---
+
+# 19. Approximate learned endpoint: why the RMFlow NLL remains valid
+
+Because iMF and RMFlow use different time / sign conventions, write the learned one-step endpoint generically as
 
 $$
 G_\theta(S_0).
 $$
 
-Depending on sign/time convention, this may be written as either
+In an iMF convention one may write
 
 $$
-G_\theta(z_1)=z_1-u_\theta(z_1,0,1)
+G_\theta(E)=E-u_\theta(E,0,1),
 $$
 
-or
+whereas the RMFlow paper writes
 
 $$
 G_\theta(x_0)=x_0+\hat u_{0,1}(x_0;\theta).
 $$
 
+The sign convention is irrelevant for the following likelihood argument.
+
 RMFlow defines
 
 $$
-Y=G_\theta(S_0)+\tau\varepsilon,
+Y
+=
+G_\theta(S_0)+\tau\epsilon_2,
 \qquad
-\varepsilon\sim\mathcal N(0,I).
+\epsilon_2\sim\mathcal N(0,I).
 $$
 
-Hence
+Thus
 
 $$
 Y\mid S_0=s
 \sim
-\mathcal N\bigl(G_\theta(s),\tau^2I\bigr),
+\mathcal N(G_\theta(s),\tau^2I),
 $$
 
 and
 
 $$
--\log p_\theta(y\mid s)
+\log p_\theta(y\mid s)
 =
-\frac{\|y-G_\theta(s)\|^2}{2\tau^2}
-+
-\frac d2\log(2\pi\tau^2).
+-\frac{1}{2\tau^2}
+\|y-G_\theta(s)\|^2
++C.
 $$
 
-For fixed $\tau$, define
+This formula does not depend on whether $G_\theta$ was trained by CMFM or iMF.
+
+Define
 
 $$
 \mathcal L_{\mathrm{endpoint}}
-:=
+=
 \mathbb E
-\|Y-G_\theta(S_0)\|^2.
-$$
-
-Jensen then yields
-
-$$
--\frac{1}{2\tau^2}\mathcal L_{\mathrm{endpoint}}+C
-\le
-\mathbb E_Y[\log p_\theta(Y)],
-$$
-
-and
-
-$$
-\mathbb E_{p_{\mathrm{tgt}}}[\log p_\theta(Y)]
-=
--H(p_{\mathrm{tgt}})
--D_{\mathrm{KL}}(p_{\mathrm{tgt}}\|p_\theta).
-$$
-
-This proof depends only on the final deterministic map and Gaussian refinement. It never uses the internal JVP tangent. Therefore the iMF replacement does not invalidate the RMFlow endpoint-likelihood theorem.
-
----
-
-# 10. Endpoint-gradient theorem
-
-If $G_\theta$ is differentiable and gradient/expectation interchange is valid,
-
-$$
-\nabla_\theta\mathcal L_{\mathrm{endpoint}}
-=
-2\mathbb E
 \left[
-J_{G_\theta}(S_0)^T
-\bigl(G_\theta(S_0)-Y\bigr)
-\right].
+\|Y_{\mathrm{tgt}}-G_\theta(S_0)\|^2
+\right],
 $$
 
-Therefore the endpoint NLL directly updates the actual inference map.
+with
 
-For the boundary construction, the same backbone parameters define $u_\theta$ and $v_\theta$. For a separate auxiliary head, the endpoint loss need not directly update head-specific layers; those layers are primarily trained by $\mathcal L_v$.
+$$
+Y_{\mathrm{tgt}}
+\overset d=
+X_{\mathrm{data}}+\sigma_{\min}\epsilon.
+$$
+
+The same Jensen argument gives
+
+$$
+-\frac{1}{2\tau^2}
+\mathcal L_{\mathrm{endpoint}}
++C
+\le
+\mathbb E_{Y\sim p_{\mathrm{tgt}}}
+[\log p_\theta(Y)].
+$$
+
+Therefore the RMFlow likelihood lower-bound mechanism survives the replacement of the first-stage training objective by iMF.
 
 ---
 
-# 11. A mathematically valid hybrid objective
+# 20. Proposed iMF + RMFlow objective
+
+A natural research objective is
 
 $$
-\mathcal L_{\mathrm{hybrid}}
+\mathcal L_{\mathrm{iMF+RM}}
 =
-\mathcal L_{\mathrm{iMF}}
-+
-\beta\mathcal L_v
+\mathcal L_{\mathrm{iMF}}^{(\sigma)}
 +
 \lambda_{\mathrm{NLL}}\mathcal L_{\mathrm{endpoint}}
 +
 \lambda_{\mathrm{guide}}\mathcal L_{\mathrm{guide}}.
 $$
 
-The terms control different objects:
+This differs from RMFlow Equation (12):
 
-- $\mathcal L_{\mathrm{iMF}}$: probability-path regression toward the marginal instantaneous velocity;
-- $\mathcal L_v$: direct supervision of an auxiliary marginal-velocity head;
-- $\mathcal L_{\mathrm{endpoint}}$: likelihood control on the one-step endpoint;
-- $\mathcal L_{\mathrm{guide}}$: optional prior/guidance regularization.
+$$
+\underbrace{\mathcal L_{\mathrm{CMFM}}}_{\text{original RMFlow}}
+\quad\longrightarrow\quad
+\underbrace{\mathcal L_{\mathrm{iMF}}^{(\sigma)}}_{\text{proposed replacement}}.
+$$
+
+So this must be presented as a proposal / research extension, not as an equation already established by the RMFlow paper.
 
 ---
 
-# 12. What is proved, and what is not
+# 21. What is proved, what requires assumptions, and what remains open?
 
-The page now proves:
+## 21.1 Established by the original RMFlow derivation
 
-1. Original MF $u$-loss and its $v$-loss reformulation are equivalent under the stated stop-gradient convention.
-2. State-only MSE regression on sample labels $E-X$ has population optimum $v^*(z_t,t)$.
-3. Under exact representability and the MeanFlow identity, $(u^*,v^*)$ is a population-optimal iMF solution after replacing the JVP tangent by $v_\theta$.
-4. RMFlow Gaussian NLL / Jensen / forward-KL reasoning remains valid for the iMF endpoint map.
+- the noise construction in Equations (6)–(8);
+- the conditional Gaussian likelihood in Equation (9);
+- the NLL surrogate in Equation (10);
+- the Jensen / marginal-likelihood / KL chain in Equations (11), (13)–(17);
+- the original joint objective in Equation (12), which uses CMFM + NLL + guidance regularization.
 
-It does **not** yet prove an iMF analogue of the original CMFM Wasserstein bound. For such a result one still needs a stability inequality connecting iMF regression error to endpoint-map error.
+## 21.2 Derivable here under explicit assumptions
 
-A useful conditional route is: if one can establish
+- Original MF's $u$-loss and the iMF paper's $v$-loss reformulation are algebraically equivalent under the stated stop-gradient convention;
+- state-only MSE regression on sample label $e-x$ has marginal velocity $v(z_t,t)$ as its population target;
+- if exact $u^*,v^*$ are representable, the iMF compound parameterization can represent the Bayes-optimal marginal velocity;
+- if the iMF first stage exactly transports the prior to $p_\sigma$, RMFlow's second Gaussian stage exactly yields $p_{\mathrm{tgt}}$;
+- for an approximate learned endpoint map, the RMFlow Gaussian NLL / Jensen lower bound remains valid.
+
+## 21.3 Still not proved
+
+The following statements should not be promoted to theorems:
+
+1. SGD training of iMF necessarily converges to exact $u^*,v^*$;
+2. finite networks / finite data necessarily produce the correct intermediate distribution $p_\sigma$;
+3. the original RMFlow Wasserstein result
+   $$
+   M\mathcal L_{\mathrm{CMFM}}\ge W_2^2
+   $$
+   remains valid after simply replacing $\mathcal L_{\mathrm{CMFM}}$ with $\mathcal L_{\mathrm{iMF}}$;
+4. the hybrid objective necessarily improves FID, KL, or perceptual quality.
+
+The main theoretical gap is therefore a stability theorem of the form
 
 $$
-\mathbb E
-\|G_\theta(S_0)-G_*(S_0)\|^2
-\le
-C\mathcal L_{\mathrm{iMF}},
+\mathcal L_{\mathrm{iMF}}^{(\sigma)}
+\Longrightarrow
+\text{endpoint-map error}
+\Longrightarrow
+W_2\text{ control}.
 $$
-
-then the same-source coupling gives
-
-$$
-W_2^2
-\bigl((G_\theta)_\#q,(G_*)_\#q\bigr)
-\le
-\mathbb E
-\|G_\theta(S_0)-G_*(S_0)\|^2.
-$$
-
-Adding the same Gaussian noise to both sides does not enlarge this shared-noise coupling bound.
 
 ---
 
-# 13. Final logic chain
+# 22. Final target map: keep the three levels separate
 
-Original MF:
+| Level | Quantity | Meaning |
+|---|---|---|
+| sample supervision | $e-x$; in the hybrid, $e-X_\sigma$ | Monte Carlo conditional-velocity label |
+| population velocity target | $v(z_t,t)=\mathbb E[e-x\mid z_t,t]$ | state-conditioned marginal velocity |
+| iMF JVP tangent | $v_\theta(z_t,t)$ | network estimate of the marginal velocity |
+| RMFlow first-stage endpoint | $G_\theta(S_0)$ | one-step deterministic transport result |
+| RMFlow likelihood target | $X_{\mathrm{data}}+\sigma_{\min}\epsilon$ | final noisy target distribution |
 
-$$
-C=E-X
-\longrightarrow
-u_{\mathrm{tgt}}
-=
-C-\Delta\operatorname{JVP}(u_\theta;C).
-$$
+The precise statement is therefore:
 
-Equivalent $v$-loss view:
-
-$$
-V_\theta^{\mathrm{MF}}(Z_t,C)
-=
- u_\theta
-+
-\Delta\operatorname{JVP}(u_\theta;C)
-\rightarrow C.
-$$
-
-iMF:
-
-$$
-V_\theta^{\mathrm{iMF}}(Z_t)
-=
- u_\theta
-+
-\Delta\operatorname{JVP}(u_\theta;v_\theta(Z_t)),
-$$
-
-still supervised by sample labels
-
-$$
-C=E-X,
-$$
-
-whose state-conditioned population target is
-
-$$
-v^*(Z_t)=\mathbb E[E-X\mid Z_t].
-$$
-
-RMFlow then acts on the inference endpoint
-
-$$
-S_0
-\xrightarrow{\;G_\theta\;}
-\text{one-step mean}
-\xrightarrow{+\tau\varepsilon}
-Y.
-$$
-
-So the three levels are distinct:
-
-> sample supervision is $E-X$; the iMF JVP tangent is $v_\theta$; RMFlow NLL acts on the final endpoint map $G_\theta$.
+> **iMF keeps the sample supervision but replaces the sample-specific JVP tangent by a state-conditioned estimate $v_\theta$. If iMF is used as RMFlow's first stage, the sample supervision should be matched to the intermediate target $X_\sigma$, i.e. $e-X_\sigma$, because the first stage is supposed to transport into $p_\sigma$, not directly into the final $p_{\mathrm{tgt}}$.**
 
 ## Sources
 
-- [Improved Mean Flows: On the Challenges of Fastforward Generative Models](https://arxiv.org/abs/2512.02012)
 - [RMFlow: Refined Mean Flow by a Noise-Injection Step for Multimodal Generation](https://arxiv.org/abs/2602.00849)
+- [Improved Mean Flows: On the Challenges of Fastforward Generative Models](https://arxiv.org/abs/2512.02012)
 
 ## Related pages
 
