@@ -235,6 +235,24 @@ $$
 A\|y-\mu_\theta(x_0)\|^2+B.
 $$
 
+:::caution[Variance-coefficient inconsistency in the paper appendix]
+Equations (7) and (9) imply unambiguously that the refinement variance is
+
+$$
+\tau^2=\sigma_{\min}^2-\sigma^2,
+$$
+
+so the Gaussian quadratic coefficient is
+
+$$
+A=\frac{1}{2(\sigma_{\min}^2-\sigma^2)}.
+$$
+
+The main text and the stated conditional Gaussian agree with this expression. One appendix line instead prints $1/[2(\sigma_{\min}-\sigma)^2]$. These are not equal in general; the latter is inconsistent with the variance defined by Equation (7). This page therefore uses the former throughout.
+
+Only $A>0$ is required. The additive constant $B=\frac d2\log(2\pi\tau^2)$ need not itself be positive.
+:::
+
 ---
 
 # 5. Equation (10): is the paper's $\mathcal L_{\mathrm{NLL}}$ literally the NLL?
@@ -292,25 +310,32 @@ If $\tau$ is learnable, this equivalence no longer holds because both $A$ and $B
 
 # 6. Cross-entropy definition: NLL and cross-entropy live at different levels
 
-Let the target density be
+Let
 
 $$
 p(y)=p_{\mathrm{tgt}}(y),
-$$
-
-and the model marginal density be
-
-$$
+\qquad
 q_\theta(y)=p_\theta(y).
 $$
 
 Assume:
 
 1. $p$ and $q_\theta$ admit densities with respect to the same base measure;
-2. $q_\theta(y)>0$ for $p$-almost every $y$;
-3. $\mathbb E_p[|\log q_\theta(Y)|]<\infty$.
+2. $p\ll q_\theta$;
+3. $\mathbb E_p[|\log p(Y)|]<\infty$;
+4. $\mathbb E_p[|\log q_\theta(Y)|]<\infty$.
 
-The **cross-entropy** is
+The last two conditions prevent undefined $\infty-\infty$ expressions in the entropy / cross-entropy decomposition.
+
+Because this is a continuous-density setting,
+
+$$
+H(p)=-\int p(y)\log p(y)dy
+$$
+
+is a **differential entropy**. Differential entropy and continuous cross-entropy need not be positive.
+
+Define
 
 $$
 H_\times(p,q_\theta)
@@ -322,7 +347,7 @@ H_\times(p,q_\theta)
 \tag{CE-1}
 $$
 
-For a single sample, the negative log-likelihood is
+For a single sample,
 
 $$
 \ell_{\mathrm{NLL}}(y;\theta)
@@ -330,7 +355,7 @@ $$
 -\log q_\theta(y).
 $$
 
-Therefore the precise relation is
+Hence
 
 $$
 H_\times(p,q_\theta)
@@ -340,37 +365,37 @@ H_\times(p,q_\theta)
 \tag{CE-2}
 $$
 
-So:
+So **NLL is a per-sample loss, whereas cross-entropy is its population expectation under the target distribution.**
 
-> **NLL is a per-sample loss; cross-entropy is the population expectation of that NLL under the target distribution.**
+In RMFlow, a non-degenerate Gaussian conditional with $\tau>0$ is strictly positive for every $y$; the induced marginal Gaussian mixture therefore also has full support, so support mismatch is not the main issue in this setup.
 
 ---
 
 # 7. Why empirical average NLL is a Monte Carlo estimator of cross-entropy
 
-Let
+First fix a parameter value $\theta$ that does **not** depend on the evaluation sample used below. Let
 
 $$
 Y_1,\ldots,Y_n\overset{iid}{\sim}p.
 $$
 
-The empirical marginal NLL is
+Define
 
 $$
-\widehat{\mathcal L}_{\mathrm{NLL}}^{\mathrm{marg}}
+\widehat{\mathcal L}_{\mathrm{NLL}}^{\mathrm{marg}}(\theta)
 :=
 -\frac1n\sum_{i=1}^n
 \log q_\theta(Y_i).
 \tag{CE-3}
 $$
 
-Taking expectation,
+Then
 
 $$
 \begin{aligned}
 \mathbb E
 \left[
-\widehat{\mathcal L}_{\mathrm{NLL}}^{\mathrm{marg}}
+\widehat{\mathcal L}_{\mathrm{NLL}}^{\mathrm{marg}}(\theta)
 \right]
 &=
 -\frac1n\sum_{i=1}^n
@@ -382,29 +407,45 @@ H_\times(p,q_\theta).
 \end{aligned}
 $$
 
-Thus empirical average NLL is an unbiased Monte Carlo estimator of marginal cross-entropy.
+Therefore, **for fixed $\theta$**, empirical average NLL is an unbiased Monte Carlo estimator of marginal cross-entropy.
 
-Under the usual integrability conditions, the strong law of large numbers also gives
+Under the stated integrability assumptions,
 
 $$
-\widehat{\mathcal L}_{\mathrm{NLL}}^{\mathrm{marg}}
+\widehat{\mathcal L}_{\mathrm{NLL}}^{\mathrm{marg}}(\theta)
 \xrightarrow[n\to\infty]{a.s.}
 H_\times(p,q_\theta).
 $$
 
+:::caution[Training-set NLL is not automatically an unbiased estimate of population CE for the fitted model]
+If
+
+$$
+\hat\theta=\hat\theta(Y_1,\ldots,Y_n)
+$$
+
+is itself fitted using the same samples, then $\hat\theta$ and the evaluation sample are dependent. In that case one cannot directly call
+
+$$
+-\frac1n\sum_i\log q_{\hat\theta}(Y_i)
+$$
+
+an unbiased estimator of $H_\times(p,q_{\hat\theta})$. Estimating the fitted model's population cross-entropy requires independent validation/test samples or a separate generalization analysis.
+:::
+
 ---
 
-# 8. Why cross-entropy equals entropy plus forward KL
+# 8. Why cross-entropy equals differential entropy plus forward KL
 
-Target entropy is
+Define
 
 $$
 H(p)
 :=
--\int p(y)\log p(y)dy.
+-\int p(y)\log p(y)dy,
 $$
 
-Forward KL is
+and
 
 $$
 D_{\mathrm{KL}}(p\|q_\theta)
@@ -413,7 +454,7 @@ D_{\mathrm{KL}}(p\|q_\theta)
 \log\frac{p(y)}{q_\theta(y)}dy.
 $$
 
-Expanding,
+Under the absolute-continuity and integrability assumptions in Section 6,
 
 $$
 \begin{aligned}
@@ -427,7 +468,7 @@ D_{\mathrm{KL}}(p\|q_\theta)
 \end{aligned}
 $$
 
-Hence
+Thus
 
 $$
 H_\times(p,q_\theta)
@@ -438,7 +479,7 @@ D_{\mathrm{KL}}(p\|q_\theta).
 \tag{CE-4}
 $$
 
-Because $p=p_{\mathrm{tgt}}$ is fixed, $H(p)$ is constant with respect to $\theta$. Therefore
+Because $p=p_{\mathrm{tgt}}$ is fixed, $H(p)$ is constant with respect to $\theta$:
 
 $$
 \arg\min_\theta H_\times(p,q_\theta)
@@ -446,13 +487,11 @@ $$
 \arg\min_\theta D_{\mathrm{KL}}(p\|q_\theta).
 $$
 
-This is the exact maximum-likelihood / cross-entropy / forward-KL equivalence at the population level.
-
 ---
 
 # 9. Crucial distinction: RMFlow Equation (10) is not the marginal cross-entropy
 
-RMFlow has a latent prior variable $X_0\sim q_0$ and a conditional model
+RMFlow has a latent prior variable $X_0\sim q_0$ and conditional model
 
 $$
 p_\theta(y\mid x_0).
@@ -467,7 +506,7 @@ p_\theta(y)
 \tag{CE-5}
 $$
 
-In the unguided product-measure setting define the averaged conditional NLL
+In the unguided product-measure setting define
 
 $$
 \mathcal C_{\mathrm{cond}}(\theta)
@@ -492,7 +531,7 @@ H_\times
 \right].
 $$
 
-By the Gaussian Equation (9),
+By Equation (9),
 
 $$
 \mathcal C_{\mathrm{cond}}(\theta)
@@ -501,9 +540,7 @@ A\mathcal L_{\mathrm{NLL}}+B.
 \tag{CE-7}
 $$
 
-So the precise interpretation of RMFlow Equation (10) is:
-
-> **At fixed variance, it is equivalent to minimizing averaged conditional cross-entropy, not directly the marginal cross-entropy $H_\times(p_{\mathrm{tgt}},p_\theta)$.**
+So at fixed variance, Equation (10) is equivalent to minimizing averaged conditional cross-entropy, not directly the marginal cross-entropy $H_\times(p_{\mathrm{tgt}},p_\theta)$.
 
 ---
 
@@ -514,8 +551,7 @@ From
 $$
 p_\theta(y)
 =
-\mathbb E_{X_0\sim q_0}
-[p_\theta(y\mid X_0)],
+\mathbb E_{X_0\sim q_0}[p_\theta(y\mid X_0)],
 $$
 
 concavity of $\log$ gives
@@ -523,20 +559,18 @@ concavity of $\log$ gives
 $$
 \log p_\theta(y)
 \ge
-\mathbb E_{X_0}
-[\log p_\theta(y\mid X_0)].
+\mathbb E_{X_0}[\log p_\theta(y\mid X_0)].
 $$
 
-Multiplying by $-1$,
+Therefore
 
 $$
 -\log p_\theta(y)
 \le
-\mathbb E_{X_0}
-[-\log p_\theta(y\mid X_0)].
+\mathbb E_{X_0}[-\log p_\theta(y\mid X_0)].
 $$
 
-Averaging over $Y\sim p_{\mathrm{tgt}}$ yields
+Averaging over $Y\sim p_{\mathrm{tgt}}$,
 
 $$
 H_\times(p_{\mathrm{tgt}},p_\theta)
@@ -547,25 +581,21 @@ A\mathcal L_{\mathrm{NLL}}+B.
 \tag{CE-8}
 $$
 
-Thus, in negative-log / cross-entropy language:
-
-> **RMFlow's conditional NLL surrogate is an upper bound on marginal cross-entropy.**
-
-In log-likelihood language, the same fact appears as the lower bound in Equation (11).
+Thus RMFlow's conditional NLL surrogate is an upper bound on marginal cross-entropy; equivalently, its log-likelihood form is a lower bound.
 
 ---
 
 # 11. Stronger result: the Jensen gap is exactly a posterior KL
 
-Define the model joint density
+Define
 
 $$
 p_\theta(x_0,y)
 :=
-q_0(x_0)p_\theta(y\mid x_0).
+q_0(x_0)p_\theta(y\mid x_0),
 $$
 
-Bayes' rule gives
+so Bayes' rule gives
 
 $$
 p_\theta(x_0\mid y)
@@ -574,17 +604,7 @@ p_\theta(x_0\mid y)
 \tag{CE-9}
 $$
 
-Now consider
-
-$$
-D_{\mathrm{KL}}
-\bigl(
-q_0(x_0)
-\|p_\theta(x_0\mid y)
-\bigr).
-$$
-
-Substitute the posterior explicitly:
+For $y$ such that the quantities below are finite,
 
 $$
 \begin{aligned}
@@ -593,19 +613,11 @@ $$
 &=
 \int q_0(x_0)
 \log
-\frac{q_0(x_0)}
-{p_\theta(x_0\mid y)}dx_0\\
-&=
-\int q_0(x_0)
-\log
-\frac{q_0(x_0)}
-{q_0(x_0)p_\theta(y\mid x_0)/p_\theta(y)}dx_0\\
+\frac{q_0(x_0)}{p_\theta(x_0\mid y)}dx_0\\
 &=
 \int q_0(x_0)
 \left[
-\log p_\theta(y)
--
-\log p_\theta(y\mid x_0)
+\log p_\theta(y)-\log p_\theta(y\mid x_0)
 \right]dx_0\\
 &=
 \log p_\theta(y)
@@ -616,7 +628,7 @@ $$
 \tag{CE-10}
 $$
 
-Therefore, pointwise in $y$,
+Hence
 
 $$
 \mathbb E_{X_0}
@@ -642,21 +654,13 @@ D_{\mathrm{KL}}
 \tag{CE-12}
 $$
 
-Since KL is nonnegative, Equation (CE-8) follows immediately.
-
-This identity also shows exactly why the Jensen bound can be loose: the gap is
-
-$$
-\mathbb E_Y
-D_{\mathrm{KL}}
-\bigl(q_0\|p_\theta(X_0\mid Y)\bigr).
-$$
+Therefore the Jensen gap is exactly the expected posterior KL.
 
 ---
 
 # 12. The full population decomposition of RMFlow Equation (10)
 
-Combining Equations (CE-7), (CE-12), and (CE-4),
+Combining (CE-7), (CE-12), and (CE-4),
 
 $$
 \begin{aligned}
@@ -681,17 +685,7 @@ D_{\mathrm{KL}}
 \tag{CE-13}
 $$
 
-This is the key identity of the page.
-
-It says that the fixed-variance RMFlow Equation (10) contains:
-
-1. target entropy $H(p_{\mathrm{tgt}})$, constant in $\theta$;
-2. the forward KL we would like to reduce,
-   $$D_{\mathrm{KL}}(p_{\mathrm{tgt}}\|p_\theta);$$
-3. the Jensen / latent-posterior gap,
-   $$\mathbb E_Y D_{\mathrm{KL}}(q_0\|p_\theta(X_0\mid Y)).$$
-
-Therefore minimizing Equation (10) is not literally the same as minimizing marginal forward KL; it minimizes
+Thus minimizing Equation (10) minimizes
 
 $$
 \text{forward KL}
@@ -699,13 +693,13 @@ $$
 \text{posterior Jensen gap}
 $$
 
-up to the fixed entropy constant and fixed Gaussian scale.
+up to fixed scale and the target differential-entropy constant; it is not literally identical to minimizing marginal forward KL alone.
 
 ---
 
 # 13. Reinterpreting Equations (11), (13)–(17)
 
-From Equation (CE-13),
+From (CE-13),
 
 $$
 A\mathcal L_{\mathrm{NLL}}+B
@@ -723,33 +717,29 @@ $$
 -D_{\mathrm{KL}}(p_{\mathrm{tgt}}\|p_\theta).
 $$
 
-Because
+Let
 
 $$
--B
-=-\frac d2\log(2\pi\tau^2),
+C:=-B=-\frac d2\log(2\pi\tau^2).
 $$
 
-which is the additive log-likelihood constant $C$, we recover
+Then
 
 $$
 -A\mathcal L_{\mathrm{NLL}}+C
 \le
-\mathbb E_{p_{\mathrm{tgt}}}
-[\log p_\theta(Y)]
+\mathbb E_{p_{\mathrm{tgt}}}[\log p_\theta(Y)]
 =
 -H(p_{\mathrm{tgt}})
 -D_{\mathrm{KL}}(p_{\mathrm{tgt}}\|p_\theta).
 \tag{11}
 $$
 
-So Equation (11) can be read as Equation (CE-13) after dropping the nonnegative posterior-KL gap.
-
-Equations (13)–(16) establish the same inequality via Jensen; Equation (17) is the log-likelihood version of the cross-entropy / KL decomposition.
+Equation (11) is therefore the inequality obtained from (CE-13) after dropping the nonnegative posterior-KL gap.
 
 ---
 
-# 14. Important correction: lowering RMFlow conditional NLL does not imply marginal cross-entropy decreases at every optimizer step
+# 14. Important correction: lowering conditional NLL does not force marginal CE down at every optimizer step
 
 Because
 
@@ -761,17 +751,7 @@ H_\times(p_{\mathrm{tgt}},p_\theta)
 \text{JensenGap}_\theta,
 $$
 
-and the Jensen gap itself depends on $\theta$, a decrease in
-
-$$
-\mathcal C_{\mathrm{cond}}
-$$
-
-does not by itself imply that every optimizer step satisfies
-
-$$
-H_\times(p_{\mathrm{tgt}},p_\theta)\downarrow.
-$$
+and the Jensen gap itself depends on $\theta$, a decrease in conditional NLL does not imply that every optimization step also decreases marginal cross-entropy.
 
 The rigorous statement is that RMFlow minimizes an **upper bound on marginal cross-entropy**, equivalently maximizing a **lower bound on marginal expected log-likelihood**.
 
@@ -779,7 +759,7 @@ The rigorous statement is that RMFlow minimizes an **upper bound on marginal cro
 
 # 15. Conditional / guided setting
 
-With condition $c$, the rigorous formulation is
+With condition $c$,
 
 $$
 q_\omega(x_0\mid c),
@@ -821,8 +801,6 @@ $$
 
 One may then average over $c$.
 
-This is stricter than assuming all variables are unconditionally independent.
-
 ---
 
 # 16. Equation (12): the original RMFlow joint objective
@@ -845,7 +823,7 @@ $$
 | Term | Role in the paper |
 |---|---|
 | $\mathcal L_{\mathrm{CMFM}}$ | MeanFlow path / transport control |
-| $\mathcal L_{\mathrm{NLL}}$ | averaged conditional cross-entropy surrogate; equivalently an upper bound on marginal CE |
+| $\mathcal L_{\mathrm{NLL}}$ | averaged conditional cross-entropy surrogate; an upper bound on marginal CE |
 | $\|\phi_\omega(c)\|^2$ | guided-prior regularization |
 
 The original first term is CMFM, not iMF.
@@ -854,7 +832,7 @@ The original first term is CMFM, not iMF.
 
 # Part III — iMF + RMFlow research extension
 
-# 17. What does it really mean to say iMF "changes the target to $v$"?
+# 17. What does it really mean to say iMF changes the target to $v$?
 
 iMF uses
 
@@ -936,35 +914,84 @@ The squared residuals are therefore identical, and under the same stop-gradient 
 
 ---
 
-# 19. Why the state-only MSE optimum of sample label $e-x$ is marginal $v$
+# 19. Why the MSE population optimum of sample label $e-x$ is marginal $v$
+
+The interval variable $R$ must be retained explicitly because the iMF predictor depends on it.
 
 Let
 
 $$
-C=e-x,
+C:=E-X,
 \qquad
-m(z_t,t)=\mathbb E[C\mid z_t,t].
+S:=(Z_t,T,R).
 $$
 
-For any state-only predictor $F(z_t,t)$,
+For any measurable predictor $F(S)$,
+
+$$
+\mathcal R(F)
+:=
+\mathbb E\|F(S)-C\|^2.
+$$
+
+The standard conditional-expectation theorem gives
+
+$$
+F^*(S)
+=
+\mathbb E[C\mid S]
+=
+\mathbb E[E-X\mid Z_t,T,R].
+\tag{iMF-CE1}
+$$
+
+If the sampling scheme satisfies
+
+$$
+R\perp(X,E)\mid T,
+\tag{iMF-A1}
+$$
+
+meaning that once $T$ is fixed, the sampling of $R$ carries no additional information about the data/noise pair, then
+
+$$
+\mathbb E[E-X\mid Z_t,T,R]
+=
+\mathbb E[E-X\mid Z_t,T]
+=
+v(Z_t,T).
+\tag{iMF-CE2}
+$$
+
+Thus the population MSE optimum simplifies to marginal velocity only under this conditional-independence assumption.
+
+For completeness, let
+
+$$
+m(S):=\mathbb E[C\mid S],
+\qquad
+C=m(S)+\xi,
+\qquad
+\mathbb E[\xi\mid S]=0.
+$$
+
+Then
 
 $$
 \mathbb E\|F-C\|^2
 =
 \mathbb E\|F-m\|^2
 +
-\mathbb E\|C-m\|^2.
+\mathbb E\|C-m\|^2,
 $$
 
-Indeed, writing $C=m+\xi$ with $\mathbb E[\xi\mid z_t,t]=0$ makes the cross term vanish in expectation.
-
-Therefore the population MSE optimum is
+because
 
 $$
-F^*(z_t,t)
-=m(z_t,t)
+\mathbb E[(F-m)^T\xi]
 =
-v(z_t,t).
+\mathbb E[(F-m)^T\mathbb E[\xi\mid S]]
+=0.
 $$
 
 ---
@@ -975,7 +1002,8 @@ Assume exact fields $(u^*,v^*)$:
 
 1. exist and are sufficiently smooth;
 2. satisfy the MeanFlow identity;
-3. are representable by the model class.
+3. are representable by the model class;
+4. are trained under a sampling scheme satisfying $R\perp(X,E)\mid T$, so the Bayes interval-aware regressor simplifies to $v^*(Z_t,T)$.
 
 If
 
@@ -996,11 +1024,9 @@ V_\theta^{\mathrm{iMF}}
 v^*.
 $$
 
-Since $v^*$ is the Bayes-optimal state-only regression target, the rigorous conclusion is:
+Therefore, under the stated population / exact-representability / sampling assumptions, the iMF parameterization does not exclude the exact MeanFlow solution.
 
-> **Under population / exact-representability assumptions, the iMF parameterization does not exclude the exact MeanFlow solution.**
-
-This is a realizability / consistency statement, not an SGD convergence theorem.
+This is a function-level realizability / consistency statement, not an SGD convergence theorem. Stop-gradient leaves the forward value unchanged but alters optimization gradients, so convergence of training dynamics does not follow from this argument.
 
 ---
 
@@ -1014,7 +1040,7 @@ p_\sigma
 p_{\mathrm{data}}*\mathcal N(0,\sigma^2I),
 $$
 
-not the final
+not
 
 $$
 p_{\mathrm{tgt}}
@@ -1022,7 +1048,7 @@ p_{\mathrm{tgt}}
 p_{\mathrm{data}}*\mathcal N(0,\sigma_{\min}^2I).
 $$
 
-Therefore the iMF data-side endpoint should be
+Therefore
 
 $$
 X_\sigma
@@ -1036,13 +1062,13 @@ $$
 Z_t=(1-t)X_\sigma+tE,
 $$
 
-so the sample conditional velocity becomes
+so
 
 $$
 C_\sigma=E-X_\sigma,
 $$
 
-and the marginal velocity is
+and
 
 $$
 v_\sigma(z_t,t)
@@ -1050,14 +1076,20 @@ v_\sigma(z_t,t)
 \mathbb E[E-X_\sigma\mid Z_t=z_t,t].
 $$
 
-A properly matched first-stage loss is therefore
+If the predictor also uses $R$, identifying this marginal velocity with the Bayes target again requires the corresponding sampling condition
+
+$$
+R\perp(X_\sigma,E)\mid T.
+$$
+
+A properly matched first-stage objective is therefore
 
 $$
 \mathcal L_{\mathrm{iMF}}^{(\sigma)}
 =
 \mathbb E
 \left\|
-V_\theta^{\mathrm{iMF}}(Z_t)
+V_\theta^{\mathrm{iMF}}(Z_t,R,T)
 -
 (E-X_\sigma)
 \right\|^2.
@@ -1136,7 +1168,7 @@ $$
 
 This does not depend on whether $G_\theta$ was trained by CMFM or iMF.
 
-Therefore the full Part II decomposition remains valid:
+Therefore
 
 $$
 A\mathcal L_{\mathrm{endpoint}}+B
@@ -1149,9 +1181,9 @@ D_{\mathrm{KL}}
 \bigl(q_0\|p_\theta(S_0\mid Y)\bigr),
 $$
 
-provided the same prior / marginalization setup and integrability assumptions are used.
+provided the same prior / marginalization setup and the absolute-continuity / integrability conditions above hold.
 
-So **the iMF replacement does not break the Gaussian conditional NLL → cross-entropy → KL probability chain.**
+So the iMF replacement does not break the Gaussian conditional NLL → cross-entropy → KL chain.
 
 ---
 
@@ -1178,16 +1210,16 @@ This is a proposal, not an original RMFlow equation.
 ## Established by RMFlow / standard probability identities
 
 - Gaussian construction in RMFlow Eqs. (6)–(10);
-- population expectation of NLL = cross-entropy;
-- cross-entropy = entropy + forward KL;
+- for fixed model parameters, empirical NLL is a Monte Carlo estimator of population cross-entropy;
+- under the stated regularity assumptions, cross-entropy = differential entropy + forward KL;
 - RMFlow averaged conditional NLL = marginal cross-entropy + expected posterior-KL Jensen gap;
 - therefore Eq. (10) is an upper bound on marginal CE, while Eq. (11) is a lower bound on marginal expected log-likelihood;
-- an exact first-stage $p_\sigma$ followed by the Gaussian refinement yields $p_{\mathrm{tgt}}$.
+- an exact first-stage $p_\sigma$ followed by Gaussian refinement yields $p_{\mathrm{tgt}}$.
 
 ## Derivable under explicit assumptions
 
 - Original MF $u$-loss and $v$-loss reformulation are equivalent;
-- state-only regression on $e-x$ has marginal $v$ as the population target;
+- if $R\perp(X,E)\mid T$, interval-aware regression on $e-x$ has marginal $v(Z_t,T)$ as its population target;
 - exact representable $(u^*,v^*)$ can realize the Bayes-optimal iMF solution;
 - attaching RMFlow to an iMF endpoint preserves the conditional Gaussian / CE / KL decomposition.
 
@@ -1198,11 +1230,14 @@ This is a proposal, not an original RMFlow equation.
    $$M\mathcal L_{\mathrm{CMFM}}\ge W_2^2$$
    remains true after simply replacing CMFM by iMF;
 3. every optimizer step that lowers RMFlow conditional NLL also lowers marginal cross-entropy;
-4. the hybrid necessarily improves FID or perceptual quality.
+4. training-set empirical NLL is an unbiased estimator of the fitted model's population cross-entropy;
+5. the hybrid necessarily improves FID or perceptual quality.
 
 ---
 
 # 26. Complete mathematical chain
+
+Under fixed $\tau>0$ and the stated support / integrability assumptions,
 
 $$
 \begin{aligned}
