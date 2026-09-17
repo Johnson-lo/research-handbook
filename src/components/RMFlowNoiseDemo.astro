@@ -1,0 +1,158 @@
+---
+const { lang = 'zh' } = Astro.props;
+const isZh = lang !== 'en';
+---
+
+<div class="rm-demo" data-rmflow-demo data-lang={isZh ? 'zh' : 'en'}>
+  <div class="rm-head">
+    <div>
+      <span>RMFLOW TOY LAB</span>
+      <strong>{isZh ? '從一個 deterministic point，看 noise 如何變成可寫 likelihood 的小分布' : 'From one deterministic point to a local distribution with an explicit likelihood'}</strong>
+      <p>{isZh ? '這個 toy demo 對應 RMFlow Eq. (6)–(10)：先得到 coarse point，再加 Gaussian noise，最後才有 conditional density 與 NLL。' : 'This toy demo mirrors RMFlow Eqs. (6)–(10): obtain a coarse point, add Gaussian noise, then write down a conditional density and NLL.'}</p>
+    </div>
+    <div class="rm-legend">
+      <span><i class="prior"></i>{isZh ? 'prior sample' : 'prior sample'}</span>
+      <span><i class="mean"></i>{isZh ? 'coarse mean' : 'coarse mean'}</span>
+      <span><i class="sample"></i>{isZh ? 'refined samples' : 'refined samples'}</span>
+      <span><i class="target"></i>{isZh ? 'target' : 'target'}</span>
+    </div>
+  </div>
+
+  <div class="rm-tabs" role="tablist">
+    <button class="active" data-mode="point"><b>1</b><span>{isZh ? 'Point → Gaussian' : 'Point → Gaussian'}</span><small>{isZh ? '為什麼一個點會變成分布' : 'why a point becomes a distribution'}</small></button>
+    <button data-mode="variance"><b>2</b><span>{isZh ? 'Variance composition' : 'Variance composition'}</span><small>{isZh ? '兩段 noise 怎麼合成' : 'how the two noises combine'}</small></button>
+    <button data-mode="nll"><b>3</b><span>{isZh ? 'Likelihood / NLL' : 'Likelihood / NLL'}</span><small>{isZh ? 'target 距離如何變成 loss' : 'how target distance becomes loss'}</small></button>
+  </div>
+
+  <div class="rm-how">
+    <strong data-how-title></strong>
+    <span data-how-text></span>
+  </div>
+
+  <div class="rm-layout">
+    <div class="rm-plot">
+      <svg data-svg viewBox="0 0 820 410" aria-label="RMFlow toy visualization"></svg>
+      <div class="rm-caption" data-caption></div>
+    </div>
+    <aside>
+      <div class="rm-control" data-sigma-row>
+        <div class="rm-control-title"><b>σ</b><output data-sigma-out>0.45</output></div>
+        <input data-sigma type="range" min="0.10" max="0.90" step="0.01" value="0.45" />
+        <small>{isZh ? '第一段 intermediate smoothing 的標準差。' : 'Standard deviation of the intermediate smoothing.'}</small>
+      </div>
+      <div class="rm-control" data-smin-row>
+        <div class="rm-control-title"><b>σ_min</b><output data-smin-out>0.85</output></div>
+        <input data-smin type="range" min="0.25" max="1.20" step="0.01" value="0.85" />
+        <small>{isZh ? '最終 target 的總標準差；必須大於 σ。' : 'Final target standard deviation; it must exceed σ.'}</small>
+      </div>
+      <div class="rm-control" data-target-row hidden>
+        <div class="rm-control-title"><b>{isZh ? 'target offset' : 'target offset'}</b><output data-target-out>0.80</output></div>
+        <input data-target type="range" min="-2.20" max="2.20" step="0.02" value="0.80" />
+        <small>{isZh ? '把 target 往 conditional mean 左右移動，觀察 density 與 NLL。' : 'Move the target around the conditional mean and watch density and NLL change.'}</small>
+      </div>
+      <div class="rm-info">
+        <small>{isZh ? '現在要看什麼' : 'What to inspect'}</small>
+        <strong data-title></strong>
+        <p data-desc></p>
+      </div>
+      <div class="rm-formula" data-formula></div>
+    </aside>
+  </div>
+</div>
+
+<style>
+.rm-demo{box-sizing:border-box;width:100%;border:1px solid var(--rh-border);border-radius:1rem;padding:1rem;background:var(--rh-surface);margin:1rem 0 1.6rem;overflow:hidden}.rm-head{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:1rem;align-items:center}.rm-head>div>span{display:block;color:var(--rh-caramel);font-size:.68rem;font-weight:800;letter-spacing:.12em}.rm-head strong{display:block;margin-top:.2rem}.rm-head p{margin:.3rem 0 0;color:var(--rh-muted);line-height:1.5}.rm-legend{display:flex;gap:.55rem;flex-wrap:wrap;font-size:.68rem;color:var(--rh-muted)}.rm-legend span{display:flex;align-items:center;gap:.25rem}.rm-legend i{width:.65rem;height:.65rem;border-radius:50%;display:inline-block}.rm-legend .prior{background:#6f85a8}.rm-legend .mean{background:#6b4f3a}.rm-legend .sample{background:#c47a3d}.rm-legend .target{background:#7d678f}.rm-tabs{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:.45rem;margin:.9rem 0}.rm-tabs button{box-sizing:border-box;height:4rem;margin:0;border:1px solid var(--rh-border);border-radius:.6rem;background:var(--rh-surface-2);color:var(--rh-text);font:inherit;cursor:pointer;padding:.45rem .6rem;display:grid;grid-template-columns:auto 1fr;grid-template-rows:auto auto;column-gap:.45rem;align-items:center;text-align:left}.rm-tabs button b{grid-row:1/3;display:grid;place-items:center;width:1.55rem;height:1.55rem;border-radius:50%;background:var(--rh-surface);color:var(--rh-coffee);font-size:.72rem}.rm-tabs button span{font-size:.82rem;font-weight:650;line-height:1.15}.rm-tabs button small{font-size:.68rem;color:var(--rh-muted);line-height:1.15}.rm-tabs button.active{border-color:var(--rh-caramel);background:var(--rh-surface-3)}.rm-how{display:grid;grid-template-columns:auto minmax(0,1fr);gap:.65rem;align-items:center;border:1px solid var(--rh-border);border-radius:.65rem;background:color-mix(in srgb,var(--rh-caramel) 5%,var(--rh-surface-2));padding:.6rem .7rem;margin-bottom:.75rem}.rm-how strong{font-size:.78rem}.rm-how span{color:var(--rh-muted);font-size:.76rem;line-height:1.45}.rm-layout{display:grid;grid-template-columns:minmax(0,1.55fr) minmax(16rem,.72fr);gap:.8rem;align-items:stretch}.rm-plot{min-width:0;border:1px solid var(--rh-border);border-radius:.75rem;background:#f8f3ec;overflow:hidden;display:grid;grid-template-rows:minmax(0,1fr) auto}.rm-plot svg{display:block;width:100%;height:100%;min-height:24rem}.rm-caption{border-top:1px solid var(--rh-border);padding:.55rem .7rem;background:var(--rh-surface-2);color:var(--rh-muted);font-size:.72rem;line-height:1.5}.rm-layout aside{display:grid;grid-auto-rows:max-content;gap:.6rem;align-content:start}.rm-control,.rm-info,.rm-formula{box-sizing:border-box;border:1px solid var(--rh-border);border-radius:.65rem;padding:.7rem;background:var(--rh-surface-2)}.rm-control-title{display:flex;justify-content:space-between;gap:.5rem;align-items:center;margin-bottom:.35rem}.rm-control-title b{font-size:.78rem}.rm-control-title output{font-variant-numeric:tabular-nums;color:var(--rh-coffee);font-weight:700}.rm-control input{width:100%}.rm-control small{display:block;color:var(--rh-muted);font-size:.7rem;line-height:1.4;margin-top:.3rem}.rm-info small{display:block;color:var(--rh-caramel);font-size:.68rem;text-transform:uppercase}.rm-info strong{display:block;margin:.25rem 0;line-height:1.35}.rm-info p{margin:0;color:var(--rh-muted);font-size:.78rem;line-height:1.55}.rm-formula{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:.76rem;line-height:1.6;overflow-wrap:anywhere;min-height:5rem}.rm-grid-label{font:600 13px system-ui,sans-serif;fill:#5c4636}.rm-small-label{font:12px system-ui,sans-serif;fill:#7a6a5d}.rm-big{font:700 15px system-ui,sans-serif;fill:#3c2f26}@media(max-width:840px){.rm-head{grid-template-columns:1fr}.rm-layout{grid-template-columns:1fr}.rm-plot svg{min-height:22rem}}@media(max-width:560px){.rm-tabs{grid-template-columns:1fr}.rm-tabs button{height:3.7rem}.rm-how{grid-template-columns:1fr}}
+</style>
+
+<script>
+for (const root of document.querySelectorAll('[data-rmflow-demo]')) {
+  if (root.dataset.ready) continue;
+  root.dataset.ready = '1';
+  const zh = root.dataset.lang === 'zh';
+  const svg = root.querySelector('[data-svg]');
+  const tabs = [...root.querySelectorAll('[data-mode]')];
+  const sigmaEl = root.querySelector('[data-sigma]');
+  const sminEl = root.querySelector('[data-smin]');
+  const targetEl = root.querySelector('[data-target]');
+  const sigmaOut = root.querySelector('[data-sigma-out]');
+  const sminOut = root.querySelector('[data-smin-out]');
+  const targetOut = root.querySelector('[data-target-out]');
+  const targetRow = root.querySelector('[data-target-row]');
+  const title = root.querySelector('[data-title]');
+  const desc = root.querySelector('[data-desc]');
+  const formula = root.querySelector('[data-formula]');
+  const caption = root.querySelector('[data-caption]');
+  const howTitle = root.querySelector('[data-how-title]');
+  const howText = root.querySelector('[data-how-text]');
+  let mode = 'point';
+  let seed = 90731;
+  const rand = () => { seed = (1664525 * seed + 1013904223) >>> 0; return seed / 4294967296; };
+  const normal = () => { const u = Math.max(rand(), 1e-9), v = rand(); return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v); };
+  const baseNoise = Array.from({length: 78}, () => ({x: normal(), y: normal()}));
+  const E = (name, attrs = {}) => { const n = document.createElementNS('http://www.w3.org/2000/svg', name); for (const [k,v] of Object.entries(attrs)) n.setAttribute(k, String(v)); svg.appendChild(n); return n; };
+  const text = (x,y,s,cls='rm-small-label',anchor='start') => { const n=E('text',{x,y,class:cls,'text-anchor':anchor}); n.textContent=s; return n; };
+  const line = (x1,y1,x2,y2,stroke='#bba994',w=1,dash='') => { const n=E('line',{x1,y1,x2,y2,stroke,'stroke-width':w}); if(dash)n.setAttribute('stroke-dasharray',dash); return n; };
+  const circle = (cx,cy,r,fill,opacity=1,stroke='none',sw=1) => E('circle',{cx,cy,r,fill,opacity,stroke,'stroke-width':sw});
+  const clear = () => { svg.innerHTML=''; E('rect',{x:0,y:0,width:820,height:410,fill:'#f8f3ec'}); };
+  function params(){
+    let sigma = Number(sigmaEl.value), smin = Number(sminEl.value);
+    if (smin <= sigma + 0.04) { smin = Math.min(1.2, sigma + 0.05); sminEl.value = smin.toFixed(2); }
+    sigmaOut.textContent = sigma.toFixed(2); sminOut.textContent = smin.toFixed(2); targetOut.textContent = Number(targetEl.value).toFixed(2);
+    return {sigma,smin,tau:Math.sqrt(Math.max(1e-6,smin*smin-sigma*sigma)),target:Number(targetEl.value)};
+  }
+  function arrow(x1,y1,x2,y2,label){ line(x1,y1,x2,y2,'#9a8068',2); const a=Math.atan2(y2-y1,x2-x1),L=9; line(x2,y2,x2-L*Math.cos(a-.55),y2-L*Math.sin(a-.55),'#9a8068',2); line(x2,y2,x2-L*Math.cos(a+.55),y2-L*Math.sin(a+.55),'#9a8068',2); if(label) text((x1+x2)/2,(y1+y2)/2-10,label,'rm-small-label','middle'); }
+  function pointView(p){
+    clear(); const y=210, x0=145, mu=455, scale=72;
+    circle(x0,y,8,'#6f85a8'); text(x0,y+28,'x₀','rm-grid-label','middle');
+    arrow(x0+18,y,mu-24,y,zh?'1-NFE deterministic map':'1-NFE deterministic map');
+    circle(mu,y,7,'#6b4f3a'); text(mu,y+28,'μθ(x₀)','rm-grid-label','middle');
+    for(const q of baseNoise){ const x=mu+scale*p.tau*q.x, yy=y+scale*p.tau*q.y; if(x>285&&x<790&&yy>30&&yy<380) circle(x,yy,2.6,'#c47a3d',.46); }
+    circle(mu,y,Math.max(16,scale*p.tau),'none',.9,'#c47a3d',1.3);
+    text(455,55,zh?'固定 x₀ 後：唯一隨機性來自 ε₂':'Condition on x₀: all remaining randomness is ε₂','rm-big','middle');
+    text(455,78,`τ = √(σ_min²−σ²) = ${p.tau.toFixed(3)}`,'rm-small-label','middle');
+    title.textContent=zh?'一個 deterministic mean + Gaussian noise = conditional distribution':'Deterministic mean + Gaussian noise = conditional distribution';
+    desc.textContent=zh?'MeanFlow 先把這個 x₀ 映到一個點 μθ(x₀)。RMFlow 不再做第二次 neural solve，只抽 ε₂ 並加上 τε₂，因此同一個 x₀ 會產生一小團 Gaussian samples。':'MeanFlow first maps this x₀ to a single point μθ(x₀). RMFlow does not run a second neural solve; it samples ε₂ and adds τε₂, so the same x₀ induces a small Gaussian cloud.';
+    formula.textContent=`ŷ = μθ(x₀)+τε₂\nŷ | x₀ ~ N(μθ(x₀), τ²I)\nτ² = σ_min²−σ² = ${(p.tau*p.tau).toFixed(3)}`;
+    caption.textContent=zh?'橘色點不是「模型輸出很多 mean」，而是固定同一個 coarse mean 後反覆抽 Gaussian refinement noise。':'The orange points are not multiple model means; they are repeated Gaussian refinements around the same coarse mean.';
+    howTitle.textContent=zh?'操作：調整 σ 與 σ_min':'Action: change σ and σ_min';
+    howText.textContent=zh?'注意真正控制這個 conditional cloud 寬度的是第二段 τ=√(σ_min²−σ²)，不是 σ_min 本身。':'Notice that the conditional cloud width is controlled by the second-stage τ=√(σ_min²−σ²), not by σ_min alone.';
+  }
+  function varianceView(p){
+    clear(); const cx=410,cy=210,scale=115;
+    for(const q of baseNoise){ const x=cx+scale*p.sigma*q.x, y=cy+scale*p.sigma*q.y; if(x>30&&x<790&&y>30&&y<380) circle(x,y,2.5,'#6f85a8',.30); }
+    for(const q of baseNoise){ const x=cx+scale*p.smin*q.x, y=cy+scale*p.smin*q.y; if(x>30&&x<790&&y>30&&y<380) circle(x,y,2.5,'#c47a3d',.34); }
+    circle(cx,cy,6,'#6b4f3a');
+    circle(cx,cy,scale*p.sigma,'none',1,'#6f85a8',1.4);
+    circle(cx,cy,scale*p.smin,'none',1,'#c47a3d',1.4);
+    text(55,58,`σ² = ${(p.sigma*p.sigma).toFixed(3)}`,'rm-grid-label');
+    text(55,84,`τ² = σ_min²−σ² = ${(p.tau*p.tau).toFixed(3)}`,'rm-grid-label');
+    text(55,110,`σ²+τ² = ${(p.sigma*p.sigma+p.tau*p.tau).toFixed(3)} = σ_min²`,'rm-big');
+    title.textContent=zh?'Gaussian variance 相加，不是標準差直接相加':'Gaussian variances add; standard deviations do not';
+    desc.textContent=zh?'第一段已有 σε₁，第二段再加 τε₂。因為 ε₁、ε₂ 獨立，covariance 直接相加，所以最後總 variance 恰好是 σ_min²I。':'The first stage already contains σε₁ and the second adds τε₂. Because ε₁ and ε₂ are independent, covariances add, making the final variance exactly σ_min²I.';
+    formula.textContent=`σε₁ + τε₂ ~ N(0,(σ²+τ²)I)\nτ² = σ_min²−σ²\n⇒ total variance = σ_min²I`;
+    caption.textContent=zh?'藍色是 std=σ 的 intermediate cloud；橘色是最終 std=σ_min 的 target cloud。':'Blue is the intermediate cloud with std=σ; orange is the final target cloud with std=σ_min.';
+    howTitle.textContent=zh?'操作：讓 σ 接近 σ_min':'Action: move σ close to σ_min';
+    howText.textContent=zh?'你會看到需要補的 τ 變小；當 σ 已很接近 σ_min，refinement 只需很小的額外 variance。':'The required τ shrinks as σ approaches σ_min; if the intermediate is already near the desired noise level, refinement needs only a small extra variance.';
+  }
+  function nllView(p){
+    clear(); targetRow.hidden=false; const left=80,right=760,base=330,mu=420,sx=120; const tau=Math.max(.08,p.tau), tx=mu+p.target*sx;
+    line(left,base,right,base,'#bba994',1.2); line(mu,75,mu,base,'#c7b7a6',1,'5 5');
+    const pts=[]; let maxPdf=1/(Math.sqrt(2*Math.PI)*tau);
+    for(let i=0;i<=160;i++){ const z=-2.8+5.6*i/160; const pdf=Math.exp(-.5*(z/tau)*(z/tau))/(Math.sqrt(2*Math.PI)*tau); const x=mu+z*sx, y=base-220*(pdf/maxPdf); pts.push(`${x},${y}`); }
+    E('polyline',{points:pts.join(' '),fill:'none',stroke:'#c47a3d','stroke-width':3});
+    const dens=Math.exp(-.5*(p.target/tau)*(p.target/tau))/(Math.sqrt(2*Math.PI)*tau); const nll=.5*(p.target*p.target)/(tau*tau)+Math.log(Math.sqrt(2*Math.PI)*tau);
+    circle(mu,base,6,'#6b4f3a'); circle(tx,base,7,'#7d678f'); line(tx,base,tx,base-220*(dens/maxPdf),'#7d678f',1.4,'4 4');
+    text(mu,base+28,'μθ(x₀)','rm-grid-label','middle'); text(tx,base+28,zh?'target':'target','rm-grid-label','middle');
+    text(90,62,`p(target|x₀) ≈ ${dens.toFixed(3)}`,'rm-grid-label'); text(90,88,`NLL ≈ ${nll.toFixed(3)} + const-shift`,'rm-big');
+    title.textContent=zh?'target 離 conditional mean 越遠，density 越低、NLL 越高':'Farther targets have lower density and higher NLL';
+    desc.textContent=zh?'固定 variance 時，Gaussian NLL 對 θ 的唯一非定常項就是平方距離。因此 paper 的 L_NLL 可以去掉固定 scaling 與常數，寫成 MSE surrogate。':'With fixed variance, the only θ-dependent part of the Gaussian NLL is squared distance. That is why the paper can drop the fixed scale and additive constant and use an MSE surrogate.';
+    formula.textContent=`−log p(y|x₀) = ||y−μθ(x₀)||²/(2τ²) + C\nτ²=${(tau*tau).toFixed(3)}, offset=${p.target.toFixed(2)}`;
+    caption.textContent=zh?'紫色 target 可左右移動；這是「endpoint likelihood control」最直接的幾何圖像。':'Move the purple target left or right; this is the direct geometry behind endpoint likelihood control.';
+    howTitle.textContent=zh?'操作：拖動 target offset':'Action: drag the target offset';
+    howText.textContent=zh?'看 target 離 mean 愈遠時，Gaussian density 下降，而 squared-error / NLL 上升。':'As the target moves away from the mean, Gaussian density drops while squared error / NLL rises.';
+  }
+  function render(){ const p=params(); targetRow.hidden=mode!=='nll'; if(mode==='point')pointView(p); else if(mode==='variance')varianceView(p); else nllView(p); }
+  tabs.forEach(b=>b.addEventListener('click',()=>{ mode=b.dataset.mode; tabs.forEach(x=>x.classList.toggle('active',x===b)); render(); }));
+  sigmaEl.addEventListener('input',render); sminEl.addEventListener('input',render); targetEl.addEventListener('input',render); render();
+}
+</script>
